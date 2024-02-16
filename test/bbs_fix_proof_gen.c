@@ -82,7 +82,6 @@ int mocked_proof_gen(
 				)) {
 		goto cleanup;
 	}
-
 	if (BBS_OK != bbs_proof_gen_det (pk, signature, proof, header, header_len,
 					 presentation_header, presentation_header_len,
 					 disclosed_indexes, disclosed_indexes_len,
@@ -204,6 +203,7 @@ int bbs_fix_proof_gen() {
 	ASSERT_EQ("scalar_10 test", scalar_buffer, fixture_bls12_381_sha_256_proof_random_scalar_10);
 
 	uint8_t proof1[BBS_PROOF_LEN(0)];
+        BBS_BENCH_START()
 	if(BBS_OK != mocked_proof_gen(
 				fixture_bls12_381_sha_256_proof1_public_key,
 				fixture_bls12_381_sha_256_proof1_signature,
@@ -220,6 +220,7 @@ int bbs_fix_proof_gen() {
 		puts("Error during proof 1 generation");
 		return 1;
 	}
+        BBS_BENCH_END("Valid Single Message Proof")
 	ASSERT_EQ("proof 1 generation", proof1, fixture_bls12_381_sha_256_proof1_proof);
 
 	uint8_t proof2[BBS_PROOF_LEN(0)];
@@ -257,6 +258,7 @@ int bbs_fix_proof_gen() {
 		puts("Error during proof 2 generation");
 		return 1;
 	}
+        BBS_BENCH_END("Valid Multi-Message, All Messages Disclosed Proof")
 	ASSERT_EQ("proof 2 generation", proof2, fixture_bls12_381_sha_256_proof2_proof);
 
 	// Only some messages are being revealed here
@@ -295,6 +297,7 @@ int bbs_fix_proof_gen() {
 		puts("Error during proof 3 generation");
 		return 1;
 	}
+        BBS_BENCH_END("Valid Multi-Message, Some Messages Disclosed Proof")
 	ASSERT_EQ("proof 3 generation", proof3, fixture_bls12_381_sha_256_proof3_proof);
 
 	bn_free(scalar);

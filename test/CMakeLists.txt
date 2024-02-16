@@ -20,6 +20,11 @@ target_link_libraries(bbs-test-fixtures PRIVATE bbs)
 add_executable(bbs-test-e2e ${e2e-tests})
 target_link_libraries(bbs-test-e2e PRIVATE bbs)
 
+add_executable(bbs-test-e2e-bench ${e2e-tests})
+target_link_libraries(bbs-test-e2e-bench PRIVATE bbs)
+target_compile_definitions(bbs-test-e2e-bench PUBLIC ENABLE_BENCHMARK)
+add_custom_target(bench COMMAND bbs-test-e2e-bench)
+
 set(fixture-test-list ${fixture-tests})
 remove(fixture-test-list bbs-test-fixtures.c)
 
