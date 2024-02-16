@@ -2,6 +2,7 @@
 #define BBS_UTIL_H
 
 #include "bbs.h"
+#include <relic.h>
 #include <sha.h>
 
 // This header specifies useful functions for several utility algorithms.
