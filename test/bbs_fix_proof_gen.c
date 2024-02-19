@@ -1,6 +1,8 @@
 #include "fixtures.h"
 #include "test_util.h"
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+
 // Mocked random scalars for bbs_proof_gen_det
 int mocked_prf(
 		bn_t out,
@@ -304,3 +306,9 @@ int bbs_fix_proof_gen() {
 	return 0;
 }
 
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+int bbs_fix_proof_gen() {
+	// TODO
+	return 0;
+}
+#endif

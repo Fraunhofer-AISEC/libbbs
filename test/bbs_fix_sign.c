@@ -1,6 +1,8 @@
 #include "fixtures.h"
 #include "test_util.h"
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+
 int bbs_fix_sign() {
 	if (core_init() != RLC_OK) {
 		core_clean();
@@ -61,3 +63,11 @@ int bbs_fix_sign() {
 	return 0;
 }
 
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+
+int bbs_fix_sign() {
+	// TODO
+	return 0;
+}
+
+#endif
