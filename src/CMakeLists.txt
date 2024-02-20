@@ -1,3 +1,4 @@
+
 find_library(GMP_LIB gmp REQUIRED)
 find_path(GMP_PATH gmp.h REQUIRED)
 message(STATUS "GMP_PATH: ${GMP_PATH}")
@@ -5,6 +6,9 @@ message(STATUS "GMP_PATH: ${GMP_PATH}")
 add_library(bbs SHARED
 	bbs.c
 	bbs_util.c)
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(bbs PUBLIC OpenSSL::Crypto)
 
 set(BBS_CIPHER_SUITE "BLS12-381-SHA-256" CACHE STRING "BBS cipher suite")
 set_property(CACHE BBS_CIPHER_SUITE PROPERTY STRINGS OPTION_DEFAULT "BLS12-381-SHA-256" "BLS12-381-SHAKE-256")
