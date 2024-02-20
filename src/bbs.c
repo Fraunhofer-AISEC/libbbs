@@ -22,7 +22,10 @@ static uint8_t P1[] = {
 };
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 static uint8_t P1[] = {
-	0x89, 0x29, 0xdf, 0xbc, 0x7e, 0x66, 0x42, 0xc4, 0xed, 0x9c, 0xba, 0x08, 0x56, 0xe4, 0x93, 0xf8, 0xb9, 0xd7, 0xd5, 0xfc, 0xb0, 0xc3, 0x1e, 0xf8, 0xfd, 0xcd, 0x34, 0xd5, 0x06, 0x48, 0xa5, 0x6c, 0x79, 0x5e, 0x10, 0x6e, 0x9e, 0xad, 0xa6, 0xe0, 0xbd, 0xa3, 0x86, 0xb4, 0x14, 0x15, 0x07, 0x55
+	0x89, 0x29, 0xdf, 0xbc, 0x7e, 0x66, 0x42, 0xc4, 0xed, 0x9c, 0xba, 0x08, 0x56, 0xe4, 0x93,
+	0xf8, 0xb9, 0xd7, 0xd5, 0xfc, 0xb0, 0xc3, 0x1e, 0xf8, 0xfd, 0xcd, 0x34, 0xd5, 0x06, 0x48,
+	0xa5, 0x6c, 0x79, 0x5e, 0x10, 0x6e, 0x9e, 0xad, 0xa6, 0xe0, 0xbd, 0xa3, 0x86, 0xb4, 0x14,
+	0x15, 0x07, 0x55
 };
 #endif
 
@@ -98,8 +101,8 @@ bbs_keygen (
 		goto cleanup;
 	}
 
-	if (BBS_OK != hash_to_scalar (sk_n, key_dst, key_dst_len, key_material, key_material_len,
-				      &key_info_len_be, 2, key_info, key_info_len, 0))
+	if (BBS_OK != hash_to_scalar (sk_n, key_dst, key_dst_len, key_material, key_material_len, &
+				      key_info_len_be, 2, key_info, key_info_len, 0))
 	{
 		goto cleanup;
 	}
@@ -231,9 +234,8 @@ bbs_sign (
 	for (int i = 0; i<num_messages + 1; i++)
 	{
 		// Technically, this includes Q_1
-		if (BBS_OK != create_generator_next (generator_ctx, H_i,
-						     (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							     BBS_SHA_256_API_ID)
+		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*)
+						     BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						     - 1))
 		{
 			goto cleanup;
@@ -243,9 +245,8 @@ bbs_sign (
 			goto cleanup;
 		}
 	}
-	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len,
-						 (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							 BBS_SHA_256_API_ID)
+	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len, (uint8_t*)
+						 BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						 - 1))
 	{
 		goto cleanup;
@@ -269,8 +270,8 @@ bbs_sign (
 	// END UGLY CODE
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID,
-					     LEN (BBS_SHA_256_API_ID)
+	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID, LEN
+						     (BBS_SHA_256_API_ID)
 					     - 1))
 	{
 		goto cleanup;
@@ -280,9 +281,8 @@ bbs_sign (
 	for (int i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i,
-						     (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							     BBS_SHA_256_API_ID)
+		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*)
+						     BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						     - 1))
 		{
 			goto cleanup;
@@ -433,8 +433,8 @@ bbs_verify (
 	}
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID,
-					     LEN (BBS_SHA_256_API_ID)
+	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID, LEN
+						     (BBS_SHA_256_API_ID)
 					     - 1))
 	{
 		goto cleanup;
@@ -448,9 +448,8 @@ bbs_verify (
 	for (int i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i,
-						     (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							     BBS_SHA_256_API_ID)
+		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*)
+						     BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						     - 1))
 		{
 			goto cleanup;
@@ -480,9 +479,8 @@ bbs_verify (
 	va_end (ap);
 
 	// Finalize domain calculation
-	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len,
-						 (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							 BBS_SHA_256_API_ID)
+	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len, (uint8_t*)
+						 BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						 - 1))
 	{
 		goto cleanup;
@@ -659,8 +657,8 @@ bbs_proof_gen_det (
 		goto cleanup;
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID,
-					     LEN (BBS_SHA_256_API_ID)
+	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID, LEN
+						     (BBS_SHA_256_API_ID)
 					     - 1))
 	{
 		goto cleanup;
@@ -674,9 +672,8 @@ bbs_proof_gen_det (
 	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i,
-						     (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							     BBS_SHA_256_API_ID)
+		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*)
+						     BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						     - 1))
 		{
 			goto cleanup;
@@ -704,8 +701,8 @@ bbs_proof_gen_det (
 			goto cleanup;
 		}
 
-		if (disclosed_indexes_idx < disclosed_indexes_len &&
-		    disclosed_indexes[disclosed_indexes_idx] == i)
+		if (disclosed_indexes_idx < disclosed_indexes_len && disclosed_indexes[
+			    disclosed_indexes_idx] == i)
 		{
 			// This message is disclosed.
 			// Here I would like to hash the disclosed messages into the
@@ -720,8 +717,8 @@ bbs_proof_gen_det (
 		{
 			// This message is undisclosed. Derive new random scalar
 			// and accumulate it onto T2
-			if (BBS_OK != prf (msg_scalar_tilde, 0, undisclosed_indexes_idx,
-					   prf_cookie))
+			if (BBS_OK != prf (msg_scalar_tilde, 0, undisclosed_indexes_idx, prf_cookie)
+			    )
 			{
 				goto cleanup;
 			}
@@ -751,9 +748,8 @@ bbs_proof_gen_det (
 	}
 
 	// Finalize domain calculation
-	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len,
-						 (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							 BBS_SHA_256_API_ID)
+	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len, (uint8_t*)
+						 BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						 - 1))
 	{
 		goto cleanup;
@@ -830,8 +826,8 @@ bbs_proof_gen_det (
 		// Calculate msg_scalar (oneshot)
 		msg     = va_arg (ap2, uint8_t*);
 		msg_len = va_arg (ap2, uint32_t);
-		if (disclosed_indexes_idx < disclosed_indexes_len &&
-		    disclosed_indexes[disclosed_indexes_idx] == i)
+		if (disclosed_indexes_idx < disclosed_indexes_len && disclosed_indexes[
+			    disclosed_indexes_idx] == i)
 		{
 			disclosed_indexes_idx++;
 			if (BBS_OK != hash_to_scalar (msg_scalar, (uint8_t*) BBS_SHA_256_MAP_DST,
@@ -846,8 +842,8 @@ bbs_proof_gen_det (
 			RLC_CATCH_ANY {
 				goto cleanup;
 			}
-			if (BBS_OK != hash_to_scalar_update (&ch_ctx, scalar_buffer,
-							     BBS_SCALAR_LEN))
+			if (BBS_OK != hash_to_scalar_update (&ch_ctx, scalar_buffer, BBS_SCALAR_LEN)
+			    )
 			{
 				goto cleanup;
 			}
@@ -873,8 +869,8 @@ bbs_proof_gen_det (
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_finalize (&ch_ctx, challenge,
-					       (uint8_t*) BBS_SHA_256_CHALLENGE_DST, LEN (
+	if (BBS_OK != hash_to_scalar_finalize (&ch_ctx, challenge, (uint8_t*)
+					       BBS_SHA_256_CHALLENGE_DST, LEN (
 						       BBS_SHA_256_CHALLENGE_DST)
 					       - 1))
 	{
@@ -975,9 +971,9 @@ bbs_proof_prf (
 {
 	// All these have length 17
 	static uint8_t *dsts[] = {
-		(uint8_t*) "random msg scalar", (uint8_t*) "random r_1 scalar",
-		(uint8_t*) "random r_2 scalar", (uint8_t*) "random e_t scalar",
-		(uint8_t*) "random r1t scalar", (uint8_t*) "random r3t scalar",
+		(uint8_t*) "random msg scalar", (uint8_t*) "random r_1 scalar", (uint8_t*)
+		"random r_2 scalar",            (uint8_t*) "random e_t scalar", (uint8_t*)
+		"random r1t scalar",            (uint8_t*) "random r3t scalar",
 	};
 
 	if (input_type >= LEN (dsts))
@@ -1020,8 +1016,8 @@ bbs_proof_gen (
 
 	if (BBS_OK != bbs_proof_gen_det (pk, signature, proof, header, header_len,
 					 presentation_header, presentation_header_len,
-					 disclosed_indexes, disclosed_indexes_len,
-					 num_messages, bbs_proof_prf, seed, ap))
+					 disclosed_indexes, disclosed_indexes_len, num_messages,
+					 bbs_proof_prf, seed, ap))
 	{
 		goto cleanup;
 	}
@@ -1171,8 +1167,8 @@ bbs_proof_verify (
 	}
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID,
-					     LEN (BBS_SHA_256_API_ID)
+	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_SHA_256_API_ID, LEN
+						     (BBS_SHA_256_API_ID)
 					     - 1))
 	{
 		goto cleanup;
@@ -1186,9 +1182,8 @@ bbs_proof_verify (
 	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i,
-						     (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							     BBS_SHA_256_API_ID)
+		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*)
+						     BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						     - 1))
 		{
 			goto cleanup;
@@ -1198,8 +1193,8 @@ bbs_proof_verify (
 			goto cleanup;
 		}
 
-		if (disclosed_indexes_idx < disclosed_indexes_len &&
-		    disclosed_indexes[disclosed_indexes_idx] == i)
+		if (disclosed_indexes_idx < disclosed_indexes_len && disclosed_indexes[
+			    disclosed_indexes_idx] == i)
 		{
 			// This message is disclosed.
 			// Read in the message and accumulate onto Bv
@@ -1253,9 +1248,8 @@ bbs_proof_verify (
 	}
 
 	// Finalize domain calculation
-	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len,
-						 (uint8_t*) BBS_SHA_256_API_ID, LEN (
-							 BBS_SHA_256_API_ID)
+	if (BBS_OK != calculate_domain_finalize (&dom_ctx, domain, header, header_len, (uint8_t*)
+						 BBS_SHA_256_API_ID, LEN (BBS_SHA_256_API_ID)
 						 - 1))
 	{
 		goto cleanup;
@@ -1350,8 +1344,8 @@ bbs_proof_verify (
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_finalize (&ch_ctx, challenge_prime,
-					       (uint8_t*) BBS_SHA_256_CHALLENGE_DST, LEN (
+	if (BBS_OK != hash_to_scalar_finalize (&ch_ctx, challenge_prime, (uint8_t*)
+					       BBS_SHA_256_CHALLENGE_DST, LEN (
 						       BBS_SHA_256_CHALLENGE_DST)
 					       - 1))
 	{
