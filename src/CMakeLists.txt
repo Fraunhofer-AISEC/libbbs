@@ -7,9 +7,6 @@ add_library(bbs SHARED
 	bbs.c
 	bbs_util.c)
 
-find_package(OpenSSL REQUIRED)
-target_link_libraries(bbs PUBLIC OpenSSL::Crypto)
-
 set(BBS_CIPHER_SUITE "BLS12-381-SHA-256" CACHE STRING "BBS cipher suite")
 set_property(CACHE BBS_CIPHER_SUITE PROPERTY STRINGS OPTION_DEFAULT "BLS12-381-SHA-256" "BLS12-381-SHAKE-256")
 
@@ -18,6 +15,8 @@ message(STATUS "BBS_CIPHER_SUITE selected: ${BBS_CIPHER_SUITE}")
 if(BBS_CIPHER_SUITE STREQUAL "BLS12-381-SHA-256")
     target_compile_definitions(bbs PUBLIC BBS_CIPHER_SUITE=1)
 elseif(BBS_CIPHER_SUITE STREQUAL "BLS12-381-SHAKE-256")
+	find_package(OpenSSL REQUIRED)
+	target_link_libraries(bbs PUBLIC OpenSSL::Crypto)
     target_compile_definitions(bbs PUBLIC BBS_CIPHER_SUITE=2)
 else() # Default case
 	message(WARNING "BBS_CIPHER_SUITE not recognized, defaulting to BLS12-381-SHA-256")
