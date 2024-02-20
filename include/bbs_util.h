@@ -3,7 +3,12 @@
 
 #include "bbs.h"
 #include <relic.h>
+
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 #include <sha.h>
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+#include <openssl/evp.h>
+#endif
 
 // This header specifies useful functions for several utility algorithms.
 // Use these if you want to hack on BBS signatures and want to stay close to the
@@ -54,19 +59,25 @@ void ep2_read_bbs(
 // are (a1, b1, a2, b2, ..., an, bn, 0).
 // Array types (e.g. ep_t) are given by reference to the one-shot API
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+typedef SHA256Context bbs_hash_ctx;
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+typedef EVP_MD_CTX bbs_hash_ctx;
+#endif
+
 // Implementation of expand_message with expand_len = 48
 // relic implements this as md_xmd, but here we built it with an incremental API
 // or varargs for the message
 int expand_message_init(
-		SHA256Context *ctx
+		bbs_hash_ctx *ctx
 	);
 int expand_message_update(
-		SHA256Context *ctx,
+		bbs_hash_ctx *ctx,
 		const uint8_t *msg,
 		uint32_t       msg_len
 	);
 int expand_message_finalize(
-		SHA256Context *ctx,
+		bbs_hash_ctx *ctx,
 		uint8_t        out[48],
 		const uint8_t *dst,
 		uint8_t        dst_len
@@ -80,15 +91,15 @@ int expand_message(
 
 // Hash to Scalar
 int hash_to_scalar_init(
-		SHA256Context *ctx
+		bbs_hash_ctx *ctx
 	);
 int hash_to_scalar_update(
-		SHA256Context *ctx,
+		bbs_hash_ctx *ctx,
 		const uint8_t *msg,
 		uint32_t       msg_len
 	);
 int hash_to_scalar_finalize(
-		SHA256Context *ctx,
+		bbs_hash_ctx *ctx,
 		bn_t           out,
 		const uint8_t *dst,
 		uint8_t        dst_len
@@ -102,16 +113,16 @@ int hash_to_scalar(
 
 // you need to call update exactly num_messages + 1 times.
 int calculate_domain_init(
-		SHA256Context *ctx,
+		bbs_hash_ctx *ctx,
 		const uint8_t  pk[BBS_PK_LEN],
 		uint64_t       num_messages
 	);
 int calculate_domain_update(
-		SHA256Context *ctx,
+		bbs_hash_ctx *ctx,
 		const ep_t     generator
 	);
 int calculate_domain_finalize(
-		SHA256Context *ctx,
+		bbs_hash_ctx *ctx,
 		bn_t           out,
 		const uint8_t *header,
 		uint64_t       header_len,

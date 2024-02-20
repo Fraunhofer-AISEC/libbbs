@@ -1,6 +1,10 @@
 #include "bbs.h"
 #include "bbs_util.h"
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+#include <openssl/evp.h>
+#endif
+
 inline void
 bn_write_bbs (
 	uint8_t     bin[BBS_SCALAR_LEN],
@@ -157,10 +161,11 @@ ep2_read_bbs (
 	}
 }
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
 expand_message_init (
-	SHA256Context *ctx
+	bbs_hash_ctx *ctx
 	)
 {
 	uint64_t zero[] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -176,10 +181,30 @@ cleanup:
 	return res;
 }
 
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+
+int
+expand_message_init (
+	bbs_hash_ctx *ctx
+	)
+{
+	int res = BBS_ERROR;
+
+	if (EVP_DigestInit_ex(ctx, EVP_shake256(), NULL) != 1)
+		goto cleanup;
+
+	res = BBS_OK;
+cleanup:
+	return res;
+}
+
+#endif
+
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
 expand_message_update (
-	SHA256Context *ctx,
+	bbs_hash_ctx *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
@@ -194,10 +219,32 @@ cleanup:
 	return res;
 }
 
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+
+int
+expand_message_update (
+	bbs_hash_ctx *ctx,
+	const uint8_t *msg,
+	uint32_t       msg_len
+	)
+{
+	int res = BBS_ERROR;
+
+	if (EVP_DigestUpdate(ctx, msg, msg_len) != 1)
+		goto cleanup;
+
+	res = BBS_OK;
+cleanup:
+	return res;
+}
+
+#endif
+
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
 expand_message_finalize (
-	SHA256Context *ctx,
+	bbs_hash_ctx *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
@@ -268,6 +315,43 @@ cleanup:
 	return res;
 }
 
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+
+/**
+ * @brief Finalizes the expand_message xof operation.
+ * 
+ * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
+*/
+int
+expand_message_finalize (
+	bbs_hash_ctx *ctx,
+	uint8_t        out[48],
+	const uint8_t *dst,
+	uint8_t        dst_len
+	)
+{
+	int     res = BBS_ERROR;
+	// len_in_bytes fixed to 48
+	uint8_t num = 48;
+	if (dst_len > 255) {
+		goto cleanup;
+	}
+	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
+	if (EVP_DigestUpdate(ctx, &num, 1) != 1)
+		goto cleanup;
+	if (EVP_DigestUpdate(ctx, dst, dst_len) != 1)
+		goto cleanup;
+	if (EVP_DigestUpdate(ctx, &dst_len, 1) != 1)
+		goto cleanup;
+	if (EVP_DigestFinalXOF(ctx, out, 48) != 1)
+		goto cleanup;
+	res = BBS_OK;
+cleanup:
+	return res;
+}
+
+
+#endif
 
 int
 expand_message (
@@ -278,7 +362,7 @@ expand_message (
 	)
 {
 	va_list       ap;
-	SHA256Context hctx;
+	bbs_hash_ctx hctx;
 	uint8_t      *msg     = 0;
 	uint32_t      msg_len = 0;
 	int           res     = BBS_ERROR;
@@ -312,7 +396,7 @@ cleanup:
 
 inline int
 hash_to_scalar_init (
-	SHA256Context *ctx
+	bbs_hash_ctx *ctx
 	)
 {
 	return expand_message_init (ctx);
@@ -321,7 +405,7 @@ hash_to_scalar_init (
 
 inline int
 hash_to_scalar_update (
-	SHA256Context *ctx,
+	bbs_hash_ctx *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
@@ -332,7 +416,7 @@ hash_to_scalar_update (
 
 inline int
 hash_to_scalar_finalize (
-	SHA256Context *ctx,
+	bbs_hash_ctx *ctx,
 	bn_t           out,
 	const uint8_t *dst,
 	uint8_t        dst_len
@@ -369,7 +453,7 @@ hash_to_scalar (
 	)
 {
 	va_list       ap;
-	SHA256Context hctx;
+	bbs_hash_ctx hctx;
 	uint8_t      *msg     = 0;
 	uint32_t      msg_len = 0;
 	int           res     = BBS_ERROR;
@@ -403,7 +487,7 @@ cleanup:
 
 int
 calculate_domain_init (
-	SHA256Context *ctx,
+	bbs_hash_ctx *ctx,
 	const uint8_t  pk[BBS_PK_LEN],
 	uint64_t       num_messages
 	)
@@ -434,7 +518,7 @@ cleanup:
 
 int
 calculate_domain_update (
-	SHA256Context *ctx,
+	bbs_hash_ctx *ctx,
 	const ep_t     generator
 	)
 {
@@ -461,7 +545,7 @@ cleanup:
 
 int
 calculate_domain_finalize (
-	SHA256Context *ctx,
+	bbs_hash_ctx *ctx,
 	bn_t           out,
 	const uint8_t *header,
 	uint64_t       header_len,
@@ -522,7 +606,7 @@ calculate_domain (
 	)
 {
 	va_list       ap;
-	SHA256Context hctx;
+	bbs_hash_ctx hctx;
 	ep_t         *generator;
 	int           res = BBS_ERROR;
 
@@ -561,7 +645,7 @@ create_generator_init (
 	)
 {
 	uint8_t       buffer[256];
-	SHA256Context hctx;
+	bbs_hash_ctx hctx;
 	int           res = BBS_ERROR;
 
 	if (api_id_len > 255 - 19)
@@ -703,7 +787,7 @@ create_generator_next (
 {
 	uint8_t       dst_buf[256];
 	uint8_t       rand_buf[128];
-	SHA256Context hctx;
+	bbs_hash_ctx hctx;
 	uint64_t      i_be = UINT64_H2BE (*((uint64_t*) (state + 48)));
 	int           res  = BBS_ERROR;
 
