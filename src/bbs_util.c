@@ -161,6 +161,7 @@ ep2_read_bbs (
 	}
 }
 
+
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
@@ -181,6 +182,7 @@ cleanup:
 	return res;
 }
 
+
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 
 int
@@ -190,7 +192,7 @@ expand_message_init (
 {
 	int res = BBS_ERROR;
 
-	if (EVP_DigestInit_ex(ctx, EVP_shake256(), NULL) != 1)
+	if (EVP_DigestInit_ex (ctx, EVP_shake256 (), NULL) != 1)
 		goto cleanup;
 
 	res = BBS_OK;
@@ -198,13 +200,14 @@ cleanup:
 	return res;
 }
 
+
 #endif
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
 expand_message_update (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
@@ -219,18 +222,19 @@ cleanup:
 	return res;
 }
 
+
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 
 int
 expand_message_update (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
 {
 	int res = BBS_ERROR;
 
-	if (EVP_DigestUpdate(ctx, msg, msg_len) != 1)
+	if (EVP_DigestUpdate (ctx, msg, msg_len) != 1)
 		goto cleanup;
 
 	res = BBS_OK;
@@ -238,13 +242,14 @@ cleanup:
 	return res;
 }
 
+
 #endif
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
 expand_message_finalize (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
@@ -315,16 +320,17 @@ cleanup:
 	return res;
 }
 
+
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 
 /**
  * @brief Finalizes the expand_message xof operation.
- * 
+ *
  * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
 */
 int
 expand_message_finalize (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
@@ -333,17 +339,18 @@ expand_message_finalize (
 	int     res = BBS_ERROR;
 	// len_in_bytes fixed to 48
 	uint8_t num = 48;
-	if (dst_len > 255) {
+	if (dst_len > 255)
+	{
 		goto cleanup;
 	}
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
-	if (EVP_DigestUpdate(ctx, &num, 1) != 1)
+	if (EVP_DigestUpdate (ctx, &num, 1) != 1)
 		goto cleanup;
-	if (EVP_DigestUpdate(ctx, dst, dst_len) != 1)
+	if (EVP_DigestUpdate (ctx, dst, dst_len) != 1)
 		goto cleanup;
-	if (EVP_DigestUpdate(ctx, &dst_len, 1) != 1)
+	if (EVP_DigestUpdate (ctx, &dst_len, 1) != 1)
 		goto cleanup;
-	if (EVP_DigestFinalXOF(ctx, out, 48) != 1)
+	if (EVP_DigestFinalXOF (ctx, out, 48) != 1)
 		goto cleanup;
 	res = BBS_OK;
 cleanup:
@@ -361,11 +368,11 @@ expand_message (
 	...
 	)
 {
-	va_list       ap;
+	va_list      ap;
 	bbs_hash_ctx hctx;
-	uint8_t      *msg     = 0;
-	uint32_t      msg_len = 0;
-	int           res     = BBS_ERROR;
+	uint8_t     *msg     = 0;
+	uint32_t     msg_len = 0;
+	int          res     = BBS_ERROR;
 
 	if (BBS_OK != expand_message_init (&hctx))
 	{
@@ -405,7 +412,7 @@ hash_to_scalar_init (
 
 inline int
 hash_to_scalar_update (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
@@ -416,7 +423,7 @@ hash_to_scalar_update (
 
 inline int
 hash_to_scalar_finalize (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	bn_t           out,
 	const uint8_t *dst,
 	uint8_t        dst_len
@@ -452,11 +459,11 @@ hash_to_scalar (
 	...
 	)
 {
-	va_list       ap;
+	va_list      ap;
 	bbs_hash_ctx hctx;
-	uint8_t      *msg     = 0;
-	uint32_t      msg_len = 0;
-	int           res     = BBS_ERROR;
+	uint8_t     *msg     = 0;
+	uint32_t     msg_len = 0;
+	int          res     = BBS_ERROR;
 
 	if (BBS_OK != hash_to_scalar_init (&hctx))
 	{
@@ -487,7 +494,7 @@ cleanup:
 
 int
 calculate_domain_init (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	const uint8_t  pk[BBS_PK_LEN],
 	uint64_t       num_messages
 	)
@@ -519,7 +526,7 @@ cleanup:
 int
 calculate_domain_update (
 	bbs_hash_ctx *ctx,
-	const ep_t     generator
+	const ep_t    generator
 	)
 {
 	int     res = BBS_ERROR;
@@ -545,7 +552,7 @@ cleanup:
 
 int
 calculate_domain_finalize (
-	bbs_hash_ctx *ctx,
+	bbs_hash_ctx  *ctx,
 	bn_t           out,
 	const uint8_t *header,
 	uint64_t       header_len,
@@ -605,10 +612,10 @@ calculate_domain (
 	...
 	)
 {
-	va_list       ap;
+	va_list      ap;
 	bbs_hash_ctx hctx;
-	ep_t         *generator;
-	int           res = BBS_ERROR;
+	ep_t        *generator;
+	int          res = BBS_ERROR;
 
 	if (BBS_OK != calculate_domain_init (&hctx, pk, num_messages))
 	{
@@ -625,8 +632,8 @@ calculate_domain (
 	}
 	va_end (ap);
 
-	if (BBS_OK != calculate_domain_finalize (&hctx, out, header, header_len, api_id,
-						 api_id_len))
+	if (BBS_OK != calculate_domain_finalize (&hctx, out, header, header_len, api_id, api_id_len)
+	    )
 	{
 		goto cleanup;
 	}
@@ -644,9 +651,9 @@ create_generator_init (
 	uint8_t        api_id_len
 	)
 {
-	uint8_t       buffer[256];
+	uint8_t      buffer[256];
 	bbs_hash_ctx hctx;
-	int           res = BBS_ERROR;
+	int          res = BBS_ERROR;
 
 	if (api_id_len > 255 - 19)
 	{
@@ -785,11 +792,11 @@ create_generator_next (
 	uint8_t        api_id_len
 	)
 {
-	uint8_t       dst_buf[256];
-	uint8_t       rand_buf[128];
+	uint8_t      dst_buf[256];
+	uint8_t      rand_buf[128];
 	bbs_hash_ctx hctx;
-	uint64_t      i_be = UINT64_H2BE (*((uint64_t*) (state + 48)));
-	int           res  = BBS_ERROR;
+	uint64_t     i_be = UINT64_H2BE (*((uint64_t*) (state + 48)));
+	int          res  = BBS_ERROR;
 
 	if (api_id_len > 255 - 19)
 	{
