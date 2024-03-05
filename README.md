@@ -12,7 +12,7 @@ Dependencies:
 
 - `gmp`
 - `cmake` (build only)
-- `openSSL` (`BLS12-381-SHAKE-256` only)
+- `` (`BLS12-381-SHAKE-256` only)
 
 ### Installation
 

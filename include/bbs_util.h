@@ -7,7 +7,7 @@
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 #include <sha.h>
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#include <openssl/evp.h>
+
 #endif
 
 // This header specifies useful functions for several utility algorithms.

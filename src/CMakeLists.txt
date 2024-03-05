@@ -15,8 +15,6 @@ message(STATUS "BBS_CIPHER_SUITE selected: ${BBS_CIPHER_SUITE}")
 if(BBS_CIPHER_SUITE STREQUAL "BLS12-381-SHA-256")
     target_compile_definitions(bbs PUBLIC BBS_CIPHER_SUITE=1)
 elseif(BBS_CIPHER_SUITE STREQUAL "BLS12-381-SHAKE-256")
-	find_package(OpenSSL REQUIRED)
-	target_link_libraries(bbs PUBLIC OpenSSL::Crypto)
     target_compile_definitions(bbs PUBLIC BBS_CIPHER_SUITE=2)
 else() # Default case
 	message(WARNING "BBS_CIPHER_SUITE not recognized, defaulting to BLS12-381-SHA-256")
