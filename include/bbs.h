@@ -7,6 +7,13 @@
 #define BBS_CIPHER_SUITE_BLS12_381_SHA_256 1
 #define BBS_CIPHER_SUITE_BLS12_381_SHAKE_256 2
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+#include <sha.h>
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+#include "KeccakHash.h"
+#undef ALIGN
+#endif
+
 // Octet string lengths
 #define BBS_SK_LEN 32
 #define BBS_PK_LEN 96
@@ -23,6 +30,12 @@
 typedef uint8_t bbs_secret_key[BBS_SK_LEN];
 typedef uint8_t bbs_public_key[BBS_PK_LEN];
 typedef uint8_t bbs_signature[BBS_SIG_LEN];
+
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+typedef SHA256Context bbs_hash_ctx;
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+typedef Keccak_HashInstance bbs_hash_ctx;
+#endif
 
 // Key Generation
 int bbs_keygen_full(

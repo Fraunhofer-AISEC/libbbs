@@ -4,12 +4,6 @@
 #include "bbs.h"
 #include <relic.h>
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-#include <sha.h>
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#include "KeccakHash.h"
-#endif
-
 // This header specifies useful functions for several utility algorithms.
 // Use these if you want to hack on BBS signatures and want to stay close to the
 // RFC draft.
@@ -59,11 +53,6 @@ void ep2_read_bbs(
 // are (a1, b1, a2, b2, ..., an, bn, 0).
 // Array types (e.g. ep_t) are given by reference to the one-shot API
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-typedef SHA256Context bbs_hash_ctx;
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-typedef Keccak_HashInstance bbs_hash_ctx;
-#endif
 
 // Implementation of expand_message with expand_len = 48
 // relic implements this as md_xmd, but here we built it with an incremental API

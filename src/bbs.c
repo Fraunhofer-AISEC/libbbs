@@ -172,7 +172,7 @@ bbs_sign (
 {
 	va_list       ap;
 	uint8_t       generator_ctx[48 + 8];
-	SHA256Context h2s_ctx, dom_ctx;
+	bbs_hash_ctx  h2s_ctx, dom_ctx;
 	uint8_t       buffer[BBS_SCALAR_LEN];
 	bn_t          e, domain, msg_scalar, sk_n;
 	ep_t          A, B, Q_1, H_i;
@@ -374,7 +374,7 @@ bbs_verify (
 {
 	va_list       ap;
 	uint8_t       generator_ctx[48 + 8];
-	SHA256Context dom_ctx;
+	bbs_hash_ctx  dom_ctx;
 	bn_t          e, domain, msg_scalar;
 	ep_t          A, B, Q_1, H_i;
 	ep2_t         W, tmp_p;
@@ -558,7 +558,7 @@ bbs_proof_gen_det (
 	uint8_t       scalar_buffer[BBS_SCALAR_LEN];
 	uint8_t      *proof_ptr, *msg;
 	uint64_t      msg_len, be_buffer;
-	SHA256Context dom_ctx, ch_ctx;
+	bbs_hash_ctx  dom_ctx, ch_ctx;
 	bn_t          e, domain, msg_scalar, msg_scalar_tilde, r1, r2, e_tilde, r1_tilde, r3_tilde,
 		      challenge;
 	ep_t          A, B, Q_1, H_i, T1, T2, D, Abar, Bbar;
@@ -1050,7 +1050,7 @@ bbs_proof_verify (
 	uint8_t        scalar_buffer[BBS_SCALAR_LEN];
 	const uint8_t *proof_ptr, *msg;
 	uint64_t       msg_len, be_buffer;
-	SHA256Context  dom_ctx, ch_ctx;
+	bbs_hash_ctx   dom_ctx, ch_ctx;
 	bn_t           domain, msg_scalar, e_hat, r1_hat, r3_hat, challenge, challenge_prime;
 	ep_t           Bv, Q_1, H_i, T1, T2, D, Abar, Bbar;
 	ep2_t          W;
