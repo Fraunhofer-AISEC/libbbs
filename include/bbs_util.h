@@ -7,7 +7,7 @@
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 #include <sha.h>
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
+#include "KeccakHash.h"
 #endif
 
 // This header specifies useful functions for several utility algorithms.
@@ -62,7 +62,7 @@ void ep2_read_bbs(
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 typedef SHA256Context bbs_hash_ctx;
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-typedef EVP_MD_CTX bbs_hash_ctx;
+typedef Keccak_HashInstance bbs_hash_ctx;
 #endif
 
 // Implementation of expand_message with expand_len = 48

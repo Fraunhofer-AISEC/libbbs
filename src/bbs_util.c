@@ -190,14 +190,12 @@ expand_message_init (
 	bbs_hash_ctx *ctx
 	)
 {
-	int res = BBS_ERROR;
-
-	if (EVP_DigestInit_ex (ctx, EVP_shake256 (), NULL) != 1)
-		goto cleanup;
-
-	res = BBS_OK;
-cleanup:
-	return res;
+	HashReturn res = Keccak_HashInitialize_SHAKE256(ctx);
+	if(res == KECCAK_SUCCESS) {
+		return BBS_OK;
+	} else {
+		return BBS_ERROR;
+	}
 }
 
 
@@ -232,16 +230,13 @@ expand_message_update (
 	uint32_t       msg_len
 	)
 {
-	int res = BBS_ERROR;
-
-	if (EVP_DigestUpdate (ctx, msg, msg_len) != 1)
-		goto cleanup;
-
-	res = BBS_OK;
-cleanup:
-	return res;
+	HashReturn res = Keccak_HashUpdate(ctx, msg, msg_len);
+	if(res == KECCAK_SUCCESS) {
+		return BBS_OK;
+	} else {
+		return BBS_ERROR;
+	}
 }
-
 
 #endif
 
@@ -339,18 +334,19 @@ expand_message_finalize (
 	int     res = BBS_ERROR;
 	// len_in_bytes fixed to 48
 	uint8_t num = 48;
-	if (dst_len > 255)
-	{
+	if (dst_len > 255 || num > 65535) {
 		goto cleanup;
 	}
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
-	if (EVP_DigestUpdate (ctx, &num, 1) != 1)
+	if (Keccak_HashUpdate(ctx, &num, 1) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (EVP_DigestUpdate (ctx, dst, dst_len) != 1)
+	if (Keccak_HashUpdate(ctx, dst, dst_len) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (EVP_DigestUpdate (ctx, &dst_len, 1) != 1)
+	if (Keccak_HashUpdate(ctx, &dst_len, 1) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (EVP_DigestFinalXOF (ctx, out, 48) != 1)
+	if (Keccak_HashFinal(ctx, NULL) != KECCAK_SUCCESS)
+		goto cleanup;
+	if (Keccak_HashSqueeze(ctx, out, 48) != KECCAK_SUCCESS)
 		goto cleanup;
 	res = BBS_OK;
 cleanup:
