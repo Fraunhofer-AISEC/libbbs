@@ -3,6 +3,9 @@ find_library(GMP_LIB gmp REQUIRED)
 find_path(GMP_PATH gmp.h REQUIRED)
 message(STATUS "GMP_PATH: ${GMP_PATH}")
 
+SET(GCC_NO_INCOMPATIBLE_POINTER_TYPE "-Wno-incompatible-pointer-types")
+add_definitions(${GCC_NO_INCOMPATIBLE_POINTER_TYPE})
+
 add_library(bbs SHARED
 	bbs.c
 	bbs_util.c)
