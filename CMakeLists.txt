@@ -83,7 +83,5 @@ if(DEFINED LIBBBS_DEBUG)
   add_compile_definitions(LIBBBS_DEBUG)
 endif()
 
-
-
 add_subdirectory(src)
 add_subdirectory(test)

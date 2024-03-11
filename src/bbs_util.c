@@ -334,7 +334,7 @@ expand_message_finalize (
 	int     res = BBS_ERROR;
 	// len_in_bytes fixed to 48
 	uint8_t num = 48;
-	if (dst_len > 255 || num > 65535) {
+	if (dst_len > 255) {
 		goto cleanup;
 	}
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
