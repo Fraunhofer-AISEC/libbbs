@@ -30,6 +30,20 @@ target_include_directories(bbs PUBLIC ${SOURCE_DIR}/src/tmpl)
 target_include_directories(bbs PUBLIC ${BINARY_DIR}/include)
 target_include_directories(bbs PUBLIC ${GMP_PATH})
 
+target_include_directories(
+  bbs
+  PRIVATE
+    ${CMAKE_BINARY_DIR}/KeccakCodePackage/src/KeccakCodePackage/bin/generic64/libXKCP.a.headers
+)
+target_link_libraries(
+  bbs
+  PRIVATE
+    ${CMAKE_BINARY_DIR}/KeccakCodePackage/src/KeccakCodePackage/bin/generic64/libXKCP.a
+)
+
+add_dependencies(bbs KeccakCodePackage)
+
+
 add_dependencies(bbs relic)
 target_link_libraries(bbs PUBLIC ${GMP_LIB})
 target_link_libraries(bbs PRIVATE

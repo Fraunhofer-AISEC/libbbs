@@ -62,6 +62,19 @@ ExternalProject_Get_Property(relic BINARY_DIR)
 ExternalProject_Get_Property(relic SOURCE_DIR)
 include_directories(${SOURCE_DIR}/include)
 
+find_program(MAKE_EXECUTABLE NAMES gmake make mingw32-make REQUIRED)
+
+ExternalProject_Add(
+  KeccakCodePackage
+  PREFIX ${CMAKE_BINARY_DIR}/KeccakCodePackage
+  GIT_REPOSITORY https://github.com/XKCP/XKCP.git
+  GIT_TAG master
+  GIT_SUBMODULES "support/XKCBuild"
+  UPDATE_DISCONNECTED 1
+  CONFIGURE_COMMAND ""
+  BUILD_IN_SOURCE 1
+  BUILD_COMMAND ${MAKE_EXECUTABLE} -j generic64/libXKCP.a
+  INSTALL_COMMAND "")
 
 file(MAKE_DIRECTORY ${BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}) # avoid race
                                                                # condition
