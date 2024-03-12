@@ -21,7 +21,7 @@ int bbs_fix_generators() {
 	}
 	RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 
-	static uint8_t api_id[] = "BBS_BLS12381G1_XMD:SHA-256_SSWU_RO_H2G_HM2S_";
+	static uint8_t api_id[] = BBS_API_ID;
 	static uint8_t api_id_len = 44;
 
 	if(BBS_OK != create_generator_init(state, api_id, api_id_len)) {

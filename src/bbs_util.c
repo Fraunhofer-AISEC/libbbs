@@ -230,7 +230,7 @@ expand_message_update (
 	uint32_t       msg_len
 	)
 {
-	HashReturn res = Keccak_HashUpdate(ctx, msg, msg_len);
+	HashReturn res = Keccak_HashUpdate(ctx, msg, msg_len * 8);
 	if(res == KECCAK_SUCCESS) {
 		return BBS_OK;
 	} else {
@@ -333,20 +333,24 @@ expand_message_finalize (
 {
 	int     res = BBS_ERROR;
 	// len_in_bytes fixed to 48
-	uint8_t num = 48;
 	if (dst_len > 255) {
 		goto cleanup;
 	}
+	uint8_t num = 0;
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
-	if (Keccak_HashUpdate(ctx, &num, 1) != KECCAK_SUCCESS)
+	if (Keccak_HashUpdate(ctx, &num, 1 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (Keccak_HashUpdate(ctx, dst, dst_len) != KECCAK_SUCCESS)
+	num = 48;
+	if (Keccak_HashUpdate(ctx, &num, 1 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (Keccak_HashUpdate(ctx, &dst_len, 1) != KECCAK_SUCCESS)
+	if (Keccak_HashUpdate(ctx, dst, dst_len * 8) != KECCAK_SUCCESS)
 		goto cleanup;
+	if (Keccak_HashUpdate(ctx, &dst_len, 1 * 8) != KECCAK_SUCCESS)
+		goto cleanup;
+	
 	if (Keccak_HashFinal(ctx, NULL) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (Keccak_HashSqueeze(ctx, out, 48) != KECCAK_SUCCESS)
+	if (Keccak_HashSqueeze(ctx, out, 48 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
 	res = BBS_OK;
 cleanup:

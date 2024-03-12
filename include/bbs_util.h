@@ -2,7 +2,22 @@
 #define BBS_UTIL_H
 
 #include "bbs.h"
+
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+#include <sha.h>
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+#include "KeccakHash.h"
+#endif
+
+#undef ALIGN
 #include <relic.h>
+
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+typedef SHA256Context bbs_hash_ctx;
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+typedef Keccak_HashInstance bbs_hash_ctx;
+#endif
+
 
 // This header specifies useful functions for several utility algorithms.
 // Use these if you want to hack on BBS signatures and want to stay close to the
