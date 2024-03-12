@@ -20,7 +20,7 @@ if(BBS_CIPHER_SUITE STREQUAL "BLS12-381-SHA-256")
 elseif(BBS_CIPHER_SUITE STREQUAL "BLS12-381-SHAKE-256")
     target_compile_definitions(bbs PUBLIC BBS_CIPHER_SUITE=2)
 else() # Default case
-	message(WARNING "BBS_CIPHER_SUITE not recognized, defaulting to BLS12-381-SHA-256")
+	message(FATAL_ERROR "Invalid BBS_CIPHER_SUITE")
     target_compile_definitions(bbs PUBLIC BBS_CIPHER_SUITE=1)
 endif()
 
