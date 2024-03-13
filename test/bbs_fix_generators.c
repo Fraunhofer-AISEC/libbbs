@@ -1,6 +1,35 @@
 #include "fixtures.h"
 #include "test_util.h"
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+#define fixture_Q_1 fixture_bls12_381_sha_256_Q_1
+#define fixture_H_1 fixture_bls12_381_sha_256_H_1
+#define fixture_H_2 fixture_bls12_381_sha_256_H_2
+#define fixture_H_3 fixture_bls12_381_sha_256_H_3
+#define fixture_H_4 fixture_bls12_381_sha_256_H_4
+#define fixture_H_5 fixture_bls12_381_sha_256_H_5
+#define fixture_H_6 fixture_bls12_381_sha_256_H_6
+#define fixture_H_7 fixture_bls12_381_sha_256_H_7
+#define fixture_H_8 fixture_bls12_381_sha_256_H_8
+#define fixture_H_9 fixture_bls12_381_sha_256_H_9
+#define fixture_H_10 fixture_bls12_381_sha_256_H_10
+
+#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+#define fixture_Q_1 fixture_bls12_381_shake_256_Q_1
+#define fixture_H_1 fixture_bls12_381_shake_256_H_1
+#define fixture_H_2 fixture_bls12_381_shake_256_H_2
+#define fixture_H_3 fixture_bls12_381_shake_256_H_3
+#define fixture_H_4 fixture_bls12_381_shake_256_H_4
+#define fixture_H_5 fixture_bls12_381_shake_256_H_5
+#define fixture_H_6 fixture_bls12_381_shake_256_H_6
+#define fixture_H_7 fixture_bls12_381_shake_256_H_7
+#define fixture_H_8 fixture_bls12_381_shake_256_H_8
+#define fixture_H_9 fixture_bls12_381_shake_256_H_9
+#define fixture_H_10 fixture_bls12_381_shake_256_H_10
+
+#endif
+
+
 int bbs_fix_generators() {
 	if (core_init() != RLC_OK) {
 		core_clean();
@@ -22,7 +51,7 @@ int bbs_fix_generators() {
 	RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 
 	static uint8_t api_id[] = BBS_API_ID;
-	static uint8_t api_id_len = 44;
+	static uint8_t api_id_len = BBS_API_ID_LENGTH;
 
 	if(BBS_OK != create_generator_init(state, api_id, api_id_len)) {
 		puts("Error during generator initialization");
@@ -36,7 +65,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator Q_1 creation", bin, fixture_bls12_381_sha_256_Q_1);
+	ASSERT_EQ("generator Q_1 creation", bin, fixture_Q_1);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_1 creation");
@@ -45,7 +74,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_1 creation", bin, fixture_bls12_381_sha_256_H_1);
+	ASSERT_EQ("generator H_1 creation", bin, fixture_H_1);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_2 creation");
@@ -54,7 +83,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_2 creation", bin, fixture_bls12_381_sha_256_H_2);
+	ASSERT_EQ("generator H_2 creation", bin, fixture_H_2);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_3 creation");
@@ -63,7 +92,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_3 creation", bin, fixture_bls12_381_sha_256_H_3);
+	ASSERT_EQ("generator H_3 creation", bin, fixture_H_3);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_4 creation");
@@ -72,7 +101,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_4 creation", bin, fixture_bls12_381_sha_256_H_4);
+	ASSERT_EQ("generator H_4 creation", bin, fixture_H_4);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_5 creation");
@@ -81,7 +110,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_5 creation", bin, fixture_bls12_381_sha_256_H_5);
+	ASSERT_EQ("generator H_5 creation", bin, fixture_H_5);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_6 creation");
@@ -90,7 +119,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_6 creation", bin, fixture_bls12_381_sha_256_H_6);
+	ASSERT_EQ("generator H_6 creation", bin, fixture_H_6);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_7 creation");
@@ -99,7 +128,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_7 creation", bin, fixture_bls12_381_sha_256_H_7);
+	ASSERT_EQ("generator H_7 creation", bin, fixture_H_7);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_8 creation");
@@ -108,7 +137,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_8 creation", bin, fixture_bls12_381_sha_256_H_8);
+	ASSERT_EQ("generator H_8 creation", bin, fixture_H_8);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_9 creation");
@@ -117,7 +146,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_9 creation", bin, fixture_bls12_381_sha_256_H_9);
+	ASSERT_EQ("generator H_9 creation", bin, fixture_H_9);
 
 	if(BBS_OK != create_generator_next(state, generator, api_id, api_id_len)) {
 		puts("Error during generator H_10 creation");
@@ -126,7 +155,7 @@ int bbs_fix_generators() {
 	RLC_TRY {
 		ep_write_bbs(bin, generator);
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
-	ASSERT_EQ("generator H_10 creation", bin, fixture_bls12_381_sha_256_H_10);
+	ASSERT_EQ("generator H_10 creation", bin, fixture_H_10);
 
 	ep_free(generator);
 	return 0;
