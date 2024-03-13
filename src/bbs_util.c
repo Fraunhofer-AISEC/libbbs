@@ -1,10 +1,6 @@
 #include "bbs.h"
 #include "bbs_util.h"
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
-#endif
-
 inline void
 bn_write_bbs (
 	uint8_t     bin[BBS_SCALAR_LEN],
@@ -317,6 +313,47 @@ cleanup:
 
 
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+
+/**
+ * @brief Finalizes the expand_message xof operation.
+ *
+ * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
+*/
+int
+_expand_message_finalize (
+	bbs_hash_ctx  *ctx,
+	uint8_t       *out,
+	uint8_t        out_len,
+	const uint8_t *dst,
+	uint8_t        dst_len
+	)
+{
+	int     res = BBS_ERROR;
+	// len_in_bytes fixed to 48
+	if (out_len )
+	if (dst_len > 255) {
+		goto cleanup;
+	}
+	uint8_t num = 0;
+	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
+	if (Keccak_HashUpdate(ctx, &num, 1 * 8) != KECCAK_SUCCESS)
+		goto cleanup;
+	num = 48;
+	if (Keccak_HashUpdate(ctx, &num, 1 * 8) != KECCAK_SUCCESS)
+		goto cleanup;
+	if (Keccak_HashUpdate(ctx, dst, dst_len * 8) != KECCAK_SUCCESS)
+		goto cleanup;
+	if (Keccak_HashUpdate(ctx, &dst_len, 1 * 8) != KECCAK_SUCCESS)
+		goto cleanup;
+	
+	if (Keccak_HashFinal(ctx, NULL) != KECCAK_SUCCESS)
+		goto cleanup;
+	if (Keccak_HashSqueeze(ctx, out, 128 * 8) != KECCAK_SUCCESS)
+		goto cleanup;
+	res = BBS_OK;
+cleanup:
+	return res;
+}
 
 /**
  * @brief Finalizes the expand_message xof operation.
@@ -837,6 +874,9 @@ create_generator_next (
 	// relic does implement this as ep_map_sswum, but hard-codes the dst, so
 	// we need to reimplement the high level parts here
 	RLC_TRY {
+		// TODO: replace md_xmd durch keccak 	if (Keccak_HashSqueeze(ctx, out, 128 * 8) != KECCAK_SUCCESS)
+		// expand message to 128 bytes instead of 48
+
 		md_xmd (rand_buf, 128, state, 48, dst_buf, api_id_len + 18);
 		ep_map_from_field (generator, rand_buf, 128, (const void (*)(ep_st *, const dig_t *)) &ep_map_sswu); // TODO: incompatible const-ness
 	}
