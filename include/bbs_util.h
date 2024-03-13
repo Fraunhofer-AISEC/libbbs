@@ -158,6 +158,36 @@ int calculate_domain (
 	...
 	);
 
+/**
+ * @brief Create a generator for the BBS+ signature scheme
+ * @param state The state of the generator, includes counter `i` as last 8 bytes
+ * @param api_id The API ID
+ * @param api_id_len The length of the API ID
+ * @return BBS_OK if the generator was created successfully, BBS_ERROR otherwise
+ *
+ * @note Always supply the same api_id to next as you did to init
+*/
+int create_generator_init (
+	uint8_t        state[48 + 8],
+	const uint8_t *api_id,
+	uint8_t        api_id_len
+	);
+
+/**
+ * @brief Create the next generator for the BBS+ signature scheme
+ * @param state The state of the generator, as set by init / previous call
+ * @param generator The generator to be created
+ * @param api_id The API ID
+ * @param api_id_len The length of the API ID
+ * @return BBS_OK if the generator was created successfully, BBS_ERROR otherwise
+ *
+ * @note Always supply the same api_id to next as you did to init
+ */
+int create_generator_next (
+	uint8_t        state[48 + 8],
+	ep_t           generator,
+	const uint8_t *api_id,
+	uint8_t        api_id_len
 	);
 
 // You can control the randomness for bbs_proof_gen by supplying a prf.
