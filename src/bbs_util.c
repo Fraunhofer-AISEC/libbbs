@@ -330,18 +330,20 @@ int
 _expand_message_finalize (
 	bbs_hash_ctx  *ctx,
 	uint8_t       *out,
-	uint8_t        out_len,
+	size_t         out_len,
 	const uint8_t *dst,
 	uint8_t        dst_len
 	)
 {
 	int res = BBS_ERROR;
-	// len_in_bytes fixed to 48
-	if (out_len)
-		if (dst_len > 255)
-		{
-			goto cleanup;
-		}
+	if (out_len > 65535)
+	{
+		goto cleanup;
+	}
+	if (dst_len > 255)
+	{
+		goto cleanup;
+	}
 	uint8_t num = 0;
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
 	if (Keccak_HashUpdate (ctx, &num, 1 * 8) != KECCAK_SUCCESS)
@@ -356,7 +358,7 @@ _expand_message_finalize (
 
 	if (Keccak_HashFinal (ctx, NULL) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (Keccak_HashSqueeze (ctx, out, 128 * 8) != KECCAK_SUCCESS)
+	if (Keccak_HashSqueeze (ctx, out, out_len * 8) != KECCAK_SUCCESS)
 		goto cleanup;
 	res = BBS_OK;
 cleanup:
@@ -377,31 +379,7 @@ expand_message_finalize (
 	uint8_t        dst_len
 	)
 {
-	int res = BBS_ERROR;
-	// len_in_bytes fixed to 48
-	if (dst_len > 255)
-	{
-		goto cleanup;
-	}
-	uint8_t num = 0;
-	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
-	if (Keccak_HashUpdate (ctx, &num, 1 * 8) != KECCAK_SUCCESS)
-		goto cleanup;
-	num = 48;
-	if (Keccak_HashUpdate (ctx, &num, 1 * 8) != KECCAK_SUCCESS)
-		goto cleanup;
-	if (Keccak_HashUpdate (ctx, dst, dst_len * 8) != KECCAK_SUCCESS)
-		goto cleanup;
-	if (Keccak_HashUpdate (ctx, &dst_len, 1 * 8) != KECCAK_SUCCESS)
-		goto cleanup;
-
-	if (Keccak_HashFinal (ctx, NULL) != KECCAK_SUCCESS)
-		goto cleanup;
-	if (Keccak_HashSqueeze (ctx, out, 48 * 8) != KECCAK_SUCCESS)
-		goto cleanup;
-	res = BBS_OK;
-cleanup:
-	return res;
+	return _expand_message_finalize (ctx, out, 48, dst, dst_len);
 }
 
 
@@ -486,6 +464,10 @@ hash_to_scalar_finalize (
 
 	RLC_TRY {
 		bn_read_bin (out, buffer, 48);
+		// // Print (core_get ()->ep_r)
+		// char str[1024];
+		// bn_write_str (str, sizeof(str), &(core_get ()->ep_r), 16);
+		// printf ("r hash suite (core_get ()->ep_r) as string: %s\n", str);
 		bn_mod (out, out, &(core_get ()->ep_r));
 	}
 	RLC_CATCH_ANY {
@@ -850,6 +832,12 @@ create_generator_next (
 		goto cleanup;
 	}
 
+	// check that count (i.e. *((uint64_t*) state + 48) < 2**64
+	if (0xffffffffffffffff == *((uint64_t*) (state + 48)))
+	{
+		goto cleanup;
+	}
+
 	*((uint64_t*) (state + 48)) += 1LL;
 
 	for (int i = 0; i < api_id_len; i++)
@@ -884,12 +872,35 @@ create_generator_next (
 	// relic does implement this as ep_map_sswum, but hard-codes the dst, so
 	// we need to reimplement the high level parts here
 	RLC_TRY {
-		// TODO: replace md_xmd durch keccak 	if (Keccak_HashSqueeze(ctx, out, 128 * 8) != KECCAK_SUCCESS)
-		// expand message to 128 bytes instead of 48
 
+		#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 		md_xmd (rand_buf, 128, state, 48, dst_buf, api_id_len + 18);
+
+		#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+		bbs_hash_ctx hctx;
+		if (BBS_OK != expand_message_init (&hctx))
+		{
+			goto cleanup;
+		}
+		// print state
+		printf ("state: ");
+		for (int i = 0; i < 48 + 8; i++)
+			printf ("%02x", state[i]);
+		printf ("\n");
+		if (BBS_OK != expand_message_update (&hctx, state, 48))
+		{
+			goto cleanup;
+		}
+		if (BBS_OK != _expand_message_finalize (&hctx, rand_buf, 128, dst_buf, api_id_len
+							+ 18))
+		{
+			goto cleanup;
+		}
+
+		#endif
+
 		ep_map_from_field (generator, rand_buf, 128, (const void (*)(ep_st *, const dig_t *)
-							      ) & ep_map_sswu);                                      // TODO: incompatible const-ness
+							      ) & ep_map_sswu); // TODO: incompatible const-ness
 	}
 	RLC_CATCH_ANY {
 		goto cleanup;
