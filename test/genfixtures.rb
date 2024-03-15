@@ -35,6 +35,7 @@ sha_proofs = (1..15).map do |n|
   file_name = "#{base_dir}bls12-381-sha-256/proof/proof#{n.to_s.rjust(3,'0')}.json"
   JSON.parse File.read(file_name)
 end
+shake_expand_message = JSON.parse File.read(base_dir + 'bls12-381-shake-256/expandMessage.json')
 
 def comment(s)
   puts "// #{s}"
@@ -50,9 +51,8 @@ def hex_string(name, s)
     #puts "unsigned char #{prefix}#{name}[] = #{prefix}#{$hex_to_name[s]};"
     puts "#define #{prefix}#{name} #{prefix}#{$hex_to_name[s]}" if $gen_header
   else
-    arr = s.scan(/../).map{|x| "0x#{x}"}
+    arr = s.scan(/.{1,2}/).map{|x| "0x#{x}"}
     $hex_to_name[s] = name
-    arr = s.scan(/../).map{|x| "0x#{x}"}
     preamble = "uint8_t  #{prefix}#{name}[] ="
     short = (preamble.length + arr.length*5 + 3 <= 100)
     if $gen_header
@@ -72,6 +72,28 @@ def hex_string(name, s)
       end
     end
   end
+end
+
+def ascii_string_to_c_array(name, ascii_string)
+  # Prefix for the variable name to clearly identify it's an array
+  prefix = "uint8_t "
+  # Convert each character in the string to its ASCII value
+  ascii_values = ascii_string.bytes.map { |byte| byte.to_s }
+  # Join the ASCII values with commas and space for C array initialization
+  array_content = ascii_values.join(', ')
+  # Construct the C declaration for the array
+  c_declaration = "#{prefix}#{name}[] = { #{array_content} };"
+  puts c_declaration
+end
+
+def print_size_t_variable(variable_name, hex_string)
+  # Convert the hex string to an integer to ensure it's a valid number
+  normalized_hex = hex_string.delete_prefix('0x')
+  number = normalized_hex.to_i(16)
+  # Prepare the C code for declaring and initializing a size_t variable
+  # Note: "%#x" formats the number back into hex, ensuring it includes the '0x' prefix
+  c_declaration = "size_t #{variable_name} = %#x;" % number
+  puts c_declaration
 end
 
 def number_array(name, a)
@@ -130,6 +152,7 @@ if $gen_header
   puts '#define FIXTURESH'
   puts
   puts '#include <stdint.h>'
+  puts '#include <stddef.h>'
 else
   puts '#include "fixtures.h"'
 end
@@ -367,6 +390,24 @@ comment("Hash to Scalar Test Vectors")
 hex_string(sha + "h2s_msg", sha_h2s['message'])
 hex_string(sha + "h2s_dst", sha_h2s['dst'])
 hex_string(sha + "h2s_scalar", sha_h2s['scalar'])
+
+puts
+comment("")
+comment("RFC 9380 K.6 expand_message_xof SHAKE256 Test Vectors")
+comment("")
+
+expand_message_xof = "rfc_9380_k6_expand_message_xof_"
+
+puts
+comment("Expand Message Test Vectors")
+ascii_string_to_c_array(expand_message_xof + "dst", shake_expand_message['DST'])
+shake_expand_message['vectors'].each_with_index do |m,idx|
+  ascii_string_to_c_array(expand_message_xof + "msg_#{idx+1}", m["msg"])
+  print_size_t_variable(expand_message_xof + "len_#{idx+1}", m["len_in_bytes"])
+  hex_string(expand_message_xof + "dst_prime#{idx+1}", m["DST_prime"])
+  hex_string(expand_message_xof + "msg_prime#{idx+1}", m["msg_prime"])
+  hex_string(expand_message_xof + "output#{idx+1}", m["uniform_bytes"])
+end
 
 if $gen_header
   puts
