@@ -75,6 +75,10 @@ def hex_string(name, s)
 end
 
 def ascii_string_to_c_array(name, ascii_string)
+  if $gen_header
+    puts "extern uint8_t #{name}[];"
+    return
+  end
   # Prefix for the variable name to clearly identify it's an array
   prefix = "uint8_t "
   # Convert each character in the string to its ASCII value
@@ -87,6 +91,10 @@ def ascii_string_to_c_array(name, ascii_string)
 end
 
 def print_size_t_variable(variable_name, hex_string)
+  if $gen_header
+    puts "extern size_t #{variable_name};"
+    return
+  end
   # Convert the hex string to an integer to ensure it's a valid number
   normalized_hex = hex_string.delete_prefix('0x')
   number = normalized_hex.to_i(16)
