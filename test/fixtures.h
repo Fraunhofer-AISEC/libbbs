@@ -695,52 +695,52 @@ extern uint8_t  fixture_bls12_381_sha_256_h2s_scalar[32];
 
 // Expand Message Test Vectors
 uint8_t rfc_9380_k6_expand_message_xof_dst[] = { 81, 85, 85, 88, 45, 86, 48, 49, 45, 67, 83, 48, 50, 45, 119, 105, 116, 104, 45, 101, 120, 112, 97, 110, 100, 101, 114, 45, 83, 72, 65, 75, 69, 50, 53, 54 };
-#define fixture_rfc_9380_k6_expand_message_xof_msg_1 fixture_m_10
+uint8_t rfc_9380_k6_expand_message_xof_msg_1[] = {  };
 size_t rfc_9380_k6_expand_message_xof_len_1 = 0x20;
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_dst_prime1[37];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime1[39];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output1[32];
-extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_2[2];
+uint8_t rfc_9380_k6_expand_message_xof_msg_2[] = { 97, 98, 99 };
 size_t rfc_9380_k6_expand_message_xof_len_2 = 0x20;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime2 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime2[42];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output2[32];
-extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_3[8];
+uint8_t rfc_9380_k6_expand_message_xof_msg_3[] = { 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 };
 size_t rfc_9380_k6_expand_message_xof_len_3 = 0x20;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime3 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime3[55];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output3[32];
-extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_4[67];
+uint8_t rfc_9380_k6_expand_message_xof_msg_4[] = { 113, 49, 50, 56, 95, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113 };
 size_t rfc_9380_k6_expand_message_xof_len_4 = 0x20;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime4 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime4[172];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output4[32];
-extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_5[259];
+uint8_t rfc_9380_k6_expand_message_xof_msg_5[] = { 97, 53, 49, 50, 95, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97 };
 size_t rfc_9380_k6_expand_message_xof_len_5 = 0x20;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime5 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime5[556];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output5[32];
-#define fixture_rfc_9380_k6_expand_message_xof_msg_6 fixture_m_10
+uint8_t rfc_9380_k6_expand_message_xof_msg_6[] = {  };
 size_t rfc_9380_k6_expand_message_xof_len_6 = 0x80;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime6 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime6[39];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output6[128];
-#define fixture_rfc_9380_k6_expand_message_xof_msg_7 fixture_rfc_9380_k6_expand_message_xof_msg_2
+uint8_t rfc_9380_k6_expand_message_xof_msg_7[] = { 97, 98, 99 };
 size_t rfc_9380_k6_expand_message_xof_len_7 = 0x80;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime7 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime7[42];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output7[128];
-#define fixture_rfc_9380_k6_expand_message_xof_msg_8 fixture_rfc_9380_k6_expand_message_xof_msg_3
+uint8_t rfc_9380_k6_expand_message_xof_msg_8[] = { 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 };
 size_t rfc_9380_k6_expand_message_xof_len_8 = 0x80;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime8 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime8[55];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output8[128];
-#define fixture_rfc_9380_k6_expand_message_xof_msg_9 fixture_rfc_9380_k6_expand_message_xof_msg_4
+uint8_t rfc_9380_k6_expand_message_xof_msg_9[] = { 113, 49, 50, 56, 95, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113, 113 };
 size_t rfc_9380_k6_expand_message_xof_len_9 = 0x80;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime9 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime9[172];
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output9[128];
-#define fixture_rfc_9380_k6_expand_message_xof_msg_10 fixture_rfc_9380_k6_expand_message_xof_msg_5
+uint8_t rfc_9380_k6_expand_message_xof_msg_10[] = { 97, 53, 49, 50, 95, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97 };
 size_t rfc_9380_k6_expand_message_xof_len_10 = 0x80;
 #define fixture_rfc_9380_k6_expand_message_xof_dst_prime10 fixture_rfc_9380_k6_expand_message_xof_dst_prime1
 extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime10[556];
