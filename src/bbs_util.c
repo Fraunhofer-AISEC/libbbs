@@ -344,11 +344,11 @@ _expand_message_finalize (
 	{
 		goto cleanup;
 	}
-	uint8_t num = 0;
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
+	uint8_t num = out_len / 256;
 	if (Keccak_HashUpdate (ctx, &num, 1 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
-	num = 48;
+	num = out_len % 256;
 	if (Keccak_HashUpdate (ctx, &num, 1 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
 	if (Keccak_HashUpdate (ctx, dst, dst_len * 8) != KECCAK_SUCCESS)
