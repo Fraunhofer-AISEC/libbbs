@@ -94,6 +94,18 @@ int expand_message_finalize (
 	uint8_t        dst_len
 	);
 
+#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+int
+_expand_message_finalize (
+	bbs_hash_ctx  *ctx,
+	uint8_t       *out,
+	size_t         out_len,
+	const uint8_t *dst,
+	uint8_t        dst_len
+	);
+#endif
+
+
 int expand_message (
 	uint8_t        out[48],
 	const uint8_t *dst,

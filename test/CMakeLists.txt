@@ -8,6 +8,7 @@ create_test_sourcelist(fixture-tests
 	bbs_fix_proof_gen.c
 	bbs_fix_proof_verify.c
 	bbs_fix_hash_to_scalar.c
+	bbs_fix_expand_message.c
 	)
 
 create_test_sourcelist(e2e-tests

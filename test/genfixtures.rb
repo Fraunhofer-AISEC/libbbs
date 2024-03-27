@@ -77,28 +77,27 @@ end
 def ascii_string_to_c_array(name, ascii_string)
   if $gen_header
     puts "extern uint8_t #{name}[];"
+    puts "extern size_t #{name}_len;"
     return
   end
-  # Prefix for the variable name to clearly identify it's an array
-  prefix = "uint8_t "
-  # Convert each character in the string to its ASCII value
+  prefix = " "
   ascii_values = ascii_string.bytes.map { |byte| byte.to_s }
-  # Join the ASCII values with commas and space for C array initialization
   array_content = ascii_values.join(', ')
-  # Construct the C declaration for the array
-  c_declaration = "#{prefix}#{name}[] = { #{array_content} };"
-  puts c_declaration
+  puts "uint8_t #{name}[] = { #{array_content} };"
+  puts "size_t #{name}_len = #{ascii_values.length};"
 end
 
-def print_size_t_variable(variable_name, hex_string)
+def print_size_t_variable(variable_name, hex_string_or_number)
   if $gen_header
     puts "extern size_t #{variable_name};"
     return
   end
-  # Convert the hex string to an integer to ensure it's a valid number
-  normalized_hex = hex_string.delete_prefix('0x')
-  number = normalized_hex.to_i(16)
-  # Prepare the C code for declaring and initializing a size_t variable
+  if hex_string_or_number.respond_to?(:start_with)
+    normalized_hex = hex_string_or_number.delete_prefix('0x')
+    number = normalized_hex.to_i(16)
+  else
+    number = hex_string_or_number
+  end
   # Note: "%#x" formats the number back into hex, ensuring it includes the '0x' prefix
   c_declaration = "size_t #{variable_name} = %#x;" % number
   puts c_declaration
@@ -409,12 +408,14 @@ expand_message_xof = "rfc_9380_k6_expand_message_xof_"
 puts
 comment("Expand Message Test Vectors")
 ascii_string_to_c_array(expand_message_xof + "dst", shake_expand_message['DST'])
+# print_size_t_variable(expand_message_xof + "dst_len", shake_expand_message['DST'].length)
 shake_expand_message['vectors'].each_with_index do |m,idx|
   ascii_string_to_c_array(expand_message_xof + "msg_#{idx+1}", m["msg"])
-  print_size_t_variable(expand_message_xof + "len_#{idx+1}", m["len_in_bytes"])
-  hex_string(expand_message_xof + "dst_prime#{idx+1}", m["DST_prime"])
-  hex_string(expand_message_xof + "msg_prime#{idx+1}", m["msg_prime"])
-  hex_string(expand_message_xof + "output#{idx+1}", m["uniform_bytes"])
+  print_size_t_variable(expand_message_xof + "out_len_#{idx+1}", m["len_in_bytes"])
+  hex_string(expand_message_xof + "dst_prime_#{idx+1}", m["DST_prime"])
+  hex_string(expand_message_xof + "msg_prime_#{idx+1}", m["msg_prime"])
+  hex_string(expand_message_xof + "output_#{idx+1}", m["uniform_bytes"])
+  # TODO: add length for dst, msg
 end
 
 if $gen_header
