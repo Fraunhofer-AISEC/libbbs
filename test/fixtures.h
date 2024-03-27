@@ -696,7 +696,6 @@ extern uint8_t  fixture_bls12_381_sha_256_h2s_scalar[32];
 // Expand Message Test Vectors
 extern uint8_t rfc_9380_k6_expand_message_xof_dst[];
 extern size_t rfc_9380_k6_expand_message_xof_dst_len;
-extern size_t rfc_9380_k6_expand_message_xof_dst_len;
 extern uint8_t rfc_9380_k6_expand_message_xof_msg_1[];
 extern size_t rfc_9380_k6_expand_message_xof_msg_1_len;
 extern size_t rfc_9380_k6_expand_message_xof_len_1;
