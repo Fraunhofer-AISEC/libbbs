@@ -28,14 +28,25 @@ bbs_fix_expand_message ()
 	}
 
 	bbs_hash_ctx ctx;
-	uint8_t      out[rfc_9380_k6_expand_message_xof_out_len_2];
+
+	uint8_t      out_1[rfc_9380_k6_expand_message_xof_out_len_1];
+	expand_message_init (&ctx);
+	expand_message_update (&ctx, rfc_9380_k6_expand_message_xof_msg_1,
+			       rfc_9380_k6_expand_message_xof_msg_1_len);
+	_expand_message_finalize (&ctx, out_1, rfc_9380_k6_expand_message_xof_out_len_1,
+				  rfc_9380_k6_expand_message_xof_dst,
+				  rfc_9380_k6_expand_message_xof_dst_len);
+	ASSERT_EQ ("expand_message", out_1, fixture_rfc_9380_k6_expand_message_xof_output_1)
+
+	uint8_t      out_2[rfc_9380_k6_expand_message_xof_out_len_2];
 	expand_message_init (&ctx);
 	expand_message_update (&ctx, rfc_9380_k6_expand_message_xof_msg_2,
 			       rfc_9380_k6_expand_message_xof_msg_2_len);
-	// _expand_message_finalize (&ctx, out, rfc_9380_k6_expand_message_xof_out_len_2,
-	// 			  rfc_9380_k6_expand_message_xof_dst,
-	// 			  rfc_9380_k6_expand_message_xof_dst_len);
-	ASSERT_EQ ("expand_message", out, fixture_rfc_9380_k6_expand_message_xof_output_2)
+	_expand_message_finalize (&ctx, out_2, rfc_9380_k6_expand_message_xof_out_len_2,
+				  rfc_9380_k6_expand_message_xof_dst,
+				  rfc_9380_k6_expand_message_xof_dst_len);
+	ASSERT_EQ ("expand_message", out_2, fixture_rfc_9380_k6_expand_message_xof_output_2)
+
 	return 0;
 }
 
