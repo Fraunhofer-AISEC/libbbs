@@ -322,7 +322,7 @@ cleanup:
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 
 /**
- * @brief Finalizes the expand_message xof operation.
+ * @brief Finalizes the expand_message xof operation with flexible output size.
  *
  * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
 */
@@ -367,7 +367,7 @@ cleanup:
 
 
 /**
- * @brief Finalizes the expand_message xof operation.
+ * @brief Finalizes the expand_message xof operation with fixed output size of 48 bytes.
  *
  * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
 */
@@ -464,10 +464,6 @@ hash_to_scalar_finalize (
 
 	RLC_TRY {
 		bn_read_bin (out, buffer, 48);
-		// // Print (core_get ()->ep_r)
-		// char str[1024];
-		// bn_write_str (str, sizeof(str), &(core_get ()->ep_r), 16);
-		// printf ("r hash suite (core_get ()->ep_r) as string: %s\n", str);
 		bn_mod (out, out, &(core_get ()->ep_r));
 	}
 	RLC_CATCH_ANY {
@@ -882,11 +878,6 @@ create_generator_next (
 		{
 			goto cleanup;
 		}
-		// print state
-		printf ("state: ");
-		for (int i = 0; i < 48 + 8; i++)
-			printf ("%02x", state[i]);
-		printf ("\n");
 		if (BBS_OK != expand_message_update (&hctx, state, 48))
 		{
 			goto cleanup;

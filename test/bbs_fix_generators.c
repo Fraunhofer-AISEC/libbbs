@@ -62,14 +62,6 @@ bbs_fix_generators ()
 		puts ("Error during generator initialization");
 		return 1;
 	}
-	// print state
-	printf ("state: ");
-	for (int i = 0; i < 48 + 8; i++)
-	{
-		printf ("%02x", state[i]);
-	}
-	printf ("\n");
-
 
 	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
 	{
@@ -79,16 +71,6 @@ bbs_fix_generators ()
 	RLC_TRY {
 		ep_write_bbs (bin, generator);
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
-
-
-	// print state
-	printf ("state: ");
-	for (int i = 0; i < 48 + 8; i++)
-	{
-		printf ("%02x", state[i]);
-	}
-	printf ("\n");
-
 
 	ASSERT_EQ ("generator Q_1 creation", bin, fixture_Q_1);
 
