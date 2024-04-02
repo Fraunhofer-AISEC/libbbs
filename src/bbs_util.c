@@ -615,7 +615,7 @@ static void
 ep_map_from_field (ep_t p,
 		   const uint8_t *uniform_bytes,
 		   size_t len,
-		   const void (*const map_fn)(ep_t, const fp_t)
+		   void (*const map_fn)(ep_t, const fp_t)
 		   )
 {
 	bn_t         k;
