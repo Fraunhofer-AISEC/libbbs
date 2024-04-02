@@ -747,7 +747,8 @@ create_generator_next (
 	// we need to reimplement the high level parts here
 	RLC_TRY {
 		md_xmd (rand_buf, 128, state, 48, dst_buf, api_id_len + 18);
-		ep_map_from_field (generator, rand_buf, 128, ep_map_sswu);
+		ep_map_from_field (generator, rand_buf, 128, (const void (*)(ep_st *, const dig_t *)
+							      ) & ep_map_sswu);
 	}
 	RLC_CATCH_ANY {
 		goto cleanup;
