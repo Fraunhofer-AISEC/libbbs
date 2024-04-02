@@ -44,6 +44,14 @@ static uint8_t P1[] = {
 };
 #endif
 
+/// @brief BBS cipher suite interface
+/// @note Strategy pattern to dispatch to the correct hash function for the 
+/// cipher suite, keeping the same overall control flow for the caller.
+typedef struct {
+	int (*expand_message_init)(void *ctx);
+	int (*expand_message_update)(void *ctx, const uint8_t *msg, uint32_t msg_len);
+	int (*expand_message_finalize)(void *ctx, uint8_t out[48], const uint8_t *dst, uint8_t dst_len);
+} bbs_cipher_suite_t;
 
 // Octet string lengths
 #define BBS_SK_LEN 32

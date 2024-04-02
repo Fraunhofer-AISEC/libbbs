@@ -78,21 +78,43 @@ void ep2_read_bbs (
 // relic implements this as md_xmd, but here we built it with an incremental API
 // or varargs for the message
 int expand_message_init (
-	bbs_hash_ctx *ctx
-	);
+	bbs_cipher_suite_t *cipher_suite, 
+	void *ctx
+);
+
+int bbs_sha256_expand_message_init (
+	void *ctx
+);
 
 int expand_message_update (
-	bbs_hash_ctx  *ctx,
+	bbs_cipher_suite_t *cipher_suite, 
+	void *ctx, 
+	const uint8_t *msg, 
+	uint32_t msg_len
+);
+
+int
+bbs_sha256_expand_message_update (
+	void  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
-	);
+);
 
 int expand_message_finalize (
-	bbs_hash_ctx  *ctx,
+	bbs_cipher_suite_t *cipher_suite, 
+	void *ctx, 
+	uint8_t out[48], 
+	const uint8_t *dst, 
+	uint8_t dst_len
+);
+
+int
+bbs_sha256_expand_message_finalize (
+	void  *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
-	);
+);
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 int
@@ -105,8 +127,15 @@ _expand_message_finalize (
 	);
 #endif
 
+bbs_cipher_suite_t bbs_sha256_cipher_suite = {
+    .expand_message_init = bbs_sha256_expand_message_init,
+    .expand_message_update = bbs_sha256_expand_message_update,
+    .expand_message_finalize = bbs_sha256_expand_message_finalize,
+};
+
 
 int expand_message (
+	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len,
@@ -115,23 +144,27 @@ int expand_message (
 
 // Hash to Scalar
 int hash_to_scalar_init (
-	bbs_hash_ctx *ctx
+	bbs_cipher_suite_t *cipher_suite,
+	void *ctx
 	);
 
 int hash_to_scalar_update (
-	bbs_hash_ctx  *ctx,
+	bbs_cipher_suite_t *cipher_suite,
+	void  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	);
 
 int hash_to_scalar_finalize (
-	bbs_hash_ctx  *ctx,
+	bbs_cipher_suite_t *cipher_suite,
+	void  *ctx,
 	bn_t           out,
 	const uint8_t *dst,
 	uint8_t        dst_len
 	);
 
 int hash_to_scalar (
+	bbs_cipher_suite_t *cipher_suite,
 	bn_t           out,
 	const uint8_t *dst,
 	uint8_t        dst_len,
@@ -140,17 +173,20 @@ int hash_to_scalar (
 
 // you need to call update exactly num_messages + 1 times.
 int calculate_domain_init (
+	bbs_cipher_suite_t *cipher_suite,
 	bbs_hash_ctx  *ctx,
 	const uint8_t  pk[BBS_PK_LEN],
 	uint64_t       num_messages
 	);
 
 int calculate_domain_update (
+	bbs_cipher_suite_t *cipher_suite,
 	bbs_hash_ctx *ctx,
 	const ep_t    generator
 	);
 
 int calculate_domain_finalize (
+	bbs_cipher_suite_t *cipher_suite,
 	bbs_hash_ctx  *ctx,
 	bn_t           out,
 	const uint8_t *header,
@@ -160,6 +196,7 @@ int calculate_domain_finalize (
 	);
 
 int calculate_domain (
+	bbs_cipher_suite_t *cipher_suite,
 	bn_t           out,
 	const uint8_t  pk[BBS_PK_LEN],
 	uint64_t       num_messages,
@@ -180,6 +217,7 @@ int calculate_domain (
  * @note Always supply the same api_id to next as you did to init
 */
 int create_generator_init (
+	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        state[48 + 8],
 	const uint8_t *api_id,
 	uint8_t        api_id_len
