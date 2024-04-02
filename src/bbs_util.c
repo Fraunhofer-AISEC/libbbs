@@ -747,7 +747,7 @@ static void
 ep_map_from_field (ep_t p,
 		   const uint8_t *uniform_bytes,
 		   size_t len,
-		   const void (*const map_fn)(ep_t, const fp_t)
+		   void (*const map_fn)(ep_t, const fp_t)
 		   )
 {
 	bn_t         k;
@@ -907,8 +907,7 @@ create_generator_next (
 
 		#endif
 
-		ep_map_from_field (generator, rand_buf, 128, (const void (*)(ep_st *, const dig_t *)
-							      ) & ep_map_sswu); // TODO: incompatible const-ness
+		ep_map_from_field (generator, rand_buf, 128, ep_map_sswu);
 	}
 	RLC_CATCH_ANY {
 		goto cleanup;
