@@ -2,6 +2,12 @@
 #include "bbs_util.h"
 #include <relic.h>
 
+bbs_cipher_suite_t bbs_sha256_cipher_suite = {
+    .expand_message_init = bbs_sha256_expand_message_init,
+    .expand_message_update = bbs_sha256_expand_message_update,
+    .expand_message_finalize = bbs_sha256_expand_message_finalize,
+};
+
 int
 bbs_keygen_full (
 	bbs_secret_key  sk,
@@ -10,7 +16,7 @@ bbs_keygen_full (
 {
 	int            res = BBS_ERROR;
 	static uint8_t seed[32];
-	bbs_cipher_suite_t bbs_sha256_cipher_suite;
+	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	// Gather randomness
 	RLC_TRY {
@@ -52,7 +58,7 @@ bbs_keygen (
 	bn_t     sk_n;
 	uint16_t key_info_len_be = ((key_info_len & 0x00FFu) << 8) | (key_info_len >> 8);
 	int      res             = BBS_ERROR;
-	bbs_cipher_suite_t bbs_sha256_cipher_suite;
+	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (sk_n);
 
@@ -105,7 +111,7 @@ bbs_sk_to_pk (
 	int   res = BBS_ERROR;
 	bn_t  sk_n;
 	ep2_t pk_p;
-	bbs_cipher_suite_t bbs_sha256_cipher_suite;
+	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (sk_n);
 	ep2_null (pk_p);
@@ -149,7 +155,7 @@ bbs_sign (
 	uint32_t      msg_len;
 	int           res = BBS_ERROR;
 
-	bbs_cipher_suite_t bbs_sha256_cipher_suite;
+	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (e);
 	bn_null (sk_n);
@@ -209,7 +215,7 @@ bbs_sign (
 	for (int i = 0; i<num_messages + 1; i++)
 	{
 		// Technically, this includes Q_1
-		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
@@ -244,7 +250,7 @@ bbs_sign (
 	// END UGLY CODE
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
@@ -255,7 +261,7 @@ bbs_sign (
 	for (int i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
@@ -353,7 +359,7 @@ bbs_verify (
 	uint8_t      *msg;
 	uint32_t      msg_len;
 	int           res = BBS_ERROR;
-	bbs_cipher_suite_t bbs_sha256_cipher_suite;
+	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (e);
 	bn_null (domain);
@@ -407,7 +413,7 @@ bbs_verify (
 	}
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
@@ -422,7 +428,7 @@ bbs_verify (
 	for (int i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
@@ -538,7 +544,7 @@ bbs_proof_gen_det (
 	uint64_t      undisclosed_indexes_idx = 0;
 	uint64_t      undisclosed_indexes_len = num_messages - disclosed_indexes_len;
 	int           res                     = BBS_ERROR;
-	bbs_cipher_suite_t bbs_sha256_cipher_suite;
+	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	// We iterate over the messages twice because the spec is ****
 	va_copy (ap2, ap);
@@ -631,7 +637,7 @@ bbs_proof_gen_det (
 		goto cleanup;
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
@@ -646,7 +652,7 @@ bbs_proof_gen_det (
 	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
@@ -1139,7 +1145,7 @@ bbs_proof_verify (
 	}
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
@@ -1154,7 +1160,7 @@ bbs_proof_verify (
 	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{

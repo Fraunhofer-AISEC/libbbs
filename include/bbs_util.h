@@ -127,13 +127,6 @@ _expand_message_finalize (
 	);
 #endif
 
-bbs_cipher_suite_t bbs_sha256_cipher_suite = {
-    .expand_message_init = bbs_sha256_expand_message_init,
-    .expand_message_update = bbs_sha256_expand_message_update,
-    .expand_message_finalize = bbs_sha256_expand_message_finalize,
-};
-
-
 int expand_message (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        out[48],
@@ -234,6 +227,7 @@ int create_generator_init (
  * @note Always supply the same api_id to next as you did to init
  */
 int create_generator_next (
+	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        state[48 + 8],
 	ep_t           generator,
 	const uint8_t *api_id,

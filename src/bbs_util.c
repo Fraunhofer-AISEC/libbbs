@@ -827,6 +827,7 @@ ep_map_from_field (ep_t p,
 
 int
 create_generator_next (
+	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        state[48 + 8],
 	ep_t           generator,
 	const uint8_t *api_id,
@@ -857,22 +858,22 @@ create_generator_next (
 	for (int i = 0; i < 19; i++)
 		dst_buf[i + api_id_len] = "SIG_GENERATOR_SEED_"[i];
 
-	if (BBS_OK != expand_message_init (&hctx))
+	if (BBS_OK != expand_message_init (cipher_suite, &hctx))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (&hctx, state, 48))
+	if (BBS_OK != expand_message_update (cipher_suite, &hctx, state, 48))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (&hctx, (uint8_t*) &i_be, 8))
+	if (BBS_OK != expand_message_update (cipher_suite, &hctx, (uint8_t*) &i_be, 8))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_finalize (&hctx, state, dst_buf, api_id_len + 19))
+	if (BBS_OK != expand_message_finalize (cipher_suite, &hctx, state, dst_buf, api_id_len + 19))
 	{
 		goto cleanup;
 	}
