@@ -161,16 +161,17 @@ ep2_read_bbs (
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
-expand_message_init (
-	bbs_hash_ctx *ctx
+bbs_sha256_expand_message_init (
+	void *ctx
 	)
 {
+	SHA256Context *sha_ctx = (SHA256Context*) ctx;
 	uint64_t zero[] = {0, 0, 0, 0, 0, 0, 0, 0};
 	int      res    = BBS_ERROR;
 
-	if (shaSuccess != SHA256Reset (ctx))
+	if (shaSuccess != SHA256Reset (sha_ctx))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, (uint8_t*) zero, 64))
+	if (shaSuccess != SHA256Input (sha_ctx, (uint8_t*) zero, 64))
 		goto cleanup;
 
 	res = BBS_OK;
@@ -203,15 +204,16 @@ expand_message_init (
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
-expand_message_update (
-	bbs_hash_ctx  *ctx,
+bbs_sha256_expand_message_update (
+	void  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
 {
+	SHA256Context *sha_ctx = (SHA256Context*) ctx;
 	int res = BBS_ERROR;
 
-	if (shaSuccess != SHA256Input (ctx, msg, msg_len))
+	if (shaSuccess != SHA256Input (sha_ctx, msg, msg_len))
 		goto cleanup;
 
 	res = BBS_OK;
@@ -246,7 +248,7 @@ expand_message_update (
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 
 int
-expand_message_finalize (
+bbs_sha256_expand_message_finalize (
 	bbs_hash_ctx  *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
@@ -258,35 +260,36 @@ expand_message_finalize (
 	uint8_t b_2[32];
 	int     res = BBS_ERROR;
 	uint8_t num = 0;
+	SHA256Context *sha_ctx = (SHA256Context*) ctx;
 
-	if (shaSuccess != SHA256Input (ctx, &num, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
 		goto cleanup;
 	num = 48;
-	if (shaSuccess != SHA256Input (ctx, &num, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
 		goto cleanup;
 	num = 0;
-	if (shaSuccess != SHA256Input (ctx, &num, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, dst, dst_len))
+	if (shaSuccess != SHA256Input (sha_ctx, dst, dst_len))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, &dst_len, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &dst_len, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Result (ctx, b_0))
+	if (shaSuccess != SHA256Result (sha_ctx, b_0))
 		goto cleanup;
 
 	// b_1 = H( b_0, I2OSP(1,1), dst, I2OSP(dst_len, 1))
-	if (shaSuccess != SHA256Reset (ctx))
+	if (shaSuccess != SHA256Reset (sha_ctx))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, b_0, 32))
+	if (shaSuccess != SHA256Input (sha_ctx, b_0, 32))
 		goto cleanup;
 	num = 1;
-	if (shaSuccess != SHA256Input (ctx, &num, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, dst, dst_len))
+	if (shaSuccess != SHA256Input (sha_ctx, dst, dst_len))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, &dst_len, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &dst_len, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Result (ctx, b_1))
+	if (shaSuccess != SHA256Result (sha_ctx, b_1))
 		goto cleanup;
 
 	// b_0 ^= b_1
@@ -294,18 +297,18 @@ expand_message_finalize (
 		((uint64_t*) b_0)[i] ^= ((uint64_t*) b_1)[i];
 
 	// b_2 = H( b_0, I2OSP(2,1), dst, I2OSP(dst_len, 1))
-	if (shaSuccess != SHA256Reset (ctx))
+	if (shaSuccess != SHA256Reset (sha_ctx))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, b_0, 32))
+	if (shaSuccess != SHA256Input (sha_ctx, b_0, 32))
 		goto cleanup;
 	num = 2;
-	if (shaSuccess != SHA256Input (ctx, &num, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, dst, dst_len))
+	if (shaSuccess != SHA256Input (sha_ctx, dst, dst_len))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (ctx, &dst_len, 1))
+	if (shaSuccess != SHA256Input (sha_ctx, &dst_len, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Result (ctx, b_2))
+	if (shaSuccess != SHA256Result (sha_ctx, b_2))
 		goto cleanup;
 
 	for (int i = 0; i<4; i++)
@@ -385,8 +388,21 @@ expand_message_finalize (
 
 #endif
 
+typedef struct {
+	int (*init)(void *ctx);
+	int (*update)(void *ctx, const uint8_t *msg, uint32_t msg_len);
+	int (*finalize)(void *ctx, uint8_t out[48], const uint8_t *dst, uint8_t dst_len);
+} bbs_cipher_suite_t;
+
+bbs_cipher_suite_t bbs_sha256_cipher_suite = {
+    .init = bbs_sha256_expand_message_init,
+    .update = bbs_sha256_expand_message_update,
+    .finalize = bbs_sha256_expand_message_finalize,
+};
+
 int
 expand_message (
+	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len,
@@ -399,7 +415,7 @@ expand_message (
 	uint32_t     msg_len = 0;
 	int          res     = BBS_ERROR;
 
-	if (BBS_OK != expand_message_init (&hctx))
+	if (BBS_OK !=  cipher_suite->init(&hctx))
 	{
 		goto cleanup;
 	}
@@ -408,14 +424,14 @@ expand_message (
 	while ((msg = va_arg (ap, uint8_t*)))
 	{
 		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != expand_message_update (&hctx, msg, msg_len))
+		if (BBS_OK != cipher_suite->update (&hctx, msg, msg_len))
 		{
 			goto cleanup;
 		}
 	}
 	va_end (ap);
 
-	if (BBS_OK != expand_message_finalize (&hctx, out, dst, dst_len))
+	if (BBS_OK != cipher_suite->finalize (&hctx, out, dst, dst_len))
 	{
 		goto cleanup;
 	}
