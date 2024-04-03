@@ -33,3 +33,5 @@ cmake ..
 make -j
 make test
 ```
+
+Debug compilation with cmake flag `-DCMAKE_BUILD_TYPE=Debug`
