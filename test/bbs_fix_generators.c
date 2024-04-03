@@ -57,13 +57,13 @@ bbs_fix_generators ()
 	static uint8_t api_id[]   = BBS_API_ID;
 	static uint8_t api_id_len = BBS_API_ID_LENGTH;
 
-	if (BBS_OK != create_generator_init (state, api_id, api_id_len))
+	if (BBS_OK != create_generator_init (&bbs_sha256_cipher_suite, state, api_id, api_id_len))
 	{
 		puts ("Error during generator initialization");
 		return 1;
 	}
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator Q_1 creation");
 		return 1;
@@ -74,7 +74,7 @@ bbs_fix_generators ()
 
 	ASSERT_EQ ("generator Q_1 creation", bin, fixture_Q_1);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_1 creation");
 		return 1;
@@ -84,7 +84,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_1 creation", bin, fixture_H_1);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_2 creation");
 		return 1;
@@ -94,7 +94,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_2 creation", bin, fixture_H_2);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_3 creation");
 		return 1;
@@ -104,7 +104,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_3 creation", bin, fixture_H_3);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_4 creation");
 		return 1;
@@ -114,7 +114,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_4 creation", bin, fixture_H_4);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_5 creation");
 		return 1;
@@ -124,7 +124,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_5 creation", bin, fixture_H_5);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_6 creation");
 		return 1;
@@ -134,7 +134,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_6 creation", bin, fixture_H_6);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_7 creation");
 		return 1;
@@ -144,7 +144,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_7 creation", bin, fixture_H_7);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_8 creation");
 		return 1;
@@ -154,7 +154,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_8 creation", bin, fixture_H_8);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_9 creation");
 		return 1;
@@ -164,7 +164,7 @@ bbs_fix_generators ()
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 	ASSERT_EQ ("generator H_9 creation", bin, fixture_H_9);
 
-	if (BBS_OK != create_generator_next (state, generator, api_id, api_id_len))
+	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, state, generator, api_id, api_id_len))
 	{
 		puts ("Error during generator H_10 creation");
 		return 1;

@@ -47,7 +47,7 @@ int bbs_fix_msg_scalars() {
 	static uint8_t map_dst[] = BBS_MAP_DST;
 	static uint8_t map_dst_len = BBS_MAP_DST_LENGTH;
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_1, sizeof(fixture_m_1), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_1, sizeof(fixture_m_1), 0)) {
 		puts("Error during hash to scalar for message 1");
 		return 1;
 	}
@@ -56,7 +56,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 1 generation", bin, fixture_msg_scalar_1);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_2, sizeof(fixture_m_2), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_2, sizeof(fixture_m_2), 0)) {
 		puts("Error during hash to scalar for message 2");
 		return 1;
 	}
@@ -65,7 +65,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 2 generation", bin, fixture_msg_scalar_2);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_3, sizeof(fixture_m_3), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_3, sizeof(fixture_m_3), 0)) {
 		puts("Error during hash to scalar for message 3");
 		return 1;
 	}
@@ -74,7 +74,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 3 generation", bin, fixture_msg_scalar_3);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_4, sizeof(fixture_m_4), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_4, sizeof(fixture_m_4), 0)) {
 		puts("Error during hash to scalar for message 4");
 		return 1;
 	}
@@ -83,7 +83,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 4 generation", bin, fixture_msg_scalar_4);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_5, sizeof(fixture_m_5), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_5, sizeof(fixture_m_5), 0)) {
 		puts("Error during hash to scalar for message 5");
 		return 1;
 	}
@@ -92,7 +92,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 5 generation", bin, fixture_msg_scalar_5);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_6, sizeof(fixture_m_6), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_6, sizeof(fixture_m_6), 0)) {
 		puts("Error during hash to scalar for message 6");
 		return 1;
 	}
@@ -101,7 +101,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 6 generation", bin, fixture_msg_scalar_6);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_7, sizeof(fixture_m_7), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_7, sizeof(fixture_m_7), 0)) {
 		puts("Error during hash to scalar for message 7");
 		return 1;
 	}
@@ -110,7 +110,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 7 generation", bin, fixture_msg_scalar_7);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_8, sizeof(fixture_m_8), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_8, sizeof(fixture_m_8), 0)) {
 		puts("Error during hash to scalar for message 8");
 		return 1;
 	}
@@ -119,7 +119,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 8 generation", bin, fixture_msg_scalar_8);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_9, sizeof(fixture_m_9), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_9, sizeof(fixture_m_9), 0)) {
 		puts("Error during hash to scalar for message 9");
 		return 1;
 	}
@@ -128,7 +128,7 @@ int bbs_fix_msg_scalars() {
 	} RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 	ASSERT_EQ("scalar 9 generation", bin, fixture_msg_scalar_9);
 
-	if(BBS_OK != hash_to_scalar(scalar, map_dst, map_dst_len, fixture_m_10, sizeof(fixture_m_10), 0)) {
+	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_10, sizeof(fixture_m_10), 0)) {
 		puts("Error during hash to scalar for message 10");
 		return 1;
 	}

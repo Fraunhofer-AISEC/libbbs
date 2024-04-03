@@ -53,6 +53,8 @@ typedef struct {
 	int (*expand_message_finalize)(void *ctx, uint8_t out[48], const uint8_t *dst, uint8_t dst_len);
 } bbs_cipher_suite_t;
 
+extern bbs_cipher_suite_t bbs_sha256_cipher_suite;
+
 // Octet string lengths
 #define BBS_SK_LEN 32
 #define BBS_PK_LEN 96

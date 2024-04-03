@@ -42,7 +42,7 @@ bbs_fix_hash_to_scalar ()
 		return 1;
 	}
 
-	if (BBS_OK != hash_to_scalar (scalar, fixture_dst, fixture_dst_len, fixture_msg,
+	if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, scalar, fixture_dst, fixture_dst_len, fixture_msg,
 				      fixture_msg_len, 0))
 	{
 		puts ("Error during hash to scalar");
