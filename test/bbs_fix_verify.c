@@ -63,7 +63,7 @@ bbs_fix_verify ()
 		return 1;
 	}
 
-	if (BBS_OK != bbs_verify (signature1_PK, signature1_signature, signature1_header, sizeof(
+	if (BBS_OK != bbs_sha256_verify (signature1_PK, signature1_signature, signature1_header, sizeof(
 					  signature1_header), 1, signature1_m_1, sizeof(
 					  signature1_m_1)))
 	{
@@ -71,7 +71,7 @@ bbs_fix_verify ()
 		return 1;
 	}
 
-	if (BBS_OK != bbs_verify (signature2_PK, signature2_signature, signature2_header, sizeof(
+	if (BBS_OK != bbs_sha256_verify (signature2_PK, signature2_signature, signature2_header, sizeof(
 					  signature2_header), 10, signature2_m_1, sizeof(
 					  signature2_m_1), signature2_m_2, sizeof(signature2_m_2),
 				  signature2_m_3, sizeof(signature2_m_3), signature2_m_4, sizeof(

@@ -211,7 +211,7 @@ mocked_proof_gen (
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != bbs_proof_gen_det (pk, signature, proof, header, header_len,
+	if (BBS_OK != bbs_proof_gen_det (&bbs_sha256_cipher_suite, pk, signature, proof, header, header_len,
 					 presentation_header, presentation_header_len,
 					 disclosed_indexes, disclosed_indexes_len, num_messages,
 					 mocked_prf, randomness, ap))

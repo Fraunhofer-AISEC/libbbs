@@ -28,7 +28,7 @@ int bbs_e2e_sign_n_proof() {
 	static char header[] = "But I am a header!";
 
         BBS_BENCH_START()
-	if(BBS_OK != bbs_sign(
+	if(BBS_OK != bbs_sha256_sign(
 				sk,
 				pk,
 				sig,
@@ -45,7 +45,7 @@ int bbs_e2e_sign_n_proof() {
         BBS_BENCH_END("bbs_sign (2 messages, 1 header)")
 
         BBS_BENCH_START()
-	if(BBS_OK != bbs_verify(
+	if(BBS_OK != bbs_sha256_verify(
 				pk,
 				sig,
 				(uint8_t*)header,
@@ -86,7 +86,7 @@ int bbs_e2e_sign_n_proof() {
         BBS_BENCH_END("bbs_proof_gen (2 messages, 1 header, 1 disclosed index)")
 
         BBS_BENCH_START()
-	if(BBS_OK != bbs_proof_verify(
+	if(BBS_OK != bbs_sha256_proof_verify(
 				pk,
 				proof,
 				BBS_PROOF_LEN(1),

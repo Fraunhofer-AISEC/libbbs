@@ -16,7 +16,6 @@ bbs_keygen_full (
 {
 	int            res = BBS_ERROR;
 	static uint8_t seed[32];
-	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	// Gather randomness
 	RLC_TRY {
@@ -27,7 +26,7 @@ bbs_keygen_full (
 	}
 
 	// Generate the secret key
-	if (BBS_OK != bbs_keygen (sk, seed, 32, 0, 0, 0, 0))
+	if (BBS_OK != bbs_sha256_keygen (sk, seed, 32, 0, 0, 0, 0))
 	{
 		goto cleanup;
 	}
@@ -43,9 +42,30 @@ cleanup:
 	return res;
 }
 
+int bbs_sha256_keygen(
+	bbs_secret_key sk, 
+	const uint8_t *key_material, 
+	uint16_t key_material_len, 
+	const uint8_t *key_info, 
+	uint16_t key_info_len, 
+	const uint8_t *key_dst, 
+	uint8_t key_dst_len
+) {
+	return bbs_keygen(
+		&bbs_sha256_cipher_suite, 
+		sk, 
+		key_material, 
+		key_material_len, 
+		key_info, 
+		key_info_len, 
+		key_dst, 
+		key_dst_len
+	);
+}
 
 int
 bbs_keygen (
+	bbs_cipher_suite_t *cipher_suite,
 	bbs_secret_key  sk,
 	const uint8_t  *key_material,
 	uint16_t        key_material_len,
@@ -58,7 +78,6 @@ bbs_keygen (
 	bn_t     sk_n;
 	uint16_t key_info_len_be = ((key_info_len & 0x00FFu) << 8) | (key_info_len >> 8);
 	int      res             = BBS_ERROR;
-	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (sk_n);
 
@@ -81,7 +100,7 @@ bbs_keygen (
 		goto cleanup;
 	}
 
-	if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, sk_n, key_dst, key_dst_len, key_material, key_material_len, &
+	if (BBS_OK != hash_to_scalar (cipher_suite, sk_n, key_dst, key_dst_len, key_material, key_material_len, &
 				      key_info_len_be, 2, key_info, key_info_len, 0))
 	{
 		goto cleanup;
@@ -111,7 +130,6 @@ bbs_sk_to_pk (
 	int   res = BBS_ERROR;
 	bn_t  sk_n;
 	ep2_t pk_p;
-	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (sk_n);
 	ep2_null (pk_p);
@@ -135,7 +153,7 @@ cleanup:
 }
 
 int
-bbs_sign (
+bbs_sha256_sign (
 	const bbs_secret_key  sk,
 	const bbs_public_key  pk,
 	bbs_signature         signature,
@@ -143,9 +161,27 @@ bbs_sign (
 	uint64_t              header_len,
 	uint64_t              num_messages,
 	...
+) {
+	va_list args;
+	va_start(args, num_messages);
+	int result = bbs_sign(&bbs_sha256_cipher_suite, sk, pk, signature, header, header_len, num_messages, args);
+	va_end(args);
+	return result;
+}
+
+
+int
+bbs_sign (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_secret_key  sk,
+	const bbs_public_key  pk,
+	bbs_signature         signature,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	va_list 			  ap
 	)
 {
-	va_list       ap;
 	uint8_t       generator_ctx[48 + 8];
 	bbs_hash_ctx  h2s_ctx, dom_ctx;
 	uint8_t       buffer[BBS_SCALAR_LEN];
@@ -154,8 +190,6 @@ bbs_sign (
 	uint8_t      *msg;
 	uint32_t      msg_len;
 	int           res = BBS_ERROR;
-
-	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (e);
 	bn_null (sk_n);
@@ -172,21 +206,21 @@ bbs_sign (
 		header_len = 0;
 	}
 
-	if (BBS_OK != create_generator_init (&bbs_sha256_cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
+	if (BBS_OK != create_generator_init (cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != calculate_domain_init (&bbs_sha256_cipher_suite, &dom_ctx, pk, num_messages))
+	if (BBS_OK != calculate_domain_init (cipher_suite, &dom_ctx, pk, num_messages))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_init (&bbs_sha256_cipher_suite, &h2s_ctx))
+	if (BBS_OK != hash_to_scalar_init (cipher_suite, &h2s_ctx))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &h2s_ctx, sk, BBS_SK_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &h2s_ctx, sk, BBS_SK_LEN))
 	{
 		goto cleanup;
 	}
@@ -215,24 +249,24 @@ bbs_sign (
 	for (int i = 0; i<num_messages + 1; i++)
 	{
 		// Technically, this includes Q_1
-		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
 			goto cleanup;
 		}
-		if (BBS_OK != calculate_domain_update (&bbs_sha256_cipher_suite, &dom_ctx, H_i))
+		if (BBS_OK != calculate_domain_update (cipher_suite, &dom_ctx, H_i))
 		{
 			goto cleanup;
 		}
 	}
-	if (BBS_OK != calculate_domain_finalize (&bbs_sha256_cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
+	if (BBS_OK != calculate_domain_finalize (cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
 						 BBS_API_ID, LEN (BBS_API_ID)
 						 - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != create_generator_init (&bbs_sha256_cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
+	if (BBS_OK != create_generator_init (cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
@@ -243,25 +277,24 @@ bbs_sign (
 	RLC_CATCH_ANY {
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &h2s_ctx, buffer, BBS_SCALAR_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &h2s_ctx, buffer, BBS_SCALAR_LEN))
 	{
 		goto cleanup;
 	}
 	// END UGLY CODE
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
 
-	va_start (ap, num_messages);
 	for (int i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
@@ -274,7 +307,7 @@ bbs_sign (
 		// Calculate msg_scalar (oneshot)
 		msg     = va_arg (ap, uint8_t*);
 		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
+		if (BBS_OK != hash_to_scalar (cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
 					      - 1, msg, msg_len, 0))
 		{
 			goto cleanup;
@@ -290,15 +323,14 @@ bbs_sign (
 		RLC_CATCH_ANY {
 			goto cleanup;
 		}
-		if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &h2s_ctx, buffer, BBS_SCALAR_LEN))
+		if (BBS_OK != hash_to_scalar_update (cipher_suite, &h2s_ctx, buffer, BBS_SCALAR_LEN))
 		{
 			goto cleanup;
 		}
 	}
-	va_end (ap);
 
 	// Derive e
-	if (BBS_OK != hash_to_scalar_finalize (&bbs_sha256_cipher_suite, &h2s_ctx, e, (uint8_t*) BBS_SIGNATURE_DST, LEN (
+	if (BBS_OK != hash_to_scalar_finalize (cipher_suite, &h2s_ctx, e, (uint8_t*) BBS_SIGNATURE_DST, LEN (
 						       BBS_SIGNATURE_DST)
 					       - 1))
 	{
@@ -338,18 +370,32 @@ cleanup:
 	return res;
 }
 
+int bbs_sha256_verify (
+	const bbs_public_key pk,
+	const bbs_signature signature,
+	const uint8_t *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	...
+) {
+	va_list args;
+	va_start (args, num_messages);
+	int result = bbs_verify(&bbs_sha256_cipher_suite, pk, signature, header, header_len, num_messages, args);
+	va_end(args);
+	return result;
+}
 
 int
 bbs_verify (
+	bbs_cipher_suite_t   *cipher_suite,
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
 	const uint8_t        *header,
 	uint64_t              header_len,
 	uint64_t              num_messages,
-	...
+	va_list 			  ap
 	)
 {
-	va_list       ap;
 	uint8_t       generator_ctx[48 + 8];
 	bbs_hash_ctx  dom_ctx;
 	bn_t          e, domain, msg_scalar;
@@ -359,7 +405,6 @@ bbs_verify (
 	uint8_t      *msg;
 	uint32_t      msg_len;
 	int           res = BBS_ERROR;
-	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	bn_null (e);
 	bn_null (domain);
@@ -379,12 +424,12 @@ bbs_verify (
 		header_len = 0;
 	}
 
-	if (BBS_OK != create_generator_init (&bbs_sha256_cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
+	if (BBS_OK != create_generator_init (cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != calculate_domain_init (&bbs_sha256_cipher_suite, &dom_ctx, pk, num_messages))
+	if (BBS_OK != calculate_domain_init (cipher_suite, &dom_ctx, pk, num_messages))
 	{
 		goto cleanup;
 	}
@@ -413,28 +458,27 @@ bbs_verify (
 	}
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != calculate_domain_update (&bbs_sha256_cipher_suite, &dom_ctx, Q_1))
+	if (BBS_OK != calculate_domain_update (cipher_suite, &dom_ctx, Q_1))
 	{
 		goto cleanup;
 	}
 
-	va_start (ap, num_messages);
 	for (int i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
 			goto cleanup;
 		}
-		if (BBS_OK != calculate_domain_update (&bbs_sha256_cipher_suite, &dom_ctx, H_i))
+		if (BBS_OK != calculate_domain_update (cipher_suite, &dom_ctx, H_i))
 		{
 			goto cleanup;
 		}
@@ -442,7 +486,7 @@ bbs_verify (
 		// Calculate msg_scalar (oneshot)
 		msg     = va_arg (ap, uint8_t*);
 		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
+		if (BBS_OK != hash_to_scalar (cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
 					      - 1, msg, msg_len, 0))
 		{
 			goto cleanup;
@@ -456,10 +500,9 @@ bbs_verify (
 			goto cleanup;
 		}
 	}
-	va_end (ap);
 
 	// Finalize domain calculation
-	if (BBS_OK != calculate_domain_finalize (&bbs_sha256_cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
+	if (BBS_OK != calculate_domain_finalize (cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
 						 BBS_API_ID, LEN (BBS_API_ID)
 						 - 1))
 	{
@@ -509,12 +552,32 @@ cleanup:
 	return res;
 }
 
+// int bbs_sha256_proof_gen_det(
+// 	const bbs_public_key  pk,
+// 	const bbs_signature   signature,
+// 	uint8_t              *proof,
+// 	const uint8_t        *header,
+// 	uint64_t              header_len,
+// 	const uint8_t        *presentation_header,
+// 	uint64_t              presentation_header_len,
+// 	const uint64_t       *disclosed_indexes,
+// 	uint64_t              disclosed_indexes_len,
+// 	uint64_t              num_messages,
+// 	bbs_bn_prf            prf,
+// 	void                 *prf_cookie,
+// 	va_list               ap
+// ) {
+// 	return bbs_proof_gen_det(&bbs_sha256_cipher_suite, pk, signature, proof, header, header_len, presentation_header, presentation_header_len, disclosed_indexes, disclosed_indexes_len, num_messages, prf, prf_cookie, ap);
+
+// }
+
 
 // bbs_proof_gen, but makes callbacks to prf for random scalars
 // We need to control the random scalars for the fixture tests. This way we do
 // not need to compile a dedicated library for the tests.
 int
 bbs_proof_gen_det (
+	bbs_cipher_suite_t   *cipher_suite,
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
 	uint8_t              *proof,
@@ -544,7 +607,6 @@ bbs_proof_gen_det (
 	uint64_t      undisclosed_indexes_idx = 0;
 	uint64_t      undisclosed_indexes_len = num_messages - disclosed_indexes_len;
 	int           res                     = BBS_ERROR;
-	// bbs_cipher_suite_t bbs_sha256_cipher_suite;
 
 	// We iterate over the messages twice because the spec is ****
 	va_copy (ap2, ap);
@@ -581,12 +643,12 @@ bbs_proof_gen_det (
 	ep_null (Abar);
 	ep_null (Bbar);
 
-	if (BBS_OK != create_generator_init (&bbs_sha256_cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
+	if (BBS_OK != create_generator_init (cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != calculate_domain_init (&bbs_sha256_cipher_suite, &dom_ctx, pk, num_messages))
+	if (BBS_OK != calculate_domain_init (cipher_suite, &dom_ctx, pk, num_messages))
 	{
 		goto cleanup;
 	}
@@ -637,13 +699,13 @@ bbs_proof_gen_det (
 		goto cleanup;
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != calculate_domain_update (&bbs_sha256_cipher_suite, &dom_ctx, Q_1))
+	if (BBS_OK != calculate_domain_update (cipher_suite, &dom_ctx, Q_1))
 	{
 		goto cleanup;
 	}
@@ -652,13 +714,13 @@ bbs_proof_gen_det (
 	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
 			goto cleanup;
 		}
-		if (BBS_OK != calculate_domain_update (&bbs_sha256_cipher_suite, &dom_ctx, H_i))
+		if (BBS_OK != calculate_domain_update (cipher_suite, &dom_ctx, H_i))
 		{
 			goto cleanup;
 		}
@@ -666,7 +728,7 @@ bbs_proof_gen_det (
 		// Calculate msg_scalar (oneshot)
 		msg     = va_arg (ap, uint8_t*);
 		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
+		if (BBS_OK != hash_to_scalar (cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
 					      - 1, msg, msg_len, 0))
 		{
 			goto cleanup;
@@ -728,7 +790,7 @@ bbs_proof_gen_det (
 	}
 
 	// Finalize domain calculation
-	if (BBS_OK != calculate_domain_finalize (&bbs_sha256_cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
+	if (BBS_OK != calculate_domain_finalize (cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
 						 BBS_API_ID, LEN (BBS_API_ID)
 						 - 1))
 	{
@@ -772,20 +834,20 @@ bbs_proof_gen_det (
 	}
 
 	// Calculate the challenge
-	if (BBS_OK != hash_to_scalar_init (&bbs_sha256_cipher_suite, &ch_ctx))
+	if (BBS_OK != hash_to_scalar_init (cipher_suite, &ch_ctx))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, proof, 3 * BBS_G1_ELEM_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, proof, 3 * BBS_G1_ELEM_LEN))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN))
 	{
 		goto cleanup;
 	}
 	be_buffer = UINT64_H2BE (disclosed_indexes_len);
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
 	{
 		goto cleanup;
 	}
@@ -793,7 +855,7 @@ bbs_proof_gen_det (
 	for (uint64_t i = 0; i<disclosed_indexes_len; i++)
 	{
 		be_buffer = UINT64_H2BE (disclosed_indexes[i]);
-		if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
+		if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
 		{
 			goto cleanup;
 		}
@@ -810,7 +872,7 @@ bbs_proof_gen_det (
 			    disclosed_indexes_idx] == i)
 		{
 			disclosed_indexes_idx++;
-			if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (
+			if (BBS_OK != hash_to_scalar (cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (
 							      BBS_MAP_DST)
 						      - 1, msg, msg_len, 0))
 			{
@@ -822,7 +884,7 @@ bbs_proof_gen_det (
 			RLC_CATCH_ANY {
 				goto cleanup;
 			}
-			if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN)
+			if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN)
 			    )
 			{
 				goto cleanup;
@@ -836,20 +898,20 @@ bbs_proof_gen_det (
 	RLC_CATCH_ANY {
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN))
 	{
 		goto cleanup;
 	}
 	be_buffer = UINT64_H2BE (presentation_header_len);
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, presentation_header, presentation_header_len))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, presentation_header, presentation_header_len))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_finalize (&bbs_sha256_cipher_suite, &ch_ctx, challenge, (uint8_t*) BBS_CHALLENGE_DST, LEN
+	if (BBS_OK != hash_to_scalar_finalize (cipher_suite, &ch_ctx, challenge, (uint8_t*) BBS_CHALLENGE_DST, LEN
 						       (BBS_CHALLENGE_DST)
 					       - 1))
 	{
@@ -939,7 +1001,6 @@ cleanup:
 	return res;
 }
 
-
 int
 bbs_proof_prf (
 	bn_t      out,
@@ -959,7 +1020,6 @@ bbs_proof_prf (
 		return BBS_ERROR;
 	return hash_to_scalar (&bbs_sha256_cipher_suite, out,  dsts[input_type], 17, seed, 32, input, 8, 0);
 }
-
 
 int
 bbs_proof_gen (
@@ -993,7 +1053,7 @@ bbs_proof_gen (
 		goto cleanup;
 	}
 
-	if (BBS_OK != bbs_proof_gen_det (pk, signature, proof, header, header_len,
+	if (BBS_OK != bbs_proof_gen_det (&bbs_sha256_cipher_suite, pk, signature, proof, header, header_len,
 					 presentation_header, presentation_header_len,
 					 disclosed_indexes, disclosed_indexes_len, num_messages,
 					 bbs_proof_prf, seed, ap))
@@ -1007,9 +1067,7 @@ cleanup:
 	return ret;
 }
 
-
-int
-bbs_proof_verify (
+int bbs_sha256_proof_verify(
 	const bbs_public_key  pk,
 	const uint8_t        *proof,
 	uint64_t              proof_len,
@@ -1021,9 +1079,32 @@ bbs_proof_verify (
 	uint64_t              disclosed_indexes_len,
 	uint64_t              num_messages,
 	...
+) {
+	va_list args;
+	va_start (args, num_messages);
+	int result = bbs_proof_verify(&bbs_sha256_cipher_suite, pk, proof, proof_len, header, header_len, presentation_header, presentation_header_len, disclosed_indexes, disclosed_indexes_len, num_messages, args);
+	va_end(args);
+	return result;
+
+}
+
+
+int
+bbs_proof_verify (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const uint8_t        *proof,
+	uint64_t              proof_len,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	va_list 			 ap
 	)
 {
-	va_list        ap;
 	uint8_t        generator_ctx[48 + 8];
 	uint8_t        T_buffer[2 * BBS_G1_ELEM_LEN];
 	uint8_t        scalar_buffer[BBS_SCALAR_LEN];
@@ -1038,6 +1119,10 @@ bbs_proof_verify (
 	uint64_t       undisclosed_indexes_idx = 0;
 	uint64_t       undisclosed_indexes_len = num_messages - disclosed_indexes_len;
 	int            res                     = BBS_ERROR;
+	va_list ap2;
+    
+    // Make a copy of the va_list to use for the first iteration
+    va_copy(ap2, ap);
 
 	if (! header)
 	{
@@ -1078,12 +1163,12 @@ bbs_proof_verify (
 		goto cleanup;
 	}
 
-	if (BBS_OK != create_generator_init (&bbs_sha256_cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
+	if (BBS_OK != create_generator_init (cipher_suite, generator_ctx, (uint8_t*) BBS_API_ID, LEN (BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != calculate_domain_init (&bbs_sha256_cipher_suite, &dom_ctx, pk, num_messages))
+	if (BBS_OK != calculate_domain_init (cipher_suite, &dom_ctx, pk, num_messages))
 	{
 		goto cleanup;
 	}
@@ -1145,28 +1230,27 @@ bbs_proof_verify (
 	}
 
 	// Calculate Q_1
-	if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
+	if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, Q_1, (uint8_t*) BBS_API_ID, LEN (
 						     BBS_API_ID)
 					     - 1))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != calculate_domain_update (&bbs_sha256_cipher_suite, &dom_ctx, Q_1))
+	if (BBS_OK != calculate_domain_update (cipher_suite, &dom_ctx, Q_1))
 	{
 		goto cleanup;
 	}
 
-	va_start (ap, num_messages);
 	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
-		if (BBS_OK != create_generator_next (&bbs_sha256_cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
+		if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, H_i, (uint8_t*) BBS_API_ID, LEN
 							     (BBS_API_ID)
 						     - 1))
 		{
 			goto cleanup;
 		}
-		if (BBS_OK != calculate_domain_update (&bbs_sha256_cipher_suite, &dom_ctx, H_i))
+		if (BBS_OK != calculate_domain_update (cipher_suite, &dom_ctx, H_i))
 		{
 			goto cleanup;
 		}
@@ -1180,7 +1264,7 @@ bbs_proof_verify (
 			msg_len = va_arg (ap, uint32_t);
 
 			// Calculate msg_scalar (oneshot)
-			if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (
+			if (BBS_OK != hash_to_scalar (cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (
 							      BBS_MAP_DST)
 						      - 1, msg, msg_len, 0))
 			{
@@ -1216,7 +1300,6 @@ bbs_proof_verify (
 			undisclosed_indexes_idx++;
 		}
 	}
-	va_end (ap);
 
 	// Sanity check. If any indices for disclosed messages were out of order
 	// or invalid, we fail here.
@@ -1226,7 +1309,7 @@ bbs_proof_verify (
 	}
 
 	// Finalize domain calculation
-	if (BBS_OK != calculate_domain_finalize (&bbs_sha256_cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
+	if (BBS_OK != calculate_domain_finalize (cipher_suite, &dom_ctx, domain, header, header_len, (uint8_t*)
 						 BBS_API_ID, LEN (BBS_API_ID)
 						 - 1))
 	{
@@ -1250,20 +1333,20 @@ bbs_proof_verify (
 	}
 
 	// Calculate the challenge
-	if (BBS_OK != hash_to_scalar_init (&bbs_sha256_cipher_suite, &ch_ctx))
+	if (BBS_OK != hash_to_scalar_init (cipher_suite, &ch_ctx))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, proof, 3 * BBS_G1_ELEM_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, proof, 3 * BBS_G1_ELEM_LEN))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN))
 	{
 		goto cleanup;
 	}
 	be_buffer = UINT64_H2BE (disclosed_indexes_len);
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
 	{
 		goto cleanup;
 	}
@@ -1271,21 +1354,20 @@ bbs_proof_verify (
 	for (uint64_t i = 0; i<disclosed_indexes_len; i++)
 	{
 		be_buffer = UINT64_H2BE (disclosed_indexes[i]);
-		if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
+		if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
 		{
 			goto cleanup;
 		}
 	}
 	// We have to go over all disclosed messages again. Someone please fix
 	// this in the spec...
-	va_start (ap, num_messages);
 	for (disclosed_indexes_idx = 0; disclosed_indexes_idx<disclosed_indexes_len;
 	     disclosed_indexes_idx++)
 	{
 		// Calculate msg_scalar (oneshot)
-		msg     = va_arg (ap, uint8_t*);
-		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
+		msg     = va_arg (ap2, uint8_t*);
+		msg_len = va_arg (ap2, uint32_t);
+		if (BBS_OK != hash_to_scalar (cipher_suite, msg_scalar, (uint8_t*) BBS_MAP_DST, LEN (BBS_MAP_DST)
 					      - 1, msg, msg_len, 0))
 		{
 			goto cleanup;
@@ -1296,12 +1378,12 @@ bbs_proof_verify (
 		RLC_CATCH_ANY {
 			goto cleanup;
 		}
-		if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN))
+		if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN))
 		{
 			goto cleanup;
 		}
 	}
-	va_end (ap);
+	va_end (ap2);
 	RLC_TRY {
 		// Write out the domain. We reuse scalar_buffer
 		bn_write_bbs (scalar_buffer, domain);
@@ -1309,20 +1391,20 @@ bbs_proof_verify (
 	RLC_CATCH_ANY {
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, scalar_buffer, BBS_SCALAR_LEN))
 	{
 		goto cleanup;
 	}
 	be_buffer = UINT64_H2BE (presentation_header_len);
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, (uint8_t*) &be_buffer, 8))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_update (&bbs_sha256_cipher_suite, &ch_ctx, presentation_header, presentation_header_len))
+	if (BBS_OK != hash_to_scalar_update (cipher_suite, &ch_ctx, presentation_header, presentation_header_len))
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != hash_to_scalar_finalize (&bbs_sha256_cipher_suite, &ch_ctx, challenge_prime, (uint8_t*)
+	if (BBS_OK != hash_to_scalar_finalize (cipher_suite, &ch_ctx, challenge_prime, (uint8_t*)
 					       BBS_CHALLENGE_DST, LEN (BBS_CHALLENGE_DST)
 					       - 1))
 	{

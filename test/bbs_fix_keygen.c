@@ -26,7 +26,7 @@ int bbs_fix_keygen() {
 	}
 
 	bbs_secret_key sk;
-	if(BBS_OK != bbs_keygen(
+	if(BBS_OK != bbs_sha256_keygen(
 				sk,
 				fixture_key_material,
 				sizeof(fixture_key_material),

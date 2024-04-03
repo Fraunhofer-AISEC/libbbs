@@ -252,6 +252,7 @@ typedef int (bbs_bn_prf)(bn_t      out,
 
 // Defined in bbs.c, but included here to hide it from bbs.h importers
 int bbs_proof_gen_det (
+	bbs_cipher_suite_t   *cipher_suite,
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
 	uint8_t              *proof,

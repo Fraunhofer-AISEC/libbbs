@@ -116,7 +116,7 @@ int bbs_fix_proof_verify() {
 		return 1;
 	}
 
-	if(BBS_OK != bbs_proof_verify(
+	if(BBS_OK != bbs_sha256_proof_verify(
 				proof1_public_key,
 				proof1_proof,
 				sizeof(proof1_proof),
@@ -133,7 +133,7 @@ int bbs_fix_proof_verify() {
 		return 1;
 	}
 
-	if(BBS_OK != bbs_proof_verify(
+	if(BBS_OK != bbs_sha256_proof_verify(
 				proof2_public_key,
 				proof2_proof,
 				sizeof(proof2_proof),
@@ -169,7 +169,7 @@ int bbs_fix_proof_verify() {
 	}
 
 	// Only some messages are being revealed here
-	if(BBS_OK != bbs_proof_verify(
+	if(BBS_OK != bbs_sha256_proof_verify(
 				proof3_public_key,
 				proof3_proof,
 				sizeof(proof3_proof),

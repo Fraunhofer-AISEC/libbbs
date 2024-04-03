@@ -60,7 +60,7 @@ int bbs_fix_sign() {
 	}
 
 	bbs_signature sig;
-	if(BBS_OK != bbs_sign(
+	if(BBS_OK != bbs_sha256_sign(
 				signature1_SK,
 				signature1_PK,
 				sig,
@@ -74,7 +74,7 @@ int bbs_fix_sign() {
 	}
 	ASSERT_EQ("signature 1 generation", sig, signature1_signature);
 
-	if(BBS_OK != bbs_sign(
+	if(BBS_OK != bbs_sha256_sign(
 				signature2_SK,
 				signature2_PK,
 				sig,
