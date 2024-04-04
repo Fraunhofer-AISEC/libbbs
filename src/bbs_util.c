@@ -185,7 +185,7 @@ cleanup:
 
 int
 bbs_shake256_expand_message_init (
-	bbs_hash_ctx *ctx
+	void *ctx
 	)
 {
 	HashReturn res = Keccak_HashInitialize_SHAKE256 (ctx);
@@ -228,7 +228,7 @@ cleanup:
 
 int
 expand_message_update (
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
@@ -334,7 +334,7 @@ cleanup:
 */
 int
 _expand_message_finalize (
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	uint8_t       *out,
 	size_t         out_len,
 	const uint8_t *dst,
@@ -379,7 +379,7 @@ cleanup:
 */
 int
 expand_message_finalize (
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
@@ -401,12 +401,11 @@ expand_message (
 	)
 {
 	va_list      ap;
-	bbs_hash_ctx hctx;
 	uint8_t     *msg     = 0;
 	uint32_t     msg_len = 0;
 	int          res     = BBS_ERROR;
 
-	if (BBS_OK !=  cipher_suite->expand_message_init(&hctx))
+	if (BBS_OK !=  cipher_suite->expand_message_init(cipher_suite->hash_ctx))
 	{
 		goto cleanup;
 	}
@@ -415,14 +414,14 @@ expand_message (
 	while ((msg = va_arg (ap, uint8_t*)))
 	{
 		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != cipher_suite->expand_message_update (&hctx, msg, msg_len))
+		if (BBS_OK != cipher_suite->expand_message_update (cipher_suite->hash_ctx, msg, msg_len))
 		{
 			goto cleanup;
 		}
 	}
 	va_end (ap);
 
-	if (BBS_OK != cipher_suite->expand_message_finalize (&hctx, out, dst, dst_len))
+	if (BBS_OK != cipher_suite->expand_message_finalize (cipher_suite->hash_ctx, out, dst, dst_len))
 	{
 		goto cleanup;
 	}
@@ -496,12 +495,11 @@ hash_to_scalar (
 	)
 {
 	va_list      ap;
-	bbs_hash_ctx hctx;
 	uint8_t     *msg     = 0;
 	uint32_t     msg_len = 0;
 	int          res     = BBS_ERROR;
 
-	if (BBS_OK != hash_to_scalar_init (cipher_suite, &hctx))
+	if (BBS_OK != hash_to_scalar_init (cipher_suite, cipher_suite->hash_ctx))
 	{
 		goto cleanup;
 	}
@@ -510,14 +508,14 @@ hash_to_scalar (
 	while ((msg = va_arg (ap, uint8_t*)))
 	{
 		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != hash_to_scalar_update (cipher_suite, &hctx, msg, msg_len))
+		if (BBS_OK != hash_to_scalar_update (cipher_suite, cipher_suite->hash_ctx, msg, msg_len))
 		{
 			goto cleanup;
 		}
 	}
 	va_end (ap);
 
-	if (BBS_OK != hash_to_scalar_finalize (cipher_suite, &hctx, out, dst, dst_len))
+	if (BBS_OK != hash_to_scalar_finalize (cipher_suite, cipher_suite->hash_ctx, out, dst, dst_len))
 	{
 		goto cleanup;
 	}
@@ -531,7 +529,7 @@ cleanup:
 int
 calculate_domain_init (
 	bbs_cipher_suite_t *cipher_suite,
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	const uint8_t  pk[BBS_PK_LEN],
 	uint64_t       num_messages
 	)
@@ -563,7 +561,7 @@ cleanup:
 int
 calculate_domain_update (
 	bbs_cipher_suite_t *cipher_suite,
-	bbs_hash_ctx *ctx,
+	void *ctx,
 	const ep_t    generator
 	)
 {
@@ -591,7 +589,7 @@ cleanup:
 int
 calculate_domain_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	bn_t           out,
 	const uint8_t *header,
 	uint64_t       header_len,
@@ -653,11 +651,10 @@ calculate_domain (
 	)
 {
 	va_list      ap;
-	bbs_hash_ctx hctx;
 	ep_t        *generator;
 	int          res = BBS_ERROR;
 
-	if (BBS_OK != calculate_domain_init (cipher_suite, &hctx, pk, num_messages))
+	if (BBS_OK != calculate_domain_init (cipher_suite, cipher_suite->hash_ctx, pk, num_messages))
 	{
 		goto cleanup;
 	}
@@ -665,14 +662,14 @@ calculate_domain (
 	va_start (ap, api_id_len);
 	while ((generator = va_arg (ap, ep_t*)))
 	{
-		if (BBS_OK != calculate_domain_update (cipher_suite, &hctx, *generator))
+		if (BBS_OK != calculate_domain_update (cipher_suite, cipher_suite->hash_ctx, *generator))
 		{
 			goto cleanup;
 		}
 	}
 	va_end (ap);
 
-	if (BBS_OK != calculate_domain_finalize (cipher_suite, &hctx, out, header, header_len, api_id, api_id_len)
+	if (BBS_OK != calculate_domain_finalize (cipher_suite, cipher_suite->hash_ctx, out, header, header_len, api_id, api_id_len)
 	    )
 	{
 		goto cleanup;
@@ -693,7 +690,6 @@ create_generator_init (
 	)
 {
 	uint8_t      buffer[256];
-	bbs_hash_ctx hctx;
 	int          res = BBS_ERROR;
 
 	if (api_id_len > 255 - 19)
@@ -706,22 +702,22 @@ create_generator_init (
 	for (int i = 0; i < 19; i++)
 		buffer[i + api_id_len] = "SIG_GENERATOR_SEED_"[i];
 
-	if (BBS_OK != expand_message_init (cipher_suite, &hctx))
+	if (BBS_OK != expand_message_init (cipher_suite, cipher_suite->hash_ctx))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite, &hctx, api_id, api_id_len))
+	if (BBS_OK != expand_message_update (cipher_suite, cipher_suite->hash_ctx, api_id, api_id_len))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite, &hctx, (uint8_t*) "MESSAGE_GENERATOR_SEED", 22))
+	if (BBS_OK != expand_message_update (cipher_suite, cipher_suite->hash_ctx, (uint8_t*) "MESSAGE_GENERATOR_SEED", 22))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_finalize (cipher_suite, &hctx, state, buffer, api_id_len + 19))
+	if (BBS_OK != expand_message_finalize (cipher_suite, cipher_suite->hash_ctx, state, buffer, api_id_len + 19))
 	{
 		goto cleanup;
 	}
@@ -836,7 +832,6 @@ create_generator_next (
 {
 	uint8_t      dst_buf[256];
 	uint8_t      rand_buf[128];
-	bbs_hash_ctx hctx;
 	uint64_t     i_be = UINT64_H2BE (*((uint64_t*) (state + 48)));
 	int          res  = BBS_ERROR;
 
@@ -858,22 +853,22 @@ create_generator_next (
 	for (int i = 0; i < 19; i++)
 		dst_buf[i + api_id_len] = "SIG_GENERATOR_SEED_"[i];
 
-	if (BBS_OK != expand_message_init (cipher_suite, &hctx))
+	if (BBS_OK != expand_message_init (cipher_suite, cipher_suite->hash_ctx))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite, &hctx, state, 48))
+	if (BBS_OK != expand_message_update (cipher_suite, cipher_suite->hash_ctx, state, 48))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite, &hctx, (uint8_t*) &i_be, 8))
+	if (BBS_OK != expand_message_update (cipher_suite, cipher_suite->hash_ctx, (uint8_t*) &i_be, 8))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_finalize (cipher_suite, &hctx, state, dst_buf, api_id_len + 19))
+	if (BBS_OK != expand_message_finalize (cipher_suite, cipher_suite->hash_ctx, state, dst_buf, api_id_len + 19))
 	{
 		goto cleanup;
 	}
@@ -890,16 +885,15 @@ create_generator_next (
 		md_xmd (rand_buf, 128, state, 48, dst_buf, api_id_len + 18);
 
 		#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-		bbs_hash_ctx hctx;
-		if (BBS_OK != expand_message_init (&hctx))
+		if (BBS_OK != expand_message_init (cipher_suite->hash_ctx))
 		{
 			goto cleanup;
 		}
-		if (BBS_OK != expand_message_update (&hctx, state, 48))
+		if (BBS_OK != expand_message_update (cipher_suite->hash_ctx, state, 48))
 		{
 			goto cleanup;
 		}
-		if (BBS_OK != _expand_message_finalize (&hctx, rand_buf, 128, dst_buf, api_id_len
+		if (BBS_OK != _expand_message_finalize (cipher_suite->hash_ctx, rand_buf, 128, dst_buf, api_id_len
 							+ 18))
 		{
 			goto cleanup;

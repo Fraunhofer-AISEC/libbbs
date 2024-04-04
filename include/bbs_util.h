@@ -3,21 +3,13 @@
 
 #include "bbs.h"
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
 #include <sha.h>
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 #include "KeccakHash.h"
-#endif
 
 #undef ALIGN
 #include <relic.h>
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-typedef SHA256Context        bbs_hash_ctx;
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-typedef Keccak_HashInstance  bbs_hash_ctx;
-#endif
-
+// typedef Keccak_HashInstance  bbs_hash_ctx;
 
 // This header specifies useful functions for several utility algorithms.
 // Use these if you want to hack on BBS signatures and want to stay close to the
@@ -119,7 +111,7 @@ bbs_sha256_expand_message_finalize (
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 int
 _expand_message_finalize (
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	uint8_t       *out,
 	size_t         out_len,
 	const uint8_t *dst,
@@ -167,20 +159,20 @@ int hash_to_scalar (
 // you need to call update exactly num_messages + 1 times.
 int calculate_domain_init (
 	bbs_cipher_suite_t *cipher_suite,
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	const uint8_t  pk[BBS_PK_LEN],
 	uint64_t       num_messages
 	);
 
 int calculate_domain_update (
 	bbs_cipher_suite_t *cipher_suite,
-	bbs_hash_ctx *ctx,
+	void *ctx,
 	const ep_t    generator
 	);
 
 int calculate_domain_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	bbs_hash_ctx  *ctx,
+	void  *ctx,
 	bn_t           out,
 	const uint8_t *header,
 	uint64_t       header_len,

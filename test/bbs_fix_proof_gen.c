@@ -162,7 +162,7 @@ fill_randomness (
 
 	#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 
-	bbs_hash_ctx hctx;
+	Keccak_HashInstance hctx;
 	if (BBS_OK != expand_message_init (&hctx))
 	{
 		goto cleanup;

@@ -27,7 +27,7 @@ bbs_fix_expand_message ()
 		return 1;
 	}
 
-	bbs_hash_ctx ctx;
+	Keccak_HashInstance ctx;
 
 	uint8_t      out_1[rfc_9380_k6_expand_message_xof_out_len_1];
 	if (BBS_OK != expand_message_init (&ctx))
