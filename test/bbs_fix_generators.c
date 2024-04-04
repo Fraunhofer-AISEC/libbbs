@@ -54,8 +54,8 @@ bbs_fix_generators ()
 	}
 	RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 
-	static uint8_t api_id[]   = BBS_API_ID;
-	static uint8_t api_id_len = BBS_API_ID_LENGTH;
+	const uint8_t *api_id   = (uint8_t *) bbs_sha256_cipher_suite.api_id;
+	const uint8_t api_id_len = bbs_sha256_cipher_suite.api_id_len;
 
 	if (BBS_OK != create_generator_init (&bbs_sha256_cipher_suite, state, api_id, api_id_len))
 	{

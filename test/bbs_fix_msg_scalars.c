@@ -44,8 +44,8 @@ int bbs_fix_msg_scalars() {
 	}
 	RLC_CATCH_ANY { puts("Internal Error"); return 1; }
 
-	static uint8_t map_dst[] = BBS_MAP_DST;
-	static uint8_t map_dst_len = BBS_MAP_DST_LENGTH;
+	const uint8_t *map_dst = (uint8_t *) bbs_sha256_cipher_suite.map_dst;
+	const uint8_t map_dst_len = bbs_sha256_cipher_suite.map_dst_len;
 
 	if(BBS_OK != hash_to_scalar(&bbs_sha256_cipher_suite, scalar, map_dst, map_dst_len, fixture_m_1, sizeof(fixture_m_1), 0)) {
 		puts("Error during hash to scalar for message 1");

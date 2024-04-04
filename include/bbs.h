@@ -7,22 +7,22 @@
 #define BBS_CIPHER_SUITE_BLS12_381_SHA_256 1
 #define BBS_CIPHER_SUITE_BLS12_381_SHAKE_256 2
 
-// Magic constants to be used as Domain Separation Tags
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-#define BBS_CIPHER_SUITE_ID "BBS_BLS12381G1_XMD:SHA-256_SSWU_RO_"
-#define BBS_CIPHER_SUITE_LENGTH 35
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#define BBS_CIPHER_SUITE_ID "BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_"
-#define BBS_CIPHER_SUITE_LENGTH 37
-#endif
+// // Magic constants to be used as Domain Separation Tags
+// #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+// #define BBS_CIPHER_SUITE_ID "BBS_BLS12381G1_XMD:SHA-256_SSWU_RO_"
+// #define BBS_CIPHER_SUITE_LENGTH 35
+// #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+// #define BBS_CIPHER_SUITE_ID "BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_"
+// #define BBS_CIPHER_SUITE_LENGTH 37
+// #endif
 
-#define BBS_DEFAULT_KEY_DST BBS_CIPHER_SUITE_ID "KEYGEN_DST_"
-#define BBS_API_ID          BBS_CIPHER_SUITE_ID "H2G_HM2S_"
-#define BBS_API_ID_LENGTH   BBS_CIPHER_SUITE_LENGTH + 9
-#define BBS_SIGNATURE_DST   BBS_API_ID "H2S_"
-#define BBS_CHALLENGE_DST   BBS_API_ID "H2S_"
-#define BBS_MAP_DST         BBS_API_ID "MAP_MSG_TO_SCALAR_AS_HASH_"
-#define BBS_MAP_DST_LENGTH  BBS_API_ID_LENGTH + 26
+// #define BBS_DEFAULT_KEY_DST BBS_CIPHER_SUITE_ID "KEYGEN_DST_"
+// #define BBS_API_ID          BBS_CIPHER_SUITE_ID "H2G_HM2S_"
+// #define BBS_API_ID_LENGTH   BBS_CIPHER_SUITE_LENGTH + 9
+// #define BBS_SIGNATURE_DST   BBS_API_ID "H2S_"
+// #define BBS_CHALLENGE_DST   BBS_API_ID "H2S_"
+// #define BBS_MAP_DST         BBS_API_ID "MAP_MSG_TO_SCALAR_AS_HASH_"
+// #define BBS_MAP_DST_LENGTH  BBS_API_ID_LENGTH + 26
 
 // The above collision stems from the ID. Possible oversight? Should not compromise
 // security too much...
@@ -51,6 +51,18 @@ typedef struct {
 	int (*expand_message_init)(void *ctx);
 	int (*expand_message_update)(void *ctx, const uint8_t *msg, uint32_t msg_len);
 	int (*expand_message_finalize)(void *ctx, uint8_t out[48], const uint8_t *dst, uint8_t dst_len);
+	char *cipher_suite_id;
+	uint8_t cipher_suite_id_len;
+	char *default_key_dst;
+	uint8_t default_key_dst_len;
+	char *api_id;
+	uint8_t api_id_len;
+	char *signature_dst;
+	uint8_t signature_dst_len;
+	char *challenge_dst;
+	uint8_t challenge_dst_len;
+	char *map_dst;
+	uint8_t map_dst_len;
 } bbs_cipher_suite_t;
 
 extern bbs_cipher_suite_t bbs_sha256_cipher_suite;

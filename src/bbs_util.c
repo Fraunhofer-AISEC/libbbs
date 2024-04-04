@@ -184,7 +184,7 @@ cleanup:
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 
 int
-expand_message_init (
+bbs_shake256_expand_message_init (
 	bbs_hash_ctx *ctx
 	)
 {
