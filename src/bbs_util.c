@@ -324,6 +324,66 @@ cleanup:
 	return res;
 }
 
+int expand_message_128_bytes (
+	bbs_cipher_suite_t *cipher_suite,
+	void *ctx,
+	uint8_t out[128],
+	const uint8_t *msg,
+	uint32_t msg_len,
+	const uint8_t *dst,
+	uint8_t dst_len
+	)
+{
+	return cipher_suite->expand_message_128_bytes(ctx, out, msg, msg_len, dst, dst_len);
+}
+
+int 
+bbs_sha256_expand_message_128_bytes(
+	void *ctx,
+	uint8_t out[128],
+	const uint8_t *msg,
+	uint32_t msg_len,
+	const uint8_t *dst,
+	uint8_t dst_len
+) {
+	RLC_TRY {
+		md_xmd (out, 128, msg, msg_len, dst, dst_len);
+	}
+	RLC_CATCH_ANY {
+		return BBS_ERROR;
+	}
+	return BBS_OK;
+}
+
+int 
+bbs_shake256_expand_message_128_bytes(
+	void *ctx,
+	uint8_t out[128],
+	const uint8_t *msg,
+	uint32_t msg_len,
+	const uint8_t *dst,
+	uint8_t dst_len
+) {
+	int res = BBS_ERROR;
+	goto cleanup;
+	// if (BBS_OK != expand_message_init (bbs_shake256_cipher_suite->hash_ctx))
+	// {
+	// 	goto cleanup;
+	// }
+	// if (BBS_OK != expand_message_update (cipher_suite->hash_ctx, state, 48))
+	// {
+	// 	goto cleanup;
+	// }
+	// if (BBS_OK != _expand_message_finalize (cipher_suite->hash_ctx, rand_buf, 128, dst_buf, api_id_len
+	// 					+ 18))
+	// {
+	// 	goto cleanup;
+	// }
+	res = BBS_OK;
+cleanup:
+	return res;
+}
+
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 
@@ -879,12 +939,12 @@ create_generator_next (
 	// Hash to curve g1
 	// relic does implement this as ep_map_sswum, but hard-codes the dst, so
 	// we need to reimplement the high level parts here
-	RLC_TRY {
 
-		#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-		md_xmd (rand_buf, 128, state, 48, dst_buf, api_id_len + 18);
+	if (BBS_OK != cipher_suite->expand_message_128_bytes(cipher_suite->hash_ctx, rand_buf, state, 48, dst_buf, cipher_suite->api_id_len + 18)) {
+		goto cleanup;
+	}
 
-		#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+		#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 		if (BBS_OK != expand_message_init (cipher_suite->hash_ctx))
 		{
 			goto cleanup;
@@ -900,7 +960,7 @@ create_generator_next (
 		}
 
 		#endif
-
+	RLC_TRY {
 		ep_map_from_field (generator, rand_buf, 128, ep_map_sswu);
 	}
 	RLC_CATCH_ANY {

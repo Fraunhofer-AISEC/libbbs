@@ -35,6 +35,7 @@ typedef struct {
 	int (*expand_message_init)(void *ctx);
 	int (*expand_message_update)(void *ctx, const uint8_t *msg, uint32_t msg_len);
 	int (*expand_message_finalize)(void *ctx, uint8_t out[48], const uint8_t *dst, uint8_t dst_len);
+	int (*expand_message_128_bytes)(void *ctx, uint8_t out[128], const uint8_t *msg, uint32_t msg_lg, const uint8_t *dst, uint8_t dst_len);
 	char *cipher_suite_id;
 	uint8_t cipher_suite_id_len;
 	char *default_key_dst;

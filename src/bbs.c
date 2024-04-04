@@ -29,6 +29,7 @@ bbs_cipher_suite_t bbs_sha256_cipher_suite = {
     .expand_message_init = bbs_sha256_expand_message_init,
     .expand_message_update = bbs_sha256_expand_message_update,
     .expand_message_finalize = bbs_sha256_expand_message_finalize,
+	.expand_message_128_bytes = bbs_sha256_expand_message_128_bytes,
 	.cipher_suite_id = (char*) BBS_SHA256_CIPHER_SUITE_ID,
 	.cipher_suite_id_len = BBS_SHA256_CIPHER_SUITE_LENGTH,
 	.default_key_dst = BBS_SHA256_DEFAULT_KEY_DST,

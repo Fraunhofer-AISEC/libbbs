@@ -119,6 +119,26 @@ _expand_message_finalize (
 	);
 #endif
 
+int expand_message_128_bytes (
+	bbs_cipher_suite_t *cipher_suite,
+	void *ctx,
+	uint8_t out[128],
+	const uint8_t *msg,
+	uint32_t msg_len,
+	const uint8_t *dst,
+	uint8_t dst_len
+	);
+
+int 
+bbs_sha256_expand_message_128_bytes(
+	void *ctx,
+	uint8_t out[128],
+	const uint8_t *msg,
+	uint32_t msg_len,
+	const uint8_t *dst,
+	uint8_t dst_len
+);
+
 int expand_message (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        out[48],
