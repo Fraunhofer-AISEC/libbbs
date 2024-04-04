@@ -25,6 +25,7 @@ bbs_cipher_suite_t bbs_sha256_cipher_suite = {
 	.hash_ctx = &bbs_sha256_hash_ctx_t,
 	.dom_ctx = &bbs_sha256_dom_ctx_t,
 	.ch_ctx = &bbs_sha256_ch_ctx_t,
+	.p1 = BBS_SHA256_P1,
     .expand_message_init = bbs_sha256_expand_message_init,
     .expand_message_update = bbs_sha256_expand_message_update,
     .expand_message_finalize = bbs_sha256_expand_message_finalize,
@@ -267,7 +268,7 @@ bbs_sign (
 		ep_new (H_i);
 
 		// Initialize B to P1
-		ep_read_bbs (B, P1);
+		ep_read_bbs (B, cipher_suite->p1);
 	}
 	RLC_CATCH_ANY {
 		goto cleanup;
@@ -467,7 +468,7 @@ bbs_verify (
 		fp12_new (paired2);
 
 		// Initialize B to P1, and parse signature
-		ep_read_bbs (B, P1);
+		ep_read_bbs (B, cipher_suite->p1);
 		ep_read_bbs (A, signature);
 		bn_read_bbs (e, signature + BBS_G1_ELEM_LEN);
 		ep2_read_bbs (W, pk);
@@ -686,7 +687,7 @@ bbs_proof_gen_det (
 		ep_new (Bbar);
 
 		// Initialize B to P1 and T2 to the identity
-		ep_read_bbs (B, P1);
+		ep_read_bbs (B, cipher_suite->p1);
 		ep_set_infty (T2);
 
 		// Parse the signature
@@ -1221,7 +1222,7 @@ bbs_proof_verify (
 		ep_add (T1, T1, T2);
 
 		// Initialize Bv to P1 and T2 to D*r3_hat
-		ep_read_bbs (Bv, P1);
+		ep_read_bbs (Bv, cipher_suite->p1);
 		ep_mul (T2, D, r3_hat);
 	}
 	RLC_CATCH_ANY {
