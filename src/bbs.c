@@ -21,6 +21,25 @@ SHA256Context bbs_sha256_hash_ctx_t;
 SHA256Context bbs_sha256_dom_ctx_t;
 SHA256Context bbs_sha256_ch_ctx_t;
 
+#define BBS_SHAKE256_CIPHER_SUITE_ID 		"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_"
+#define BBS_SHAKE256_CIPHER_SUITE_LENGTH 	37
+#define BBS_SHAKE256_DEFAULT_KEY_DST 		BBS_SHA256_CIPHER_SUITE_ID "KEYGEN_DST_"
+#define BBS_SHAKE256_DEFAULT_KEY_DST_LENGTH BBS_SHA256_CIPHER_SUITE_LENGTH + 11
+#define BBS_SHAKE256_API_ID          		BBS_SHA256_CIPHER_SUITE_ID "H2G_HM2S_"
+#define BBS_SHAKE256_API_ID_LENGTH   		BBS_SHA256_CIPHER_SUITE_LENGTH + 9
+#define BBS_SHAKE256_SIGNATURE_DST   		BBS_SHA256_API_ID "H2S_"
+#define BBS_SHAKE256_SIGNATURE_DST_LENGTH BBS_SHA256_API_ID_LENGTH + 4
+#define BBS_SHAKE256_CHALLENGE_DST   		BBS_SHA256_API_ID "H2S_"
+#define BBS_SHAKE256_CHALLENGE_DST_LENGTH BBS_SHA256_API_ID_LENGTH + 4
+#define BBS_SHAKE256_MAP_DST         		BBS_SHA256_API_ID "MAP_MSG_TO_SCALAR_AS_HASH_"
+#define BBS_SHAKE256_MAP_DST_LENGTH  		BBS_SHA256_API_ID_LENGTH + 26
+
+
+Keccak_HashInstance  bbs_shake256_hash_ctx_t;
+Keccak_HashInstance bbs_shake256_dom_ctx_t;
+Keccak_HashInstance bbs_shake256_ch_ctx_t;
+
+
 bbs_cipher_suite_t bbs_sha256_cipher_suite = {
 	.hash_ctx = &bbs_sha256_hash_ctx_t,
 	.dom_ctx = &bbs_sha256_dom_ctx_t,
@@ -28,8 +47,8 @@ bbs_cipher_suite_t bbs_sha256_cipher_suite = {
 	.p1 = BBS_SHA256_P1,
     .expand_message_init = bbs_sha256_expand_message_init,
     .expand_message_update = bbs_sha256_expand_message_update,
-    .expand_message_finalize = bbs_sha256_expand_message_finalize,
-	.expand_message_128_bytes = bbs_sha256_expand_message_128_bytes,
+    .expand_message_finalize_48B = bbs_sha256_expand_message_finalize_48B,
+	.expand_message_dyn = bbs_sha256_expand_message_dyn,
 	.cipher_suite_id = (char*) BBS_SHA256_CIPHER_SUITE_ID,
 	.cipher_suite_id_len = BBS_SHA256_CIPHER_SUITE_LENGTH,
 	.default_key_dst = BBS_SHA256_DEFAULT_KEY_DST,
@@ -42,6 +61,29 @@ bbs_cipher_suite_t bbs_sha256_cipher_suite = {
 	.challenge_dst_len = BBS_SHA256_CHALLENGE_DST_LENGTH,
 	.map_dst = BBS_SHA256_MAP_DST,
 	.map_dst_len = BBS_SHA256_MAP_DST_LENGTH,
+};
+
+bbs_cipher_suite_t bbs_shake256_cipher_suite = {
+	.hash_ctx = &bbs_shake256_hash_ctx_t,
+	.dom_ctx = &bbs_shake256_dom_ctx_t,
+	.ch_ctx = &bbs_shake256_ch_ctx_t,
+	.p1 = BBS_SHAKE256_P1,
+    .expand_message_init = bbs_shake256_expand_message_init,
+    .expand_message_update = bbs_shake256_expand_message_update,
+    .expand_message_finalize_48B = bbs_shake256_expand_message_finalize_48B,
+	.expand_message_dyn = bbs_shake256_expand_message_dyn,
+	.cipher_suite_id = (char*) BBS_SHAKE256_CIPHER_SUITE_ID,
+	.cipher_suite_id_len = BBS_SHAKE256_CIPHER_SUITE_LENGTH,
+	.default_key_dst = BBS_SHAKE256_DEFAULT_KEY_DST,
+	.default_key_dst_len = BBS_SHAKE256_DEFAULT_KEY_DST_LENGTH,
+	.api_id = BBS_SHAKE256_API_ID,
+	.api_id_len = BBS_SHAKE256_API_ID_LENGTH,
+	.signature_dst = BBS_SHAKE256_SIGNATURE_DST,
+	.signature_dst_len = BBS_SHAKE256_SIGNATURE_DST_LENGTH,
+	.challenge_dst = BBS_SHAKE256_CHALLENGE_DST,
+	.challenge_dst_len = BBS_SHAKE256_CHALLENGE_DST_LENGTH,
+	.map_dst = BBS_SHAKE256_MAP_DST,
+	.map_dst_len = BBS_SHAKE256_MAP_DST_LENGTH,
 };
 
 int

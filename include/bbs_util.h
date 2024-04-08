@@ -9,7 +9,7 @@
 #undef ALIGN
 #include <relic.h>
 
-// typedef Keccak_HashInstance  bbs_hash_ctx;
+// typedef ;
 
 // This header specifies useful functions for several utility algorithms.
 // Use these if you want to hack on BBS signatures and want to stay close to the
@@ -78,6 +78,11 @@ int bbs_sha256_expand_message_init (
 	void *ctx
 );
 
+int
+bbs_shake256_expand_message_init (
+	void *ctx
+);
+
 int expand_message_update (
 	bbs_cipher_suite_t *cipher_suite, 
 	void *ctx, 
@@ -92,7 +97,14 @@ bbs_sha256_expand_message_update (
 	uint32_t       msg_len
 );
 
-int expand_message_finalize (
+int
+bbs_shake256_expand_message_update (
+	void  *ctx,
+	const uint8_t *msg,
+	uint32_t       msg_len
+);
+
+int expand_message_finalize_48B (
 	bbs_cipher_suite_t *cipher_suite, 
 	void *ctx, 
 	uint8_t out[48], 
@@ -101,45 +113,70 @@ int expand_message_finalize (
 );
 
 int
-bbs_sha256_expand_message_finalize (
+bbs_sha256_expand_message_finalize_48B (
 	void  *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
 );
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
 int
-_expand_message_finalize (
+bbs_shake256_expand_message_finalize_48B (
 	void  *ctx,
-	uint8_t       *out,
-	size_t         out_len,
+	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
-	);
-#endif
+);
 
-int expand_message_128_bytes (
+int bbs_shake256_expand_message_finalize_dyn (
+	void  *ctx,
+	uint8_t       *out,
+	uint32_t 	   out_len,
+	const uint8_t *dst,
+	uint8_t        dst_len
+);
+
+/// @brief Expand a message to a dynamically sized output
+/// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
+int expand_message_dyn (
 	bbs_cipher_suite_t *cipher_suite,
 	void *ctx,
-	uint8_t out[128],
+	uint8_t *out,
+	uint32_t out_len,
 	const uint8_t *msg,
 	uint32_t msg_len,
 	const uint8_t *dst,
 	uint8_t dst_len
 	);
 
+/// @brief Expand a message to a dynamically sized output with sha256 hashing
+/// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
 int 
-bbs_sha256_expand_message_128_bytes(
+bbs_sha256_expand_message_dyn(
 	void *ctx,
-	uint8_t out[128],
+	uint8_t *out,
+	uint32_t out_len,
 	const uint8_t *msg,
 	uint32_t msg_len,
 	const uint8_t *dst,
 	uint8_t dst_len
 );
 
-int expand_message (
+/// @brief Expand a message to a 128 byte output with shake256 hashing
+/// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
+int 
+bbs_shake256_expand_message_dyn(
+	void *ctx,
+	uint8_t *out,
+	uint32_t out_len,
+	const uint8_t *msg,
+	uint32_t msg_len,
+	const uint8_t *dst,
+	uint8_t dst_len
+);
+
+/// Expand a message to a 48 byte output
+int expand_message_48B (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        out[48],
 	const uint8_t *dst,

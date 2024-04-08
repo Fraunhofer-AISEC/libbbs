@@ -180,15 +180,13 @@ cleanup:
 	return res;
 }
 
-
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
 int
 bbs_shake256_expand_message_init (
 	void *ctx
 	)
 {
-	HashReturn res = Keccak_HashInitialize_SHAKE256 (ctx);
+	Keccak_HashInstance *shake_ctx = (Keccak_HashInstance*) ctx;
+	HashReturn res = Keccak_HashInitialize_SHAKE256 (shake_ctx);
 	if (res == KECCAK_SUCCESS)
 	{
 		return BBS_OK;
@@ -198,8 +196,6 @@ bbs_shake256_expand_message_init (
 		return BBS_ERROR;
 	}
 }
-
-#endif
 
 int expand_message_update(bbs_cipher_suite_t *cipher_suite, void *ctx, const uint8_t *msg, uint32_t msg_len) {
 	return cipher_suite->expand_message_update(ctx, msg, msg_len);
@@ -223,17 +219,15 @@ cleanup:
 	return res;
 }
 
-
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
 int
-expand_message_update (
+bbs_shake256_expand_message_update (
 	void  *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
 {
-	HashReturn res = Keccak_HashUpdate (ctx, msg, msg_len * 8);
+	Keccak_HashInstance *shake_ctx = (Keccak_HashInstance*) ctx;
+	HashReturn res = Keccak_HashUpdate (shake_ctx, msg, msg_len * 8);
 	if (res == KECCAK_SUCCESS)
 	{
 		return BBS_OK;
@@ -244,14 +238,12 @@ expand_message_update (
 	}
 }
 
-#endif
-
-int expand_message_finalize(bbs_cipher_suite_t *cipher_suite, void *ctx, uint8_t out[48], const uint8_t *dst, uint8_t dst_len) {
-	return cipher_suite->expand_message_finalize(ctx, out, dst, dst_len);
+int expand_message_finalize_48B(bbs_cipher_suite_t *cipher_suite, void *ctx, uint8_t out[48], const uint8_t *dst, uint8_t dst_len) {
+	return cipher_suite->expand_message_finalize_48B(ctx, out, dst, dst_len);
 }
 
 int
-bbs_sha256_expand_message_finalize (
+bbs_sha256_expand_message_finalize_48B (
 	void  *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
@@ -324,30 +316,48 @@ cleanup:
 	return res;
 }
 
-int expand_message_128_bytes (
+/**
+ * @brief Finalizes the expand_message xof operation with fixed output size of 48 bytes.
+ *
+ * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
+*/
+int
+bbs_shake256_expand_message_finalize_48B (
+	void  *ctx,
+	uint8_t        out[48],
+	const uint8_t *dst,
+	uint8_t        dst_len
+	)
+{
+	return bbs_shake256_expand_message_finalize_dyn (ctx, out, 48, dst, dst_len);
+}
+
+int expand_message_dyn (
 	bbs_cipher_suite_t *cipher_suite,
 	void *ctx,
-	uint8_t out[128],
+	uint8_t *out,
+	uint32_t out_len,
 	const uint8_t *msg,
 	uint32_t msg_len,
 	const uint8_t *dst,
 	uint8_t dst_len
 	)
 {
-	return cipher_suite->expand_message_128_bytes(ctx, out, msg, msg_len, dst, dst_len);
+	return cipher_suite->expand_message_dyn(ctx, out, out_len, msg, msg_len, dst, dst_len);
 }
 
 int 
-bbs_sha256_expand_message_128_bytes(
+bbs_sha256_expand_message_dyn(
 	void *ctx,
-	uint8_t out[128],
+	uint8_t *out,
+	uint32_t out_len,
 	const uint8_t *msg,
 	uint32_t msg_len,
 	const uint8_t *dst,
 	uint8_t dst_len
 ) {
 	RLC_TRY {
-		md_xmd (out, 128, msg, msg_len, dst, dst_len);
+		md_xmd (out, out_len, msg, msg_len, dst, dst_len);
 	}
 	RLC_CATCH_ANY {
 		return BBS_ERROR;
@@ -355,48 +365,16 @@ bbs_sha256_expand_message_128_bytes(
 	return BBS_OK;
 }
 
-int 
-bbs_shake256_expand_message_128_bytes(
-	void *ctx,
-	uint8_t out[128],
-	const uint8_t *msg,
-	uint32_t msg_len,
-	const uint8_t *dst,
-	uint8_t dst_len
-) {
-	int res = BBS_ERROR;
-	goto cleanup;
-	// if (BBS_OK != expand_message_init (bbs_shake256_cipher_suite->hash_ctx))
-	// {
-	// 	goto cleanup;
-	// }
-	// if (BBS_OK != expand_message_update (cipher_suite->hash_ctx, state, 48))
-	// {
-	// 	goto cleanup;
-	// }
-	// if (BBS_OK != _expand_message_finalize (cipher_suite->hash_ctx, rand_buf, 128, dst_buf, api_id_len
-	// 					+ 18))
-	// {
-	// 	goto cleanup;
-	// }
-	res = BBS_OK;
-cleanup:
-	return res;
-}
-
-
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
 /**
  * @brief Finalizes the expand_message xof operation with flexible output size.
  *
  * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
 */
 int
-_expand_message_finalize (
+bbs_shake256_expand_message_finalize_dyn (
 	void  *ctx,
 	uint8_t       *out,
-	size_t         out_len,
+	uint32_t         out_len,
 	const uint8_t *dst,
 	uint8_t        dst_len
 	)
@@ -432,27 +410,42 @@ cleanup:
 }
 
 
-/**
- * @brief Finalizes the expand_message xof operation with fixed output size of 48 bytes.
- *
- * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
-*/
-int
-expand_message_finalize (
-	void  *ctx,
-	uint8_t        out[48],
+int 
+bbs_shake256_expand_message_dyn(
+	void *ctx,
+	uint8_t *out,
+	uint32_t out_len,
+	const uint8_t *msg,
+	uint32_t msg_len,
 	const uint8_t *dst,
-	uint8_t        dst_len
-	)
-{
-	return _expand_message_finalize (ctx, out, 48, dst, dst_len);
+	uint8_t dst_len
+) {
+	Keccak_HashInstance *shake_ctx = (Keccak_HashInstance*) ctx;
+	int          res     = BBS_ERROR;
+
+	if (BBS_OK !=  bbs_shake256_expand_message_init(shake_ctx))
+	{
+		goto cleanup;
+	}
+
+	if (BBS_OK != bbs_shake256_expand_message_update (shake_ctx, msg, msg_len))
+	{
+		goto cleanup;
+	}
+
+	if (BBS_OK != bbs_shake256_expand_message_finalize_dyn (shake_ctx, out, 128, dst, dst_len))
+	{
+		goto cleanup;
+	}
+
+	res = BBS_OK;
+cleanup:
+	return res;
 }
 
 
-#endif
-
 int
-expand_message (
+expand_message_48B (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t        out[48],
 	const uint8_t *dst,
@@ -481,7 +474,7 @@ expand_message (
 	}
 	va_end (ap);
 
-	if (BBS_OK != cipher_suite->expand_message_finalize (cipher_suite->hash_ctx, out, dst, dst_len))
+	if (BBS_OK != cipher_suite->expand_message_finalize_48B (cipher_suite->hash_ctx, out, dst, dst_len))
 	{
 		goto cleanup;
 	}
@@ -526,7 +519,7 @@ hash_to_scalar_finalize (
 	uint8_t buffer[48];
 	int     res = BBS_ERROR;
 
-	if (BBS_OK != cipher_suite->expand_message_finalize (ctx, buffer, dst, dst_len))
+	if (BBS_OK != cipher_suite->expand_message_finalize_48B (ctx, buffer, dst, dst_len))
 	{
 		goto cleanup;
 	}
@@ -777,7 +770,7 @@ create_generator_init (
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_finalize (cipher_suite, cipher_suite->hash_ctx, state, buffer, api_id_len + 19))
+	if (BBS_OK != expand_message_finalize_48B (cipher_suite, cipher_suite->hash_ctx, state, buffer, api_id_len + 19))
 	{
 		goto cleanup;
 	}
@@ -928,7 +921,7 @@ create_generator_next (
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_finalize (cipher_suite, cipher_suite->hash_ctx, state, dst_buf, api_id_len + 19))
+	if (BBS_OK != expand_message_finalize_48B (cipher_suite, cipher_suite->hash_ctx, state, dst_buf, api_id_len + 19))
 	{
 		goto cleanup;
 	}
@@ -940,26 +933,10 @@ create_generator_next (
 	// relic does implement this as ep_map_sswum, but hard-codes the dst, so
 	// we need to reimplement the high level parts here
 
-	if (BBS_OK != cipher_suite->expand_message_128_bytes(cipher_suite->hash_ctx, rand_buf, state, 48, dst_buf, cipher_suite->api_id_len + 18)) {
+	if (BBS_OK != cipher_suite->expand_message_dyn(cipher_suite->hash_ctx, rand_buf, 128, state, 48, dst_buf, cipher_suite->api_id_len + 18)) {
 		goto cleanup;
 	}
 
-		#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-		if (BBS_OK != expand_message_init (cipher_suite->hash_ctx))
-		{
-			goto cleanup;
-		}
-		if (BBS_OK != expand_message_update (cipher_suite->hash_ctx, state, 48))
-		{
-			goto cleanup;
-		}
-		if (BBS_OK != _expand_message_finalize (cipher_suite->hash_ctx, rand_buf, 128, dst_buf, api_id_len
-							+ 18))
-		{
-			goto cleanup;
-		}
-
-		#endif
 	RLC_TRY {
 		ep_map_from_field (generator, rand_buf, 128, ep_map_sswu);
 	}
