@@ -51,6 +51,7 @@ typedef struct {
 } bbs_cipher_suite_t;
 
 extern bbs_cipher_suite_t bbs_sha256_cipher_suite;
+extern bbs_cipher_suite_t bbs_shake256_cipher_suite;
 
 // Octet string lengths
 #define BBS_SK_LEN 32

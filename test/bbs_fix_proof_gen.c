@@ -151,33 +151,17 @@ fill_randomness (
 	int out_len = count * 48;
 
 	#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-
-	RLC_TRY {
-		md_xmd (rand, out_len, seed, seed_len, dst, dst_len);
-	}
-	RLC_CATCH_ANY {
-		goto cleanup;
-	}
-	ret = BBS_OK;
-
+	bbs_cipher_suite_t cipher_suite = bbs_sha256_cipher_suite;
 	#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
-	Keccak_HashInstance hctx;
-	if (BBS_OK != expand_message_init (&hctx))
-	{
-		goto cleanup;
-	}
-	if (BBS_OK != expand_message_update (&hctx, seed, seed_len))
-	{
-		goto cleanup;
-	}
-	if (BBS_OK != _expand_message_finalize (&hctx, rand, out_len, dst, dst_len))
-	{
-		goto cleanup;
-	}
-	ret = BBS_OK;
-
+	bbs_cipher_suite_t cipher_suite = bbs_shake256_cipher_suite;
 	#endif
+
+	if (BBS_OK != expand_message_dyn(&cipher_suite, cipher_suite.hash_ctx, rand, out_len, seed, seed_len, dst, dst_len))
+	{
+		goto cleanup;
+	}
+	
+	ret = BBS_OK;
 
 cleanup:
 	return ret;

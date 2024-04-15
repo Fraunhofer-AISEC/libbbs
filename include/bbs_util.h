@@ -70,182 +70,175 @@ void ep2_read_bbs (
 // relic implements this as md_xmd, but here we built it with an incremental API
 // or varargs for the message
 int expand_message_init (
-	bbs_cipher_suite_t *cipher_suite, 
-	void *ctx
-);
+	bbs_cipher_suite_t *cipher_suite,
+	void               *ctx
+	);
 
 int bbs_sha256_expand_message_init (
 	void *ctx
-);
+	);
 
-int
-bbs_shake256_expand_message_init (
+int bbs_shake256_expand_message_init (
 	void *ctx
-);
+	);
 
 int expand_message_update (
-	bbs_cipher_suite_t *cipher_suite, 
-	void *ctx, 
-	const uint8_t *msg, 
-	uint32_t msg_len
-);
+	bbs_cipher_suite_t *cipher_suite,
+	void               *ctx,
+	const uint8_t      *msg,
+	uint32_t            msg_len
+	);
 
-int
-bbs_sha256_expand_message_update (
-	void  *ctx,
+int bbs_sha256_expand_message_update (
+	void          *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
-);
+	);
 
-int
-bbs_shake256_expand_message_update (
-	void  *ctx,
+int bbs_shake256_expand_message_update (
+	void          *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
-);
+	);
 
 int expand_message_finalize_48B (
-	bbs_cipher_suite_t *cipher_suite, 
-	void *ctx, 
-	uint8_t out[48], 
-	const uint8_t *dst, 
-	uint8_t dst_len
-);
+	bbs_cipher_suite_t *cipher_suite,
+	void               *ctx,
+	uint8_t             out[48],
+	const uint8_t      *dst,
+	uint8_t             dst_len
+	);
 
-int
-bbs_sha256_expand_message_finalize_48B (
-	void  *ctx,
+int bbs_sha256_expand_message_finalize_48B (
+	void          *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
-);
+	);
 
-int
-bbs_shake256_expand_message_finalize_48B (
-	void  *ctx,
+int bbs_shake256_expand_message_finalize_48B (
+	void          *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
-);
+	);
 
 int bbs_shake256_expand_message_finalize_dyn (
-	void  *ctx,
+	void          *ctx,
 	uint8_t       *out,
-	uint32_t 	   out_len,
+	uint32_t       out_len,
 	const uint8_t *dst,
 	uint8_t        dst_len
-);
+	);
 
 /// @brief Expand a message to a dynamically sized output
 /// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
 int expand_message_dyn (
 	bbs_cipher_suite_t *cipher_suite,
-	void *ctx,
-	uint8_t *out,
-	uint32_t out_len,
-	const uint8_t *msg,
-	uint32_t msg_len,
-	const uint8_t *dst,
-	uint8_t dst_len
+	void               *ctx,
+	uint8_t            *out,
+	uint32_t            out_len,
+	const uint8_t      *msg,
+	uint32_t            msg_len,
+	const uint8_t      *dst,
+	uint8_t             dst_len
 	);
 
 /// @brief Expand a message to a dynamically sized output with sha256 hashing
 /// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
-int 
-bbs_sha256_expand_message_dyn(
-	void *ctx,
-	uint8_t *out,
-	uint32_t out_len,
+int bbs_sha256_expand_message_dyn (
+	void          *ctx,
+	uint8_t       *out,
+	uint32_t       out_len,
 	const uint8_t *msg,
-	uint32_t msg_len,
+	uint32_t       msg_len,
 	const uint8_t *dst,
-	uint8_t dst_len
-);
+	uint8_t        dst_len
+	);
 
 /// @brief Expand a message to a 128 byte output with shake256 hashing
 /// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
-int 
-bbs_shake256_expand_message_dyn(
-	void *ctx,
-	uint8_t *out,
-	uint32_t out_len,
+int bbs_shake256_expand_message_dyn (
+	void          *ctx,
+	uint8_t       *out,
+	uint32_t       out_len,
 	const uint8_t *msg,
-	uint32_t msg_len,
+	uint32_t       msg_len,
 	const uint8_t *dst,
-	uint8_t dst_len
-);
+	uint8_t        dst_len
+	);
 
 /// Expand a message to a 48 byte output
 int expand_message_48B (
 	bbs_cipher_suite_t *cipher_suite,
-	uint8_t        out[48],
-	const uint8_t *dst,
-	uint8_t        dst_len,
+	uint8_t             out[48],
+	const uint8_t      *dst,
+	uint8_t             dst_len,
 	...
 	);
 
 // Hash to Scalar
 int hash_to_scalar_init (
 	bbs_cipher_suite_t *cipher_suite,
-	void *ctx
+	void               *ctx
 	);
 
 int hash_to_scalar_update (
 	bbs_cipher_suite_t *cipher_suite,
-	void  *ctx,
-	const uint8_t *msg,
-	uint32_t       msg_len
+	void               *ctx,
+	const uint8_t      *msg,
+	uint32_t            msg_len
 	);
 
 int hash_to_scalar_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	void  *ctx,
-	bn_t           out,
-	const uint8_t *dst,
-	uint8_t        dst_len
+	void               *ctx,
+	bn_t                out,
+	const uint8_t      *dst,
+	uint8_t             dst_len
 	);
 
 int hash_to_scalar (
 	bbs_cipher_suite_t *cipher_suite,
-	bn_t           out,
-	const uint8_t *dst,
-	uint8_t        dst_len,
+	bn_t                out,
+	const uint8_t      *dst,
+	uint8_t             dst_len,
 	...
 	);
 
 // you need to call update exactly num_messages + 1 times.
 int calculate_domain_init (
 	bbs_cipher_suite_t *cipher_suite,
-	void  *ctx,
-	const uint8_t  pk[BBS_PK_LEN],
-	uint64_t       num_messages
+	void               *ctx,
+	const uint8_t       pk[BBS_PK_LEN],
+	uint64_t            num_messages
 	);
 
 int calculate_domain_update (
 	bbs_cipher_suite_t *cipher_suite,
-	void *ctx,
-	const ep_t    generator
+	void               *ctx,
+	const ep_t          generator
 	);
 
 int calculate_domain_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	void  *ctx,
-	bn_t           out,
-	const uint8_t *header,
-	uint64_t       header_len,
-	const uint8_t *api_id,
-	uint8_t        api_id_len
+	void               *ctx,
+	bn_t                out,
+	const uint8_t      *header,
+	uint64_t            header_len,
+	const uint8_t      *api_id,
+	uint8_t             api_id_len
 	);
 
 int calculate_domain (
 	bbs_cipher_suite_t *cipher_suite,
-	bn_t           out,
-	const uint8_t  pk[BBS_PK_LEN],
-	uint64_t       num_messages,
-	const uint8_t *header,
-	uint64_t       header_len,
-	const uint8_t *api_id,
-	uint8_t        api_id_len,
+	bn_t                out,
+	const uint8_t       pk[BBS_PK_LEN],
+	uint64_t            num_messages,
+	const uint8_t      *header,
+	uint64_t            header_len,
+	const uint8_t      *api_id,
+	uint8_t             api_id_len,
 	...
 	);
 
@@ -260,9 +253,9 @@ int calculate_domain (
 */
 int create_generator_init (
 	bbs_cipher_suite_t *cipher_suite,
-	uint8_t        state[48 + 8],
-	const uint8_t *api_id,
-	uint8_t        api_id_len
+	uint8_t             state[48 + 8],
+	const uint8_t      *api_id,
+	uint8_t             api_id_len
 	);
 
 /**
@@ -277,10 +270,10 @@ int create_generator_init (
  */
 int create_generator_next (
 	bbs_cipher_suite_t *cipher_suite,
-	uint8_t        state[48 + 8],
-	ep_t           generator,
-	const uint8_t *api_id,
-	uint8_t        api_id_len
+	uint8_t             state[48 + 8],
+	ep_t                generator,
+	const uint8_t      *api_id,
+	uint8_t             api_id_len
 	);
 
 // You can control the randomness for bbs_proof_gen by supplying a prf.
