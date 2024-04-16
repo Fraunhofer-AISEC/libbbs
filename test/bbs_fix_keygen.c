@@ -1,23 +1,6 @@
 #include "fixtures.h"
 #include "test_util.h"
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-#define key_gen              bbs_sha256_keygen
-#define cipher_suite         bbs_sha256_cipher_suite
-#define fixture_key_material fixture_bls12_381_sha_256_key_material
-#define fixture_key_info     fixture_bls12_381_sha_256_key_info
-#define fixture_key_dst      fixture_bls12_381_sha_256_key_dst
-#define fixture_SK           fixture_bls12_381_sha_256_SK
-#define fixture_PK           fixture_bls12_381_sha_256_PK
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#define key_gen              bbs_shake256_keygen
-#define fixture_key_material fixture_bls12_381_shake_256_key_material
-#define fixture_key_info     fixture_bls12_381_shake_256_key_info
-#define fixture_key_dst      fixture_bls12_381_shake_256_key_dst
-#define fixture_SK           fixture_bls12_381_shake_256_SK
-#define fixture_PK           fixture_bls12_381_shake_256_PK
-#endif
-
 typedef struct
 {
 	int (*key_gen) (
