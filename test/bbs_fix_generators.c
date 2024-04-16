@@ -100,4 +100,5 @@ bbs_fix_generators ()
 			ASSERT_EQ_PTR ("generator creation", bin, fixture.hs[j], BBS_G1_ELEM_LEN);
 		}
 	}
+	return 0;
 }
