@@ -9,19 +9,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CheckCCompilerFlag OPTIONAL)
 include(CTest)
 
-# Set default build type to Release if not specified
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
-
-# Add debug flag for Debug builds
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
-
-# Optional: Include debug symbols in RelWithDebInfo builds
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -g")
-
-
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}"
         DESTINATION ${CMAKE_INSTALL_PREFIX})
 
