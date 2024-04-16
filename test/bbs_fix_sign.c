@@ -138,6 +138,7 @@ bbs_fix_sign ()
 	for (int cipher_suite_index = 0; cipher_suite_index < 2; cipher_suite_index++ )
 	{
 		bbs_fix_sign_fixture_t test_case = fixtures[cipher_suite_index];
+		printf("Testing cipher suite %s\n", test_case.cipher_suite.cipher_suite_id);
 		if (core_init () != RLC_OK)
 		{
 			core_clean ();
