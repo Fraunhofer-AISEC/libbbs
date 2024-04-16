@@ -1,65 +1,73 @@
 #include "fixtures.h"
 #include "test_util.h"
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-#define cipher_suite            bbs_sha256_cipher_suite
-#define fixture_msg             fixture_bls12_381_sha_256_h2s_msg
-#define fixture_msg_len         32
-#define fixture_dst             fixture_bls12_381_sha_256_h2s_dst
-#define fixture_dst_len         48
-#define fixture_expected_scalar fixture_bls12_381_sha_256_h2s_scalar
-#define fixture_scalar_len      32
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#define cipher_suite            bbs_shake256_cipher_suite
-#define fixture_msg             fixture_bls12_381_shake_256_h2s_msg
-#define fixture_msg_len         32
-#define fixture_dst             fixture_bls12_381_shake_256_h2s_dst
-#define fixture_dst_len         50
-#define fixture_expected_scalar fixture_bls12_381_shake_256_h2s_scalar
-#define fixture_scalar_len      32
-#endif
+
+typedef struct
+{
+	bbs_cipher_suite_t *cipher_suite;
+	uint8_t            *msg;
+	uint16_t            msg_len;
+	uint8_t            *dst;
+	uint16_t            dst_len;
+	uint8_t            *scalar;
+	uint16_t            scalar_len;
+} bbs_fix_hash_to_scalar_fixture_t;
 
 int
 bbs_fix_hash_to_scalar ()
 {
-	if (core_init () != RLC_OK)
-	{
-		core_clean ();
-		return 1;
-	}
-	if (pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
-		return 1;
-	}
+	bbs_fix_hash_to_scalar_fixture_t test_cases[] = {
+		{
+			.cipher_suite = &bbs_sha256_cipher_suite,
+			.msg          = fixture_bls12_381_sha_256_h2s_msg, .msg_len     = 32,
+			.dst          = fixture_bls12_381_sha_256_h2s_dst, .dst_len     = 48,
+			.scalar       = fixture_bls12_381_sha_256_h2s_scalar, .scalar_len  = 32,
+		},{
+			.cipher_suite = &bbs_shake256_cipher_suite,
+			.msg          = fixture_bls12_381_shake_256_h2s_msg, .msg_len     = 32,
+			.dst          = fixture_bls12_381_shake_256_h2s_dst, .dst_len     = 50,
+			.scalar       = fixture_bls12_381_shake_256_h2s_scalar, .scalar_len  = 32,
+		}
+	};
 
-	uint8_t bin[BBS_SCALAR_LEN];
-	bn_t    scalar;
-	bn_null (scalar);
-	RLC_TRY {
-		bn_new (scalar);
-	}
-	RLC_CATCH_ANY {
-		puts ("Internal Error");
-		return 1;
-	}
-
-	if (BBS_OK != hash_to_scalar (&cipher_suite,
-				      scalar,
-				      fixture_dst,
-				      fixture_dst_len,
-				      fixture_msg,
-				      fixture_msg_len,
-				      0))
+	for (int i = 0; i < 2; i++)
 	{
-		puts ("Error during hash to scalar");
-		return 1;
-	}
-	RLC_TRY {
-		bn_write_bbs (bin, scalar);
-	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
+		bbs_fix_hash_to_scalar_fixture_t fixture = test_cases[i];
 
-	ASSERT_EQ ("hash to scalar", bin, fixture_expected_scalar);
+		if (core_init () != RLC_OK)
+		{
+			core_clean ();
+			return 1;
+		}
+		if (pc_param_set_any () != RLC_OK)
+		{
+			core_clean ();
+			return 1;
+		}
+
+		uint8_t bin[BBS_SCALAR_LEN];
+		bn_t    scalar;
+		bn_null (scalar);
+		RLC_TRY {
+			bn_new (scalar);
+		}
+		RLC_CATCH_ANY {
+			puts ("Internal Error");
+			return 1;
+		}
+
+		if (BBS_OK != hash_to_scalar (fixture.cipher_suite, scalar, fixture.dst, fixture.dst_len,
+					      fixture.msg, fixture.msg_len, 0))
+		{
+			puts ("Error during hash to scalar");
+			return 1;
+		}
+		RLC_TRY {
+			bn_write_bbs (bin, scalar);
+		} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
+
+		ASSERT_EQ_PTR ("hash to scalar", bin, fixture.scalar, fixture.scalar_len);
+	}
 
 	return 0;
 }
