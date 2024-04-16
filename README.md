@@ -22,8 +22,6 @@ cmake ..
 make install
 ```
 
-`BBS_CIPHER_SUITE` cmake Options: `BLS12381-SHA-256` (default), `BLS12-381-SHAKE-256`, e.g. `cmake .. -DBBS_CIPHER_SUITE=BLS12-381-SHA-256`
-
 ### Test
 
 ```zsh
@@ -33,5 +31,3 @@ cmake ..
 make -j
 make test
 ```
-
-Debug compilation with cmake flag `-DCMAKE_BUILD_TYPE=Debug`
