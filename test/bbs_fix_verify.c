@@ -2,7 +2,7 @@
 #include "test_util.h"
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-#define verify bbs_sha256_verify
+#define verify               bbs_sha256_verify
 #define signature1_SK        fixture_bls12_381_sha_256_signature1_SK
 #define signature1_PK        fixture_bls12_381_sha_256_signature1_PK
 #define signature1_header    fixture_bls12_381_sha_256_signature1_header
@@ -25,7 +25,7 @@
 #define signature2_signature fixture_bls12_381_sha_256_signature2_signature
 
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#define verify bbs_shake256_verify
+#define verify               bbs_shake256_verify
 #define signature1_SK        fixture_bls12_381_shake_256_signature1_SK
 #define signature1_PK        fixture_bls12_381_shake_256_signature1_PK
 #define signature1_header    fixture_bls12_381_shake_256_signature1_header
@@ -63,23 +63,38 @@ bbs_fix_verify ()
 		return 1;
 	}
 
-	if (BBS_OK != verify (signature1_PK, signature1_signature, signature1_header, sizeof(
-					  signature1_header), 1, signature1_m_1, sizeof(
-					  signature1_m_1)))
+	if (BBS_OK != verify (signature1_PK, signature1_signature, signature1_header,
+			      sizeof(signature1_header), 1, signature1_m_1, sizeof(signature1_m_1)))
 	{
 		puts ("Error during signature 1 verification");
 		return 1;
 	}
 
-	if (BBS_OK != verify (signature2_PK, signature2_signature, signature2_header, sizeof(
-					  signature2_header), 10, signature2_m_1, sizeof(
-					  signature2_m_1), signature2_m_2, sizeof(signature2_m_2),
-				  signature2_m_3, sizeof(signature2_m_3), signature2_m_4, sizeof(
-					  signature2_m_4), signature2_m_5, sizeof(signature2_m_5),
-				  signature2_m_6, sizeof(signature2_m_6), signature2_m_7, sizeof(
-					  signature2_m_7), signature2_m_8, sizeof(signature2_m_8),
-				  signature2_m_9, sizeof(signature2_m_9), signature2_m_10, sizeof(
-					  signature2_m_10)))
+	if (BBS_OK != verify (signature2_PK,
+			      signature2_signature,
+			      signature2_header,
+			      sizeof(signature2_header),
+			      10,
+			      signature2_m_1,
+			      sizeof(signature2_m_1),
+			      signature2_m_2,
+			      sizeof(signature2_m_2),
+			      signature2_m_3,
+			      sizeof(signature2_m_3),
+			      signature2_m_4,
+			      sizeof(signature2_m_4),
+			      signature2_m_5,
+			      sizeof(signature2_m_5),
+			      signature2_m_6,
+			      sizeof(signature2_m_6),
+			      signature2_m_7,
+			      sizeof(signature2_m_7),
+			      signature2_m_8,
+			      sizeof(signature2_m_8),
+			      signature2_m_9,
+			      sizeof(signature2_m_9),
+			      signature2_m_10,
+			      sizeof(signature2_m_10)))
 	{
 		puts ("Error during signature 2 verification");
 		return 1;

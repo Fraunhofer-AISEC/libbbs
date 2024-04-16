@@ -9,15 +9,13 @@
 #undef ALIGN
 #include <relic.h>
 
-// typedef ;
-
 // This header specifies useful functions for several utility algorithms.
 // Use these if you want to hack on BBS signatures and want to stay close to the
 // RFC draft.
 
 #define LEN(m)          (sizeof(m) / sizeof(m[0]))
-#define DEBUG(p, a, l)  do { puts (p); for (int xx = 0; xx<l; xx++) printf ("%02x ", a[xx]); puts ( \
-				     ""); } while (0);
+#define DEBUG(p, a, l)  do { puts (p); for (int xx = 0; xx<l; xx++) printf ("%02x ", a[xx]); \
+			     puts (""); } while (0);
 
 #define BBS_SCALAR_LEN  32
 #define BBS_G1_ELEM_LEN 48

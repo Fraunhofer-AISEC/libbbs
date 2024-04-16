@@ -2,7 +2,7 @@
 #include "test_util.h"
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-#define cipher_suite bbs_sha256_cipher_suite
+#define cipher_suite               bbs_sha256_cipher_suite
 #define proof_SEED                 fixture_bls12_381_sha_256_proof_SEED
 #define proof_DST                  fixture_bls12_381_sha_256_proof_DST
 #define proof_random_scalar_1      fixture_bls12_381_sha_256_proof_random_scalar_1
@@ -49,7 +49,7 @@
 #define proof3_proof               fixture_bls12_381_sha_256_proof3_proof
 
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#define cipher_suite bbs_shake256_cipher_suite
+#define cipher_suite               bbs_shake256_cipher_suite
 #define proof_SEED                 fixture_bls12_381_shake_256_proof_SEED
 #define proof_DST                  fixture_bls12_381_shake_256_proof_DST
 #define proof_random_scalar_1      fixture_bls12_381_shake_256_proof_random_scalar_1
@@ -150,11 +150,18 @@ fill_randomness (
 	int ret     = BBS_ERROR;
 	int out_len = count * 48;
 
-	if (BBS_OK != expand_message_dyn(&cipher_suite, cipher_suite.hash_ctx, rand, out_len, seed, seed_len, dst, dst_len))
+	if (BBS_OK != expand_message_dyn (&cipher_suite,
+					  cipher_suite.hash_ctx,
+					  rand,
+					  out_len,
+					  seed,
+					  seed_len,
+					  dst,
+					  dst_len))
 	{
 		goto cleanup;
 	}
-	
+
 	ret = BBS_OK;
 
 cleanup:
@@ -183,16 +190,30 @@ mocked_proof_gen (
 	int     ret = BBS_ERROR;
 	va_start (ap, num_messages);
 
-	if (BBS_OK != fill_randomness (randomness, 5 + num_messages - disclosed_indexes_len,
-				       proof_SEED, sizeof(proof_SEED), proof_DST, sizeof(proof_DST))
+	if (BBS_OK != fill_randomness (randomness,
+				       5 + num_messages - disclosed_indexes_len,
+				       proof_SEED,
+				       sizeof(proof_SEED),
+				       proof_DST,
+				       sizeof(proof_DST))
 	    )
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != bbs_proof_gen_det (&cipher_suite, pk, signature, proof, header, header_len,
-					 presentation_header, presentation_header_len,
-					 disclosed_indexes, disclosed_indexes_len, num_messages,
-					 mocked_prf, randomness, ap))
+	if (BBS_OK != bbs_proof_gen_det (&cipher_suite,
+					 pk,
+					 signature,
+					 proof,
+					 header,
+					 header_len,
+					 presentation_header,
+					 presentation_header_len,
+					 disclosed_indexes,
+					 disclosed_indexes_len,
+					 num_messages,
+					 mocked_prf,
+					 randomness,
+					 ap))
 	{
 		goto cleanup;
 	}
@@ -232,8 +253,12 @@ bbs_fix_proof_gen ()
 		puts ("Internal error");
 		return 1;
 	}
-	if (BBS_OK != fill_randomness (randomness, 10, proof_SEED, LEN (proof_SEED), proof_DST, LEN
-					       (proof_DST)))
+	if (BBS_OK != fill_randomness (randomness,
+				       10,
+				       proof_SEED,
+				       LEN (proof_SEED),
+				       proof_DST,
+				       LEN (proof_DST)))
 	{
 		puts ("Error during randomness generation self test");
 		return 1;
@@ -322,11 +347,19 @@ bbs_fix_proof_gen ()
 
 	uint8_t proof1[BBS_PROOF_LEN (0)];
 	BBS_BENCH_START ()
-	if (BBS_OK != mocked_proof_gen (proof1_public_key, proof1_signature, proof1, proof1_header,
-					sizeof(proof1_header), proof1_presentation_header, sizeof(
-						proof1_presentation_header), proof1_revealed_indexes
-					, LEN (proof1_revealed_indexes), 1, // num_messages
-					proof1_m_1, sizeof(proof1_m_1)))
+	if (BBS_OK != mocked_proof_gen (proof1_public_key,
+					proof1_signature,
+					proof1,
+					proof1_header,
+					sizeof(proof1_header),
+					proof1_presentation_header,
+					sizeof(proof1_presentation_header),
+					proof1_revealed_indexes,
+					LEN (proof1_revealed_indexes),
+					1,
+	                                // num_messages
+					proof1_m_1,
+					sizeof(proof1_m_1)))
 	{
 		puts ("Error during proof 1 generation");
 		return 1;
@@ -335,17 +368,36 @@ bbs_fix_proof_gen ()
 	ASSERT_EQ ("proof 1 generation", proof1, proof1_proof);
 
 	uint8_t proof2[BBS_PROOF_LEN (0)];
-	if (BBS_OK != mocked_proof_gen (proof2_public_key, proof2_signature, proof2, proof2_header,
-					sizeof(proof2_header), proof2_presentation_header, sizeof(
-						proof2_presentation_header), proof2_revealed_indexes
-					, LEN (proof2_revealed_indexes), 10, proof2_m_1, sizeof(
-						proof2_m_1), proof2_m_2, sizeof(proof2_m_2),
-					proof2_m_3, sizeof(proof2_m_3), proof2_m_4, sizeof(
-						proof2_m_4), proof2_m_5, sizeof(proof2_m_5),
-					proof2_m_6, sizeof(proof2_m_6), proof2_m_7, sizeof(
-						proof2_m_7), proof2_m_8, sizeof(proof2_m_8),
-					proof2_m_9, sizeof(proof2_m_9), proof2_m_10, sizeof(
-						proof2_m_10)))
+	if (BBS_OK != mocked_proof_gen (proof2_public_key,
+					proof2_signature,
+					proof2,
+					proof2_header,
+					sizeof(proof2_header),
+					proof2_presentation_header,
+					sizeof(proof2_presentation_header),
+					proof2_revealed_indexes,
+					LEN (proof2_revealed_indexes),
+					10,
+					proof2_m_1,
+					sizeof(proof2_m_1),
+					proof2_m_2,
+					sizeof(proof2_m_2),
+					proof2_m_3,
+					sizeof(proof2_m_3),
+					proof2_m_4,
+					sizeof(proof2_m_4),
+					proof2_m_5,
+					sizeof(proof2_m_5),
+					proof2_m_6,
+					sizeof(proof2_m_6),
+					proof2_m_7,
+					sizeof(proof2_m_7),
+					proof2_m_8,
+					sizeof(proof2_m_8),
+					proof2_m_9,
+					sizeof(proof2_m_9),
+					proof2_m_10,
+					sizeof(proof2_m_10)))
 	{
 		puts ("Error during proof 2 generation");
 		return 1;
@@ -355,17 +407,36 @@ bbs_fix_proof_gen ()
 
 	// Only some messages are being revealed here
 	uint8_t proof3[BBS_PROOF_LEN (6)];
-	if (BBS_OK != mocked_proof_gen (proof3_public_key, proof3_signature, proof3, proof3_header,
-					sizeof(proof3_header), proof3_presentation_header, sizeof(
-						proof3_presentation_header), proof3_revealed_indexes
-					, LEN (proof3_revealed_indexes), 10, proof2_m_1, sizeof(
-						proof2_m_1), proof2_m_2, sizeof(proof2_m_2),
-					proof2_m_3, sizeof(proof2_m_3), proof2_m_4, sizeof(
-						proof2_m_4), proof2_m_5, sizeof(proof2_m_5),
-					proof2_m_6, sizeof(proof2_m_6), proof2_m_7, sizeof(
-						proof2_m_7), proof2_m_8, sizeof(proof2_m_8),
-					proof2_m_9, sizeof(proof2_m_9), proof2_m_10, sizeof(
-						proof2_m_10)))
+	if (BBS_OK != mocked_proof_gen (proof3_public_key,
+					proof3_signature,
+					proof3,
+					proof3_header,
+					sizeof(proof3_header),
+					proof3_presentation_header,
+					sizeof(proof3_presentation_header),
+					proof3_revealed_indexes,
+					LEN (proof3_revealed_indexes),
+					10,
+					proof2_m_1,
+					sizeof(proof2_m_1),
+					proof2_m_2,
+					sizeof(proof2_m_2),
+					proof2_m_3,
+					sizeof(proof2_m_3),
+					proof2_m_4,
+					sizeof(proof2_m_4),
+					proof2_m_5,
+					sizeof(proof2_m_5),
+					proof2_m_6,
+					sizeof(proof2_m_6),
+					proof2_m_7,
+					sizeof(proof2_m_7),
+					proof2_m_8,
+					sizeof(proof2_m_8),
+					proof2_m_9,
+					sizeof(proof2_m_9),
+					proof2_m_10,
+					sizeof(proof2_m_10)))
 	{
 		puts ("Error during proof 3 generation");
 		return 1;

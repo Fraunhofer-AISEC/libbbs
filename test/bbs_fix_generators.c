@@ -56,8 +56,8 @@ bbs_fix_generators ()
 	}
 	RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 
-	const uint8_t *api_id   = (uint8_t *) cipher_suite.api_id;
-	const uint8_t api_id_len = cipher_suite.api_id_len;
+	const uint8_t *api_id     = (uint8_t *) cipher_suite.api_id;
+	const uint8_t  api_id_len = cipher_suite.api_id_len;
 
 	if (BBS_OK != create_generator_init (&cipher_suite, state, api_id, api_id_len))
 	{
