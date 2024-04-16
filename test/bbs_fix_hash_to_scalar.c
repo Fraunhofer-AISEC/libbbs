@@ -2,6 +2,7 @@
 #include "test_util.h"
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
+#define cipher_suite bbs_sha256_cipher_suite
 #define fixture_msg             fixture_bls12_381_sha_256_h2s_msg
 #define fixture_msg_len         32
 #define fixture_dst             fixture_bls12_381_sha_256_h2s_dst
@@ -9,6 +10,7 @@
 #define fixture_expected_scalar fixture_bls12_381_sha_256_h2s_scalar
 #define fixture_scalar_len      32
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
+#define cipher_suite bbs_shake256_cipher_suite
 #define fixture_msg             fixture_bls12_381_shake_256_h2s_msg
 #define fixture_msg_len         32
 #define fixture_dst             fixture_bls12_381_shake_256_h2s_dst
@@ -42,7 +44,7 @@ bbs_fix_hash_to_scalar ()
 		return 1;
 	}
 
-	if (BBS_OK != hash_to_scalar (&bbs_sha256_cipher_suite, scalar, fixture_dst, fixture_dst_len, fixture_msg,
+	if (BBS_OK != hash_to_scalar (&cipher_suite, scalar, fixture_dst, fixture_dst_len, fixture_msg,
 				      fixture_msg_len, 0))
 	{
 		puts ("Error during hash to scalar");

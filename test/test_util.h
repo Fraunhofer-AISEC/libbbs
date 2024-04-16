@@ -18,6 +18,19 @@
 		} \
 	}
 
+#define ASSERT_EQ_PTR(purpose, actual, ref, len) \
+    int fail = 0; \
+    for(size_t assert_eq_index = 0; assert_eq_index < len; assert_eq_index++) { \
+        if (actual[assert_eq_index] != ref[assert_eq_index]) { \
+			puts("Mismatch in " purpose); \
+			printf("actual[%zu]: %02x\n", assert_eq_index, actual[assert_eq_index]); \
+			printf("ref[%zu]: %02x\n", assert_eq_index, ref[assert_eq_index]); \
+			DEBUG("Should be:", ref, len); \
+			DEBUG("Is:", actual, len); \
+			return 1; \
+        } \
+    }
+
 
 struct timespec tp_start;
 

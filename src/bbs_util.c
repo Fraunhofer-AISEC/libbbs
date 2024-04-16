@@ -374,7 +374,7 @@ int
 bbs_shake256_expand_message_finalize_dyn (
 	void  *ctx,
 	uint8_t       *out,
-	uint32_t         out_len,
+	uint32_t      out_len,
 	const uint8_t *dst,
 	uint8_t        dst_len
 	)
@@ -433,7 +433,7 @@ bbs_shake256_expand_message_dyn(
 		goto cleanup;
 	}
 
-	if (BBS_OK != bbs_shake256_expand_message_finalize_dyn (shake_ctx, out, 128, dst, dst_len))
+	if (BBS_OK != bbs_shake256_expand_message_finalize_dyn (shake_ctx, out, out_len, dst, dst_len))
 	{
 		goto cleanup;
 	}

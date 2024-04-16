@@ -22,23 +22,6 @@ typedef struct
 } expand_message_rfc_9380_expand_message_xof_test;
 
 int
-bbs_fix_expand_message_test_case (expand_message_rfc_9380_expand_message_xof_test  spec,
-				  uint8_t                                         *out_buffer
-				  )
-{
-	if (BBS_OK != expand_message_dyn (&bbs_shake256_cipher_suite, bbs_shake256_cipher_suite.
-					  hash_ctx, out_buffer, spec.out_len, spec.msg, spec.msg_len
-					  , rfc_9380_k6_expand_message_xof_dst,
-					  rfc_9380_k6_expand_message_xof_dst_len))
-	{
-		puts ("Error in expand_message_dyn");
-		return 1;
-	}
-	ASSERT_EQ ("expand_message", out_buffer, spec.expected_output);
-}
-
-
-int
 bbs_fix_expand_message ()
 {
 	if (core_init () != RLC_OK)
@@ -63,9 +46,9 @@ bbs_fix_expand_message ()
 	uint8_t out_9[rfc_9380_k6_expand_message_xof_out_len_9];
 	uint8_t out_10[rfc_9380_k6_expand_message_xof_out_len_10];
 
-	uint8_t *out_buffers[] = { out_1, out_2, out_3, out_4, out_5, out_6, out_7, out_8, out_9, out_10 };
+	uint8_t *out_buffers[10] = { out_1, out_2, out_3, out_4, out_5, out_6, out_7, out_8, out_9, out_10 };
 
-	expand_message_rfc_9380_expand_message_xof_test test_cases[] = {
+	expand_message_rfc_9380_expand_message_xof_test test_cases[10] = {
 		{
 			.msg = rfc_9380_k6_expand_message_xof_msg_1,
 			.msg_len = rfc_9380_k6_expand_message_xof_msg_1_len,
@@ -127,9 +110,27 @@ bbs_fix_expand_message ()
 			.expected_output = fixture_rfc_9380_k6_expand_message_xof_output_10
 		}
 	};
-
 	for(int i = 0; i < 10; i++) {
-		bbs_fix_expand_message_test_case(test_cases[i], out_buffers[i]);
+		if (BBS_OK != expand_message_dyn (&bbs_shake256_cipher_suite, bbs_shake256_cipher_suite.
+					hash_ctx, out_buffers[i], test_cases[i].out_len, test_cases[i].msg, test_cases[i].msg_len
+					, rfc_9380_k6_expand_message_xof_dst,
+					rfc_9380_k6_expand_message_xof_dst_len))
+		{
+			printf("Error in expand_message_dyn test case %d\n", i);
+
+			return 1;
+		}
+		// printf("expand_message_dyn test case %d\n", i);
+		// for(int j = 0; j < test_cases[i].out_len; j++) {
+		// 	printf("%02x", test_cases[i].expected_output[j]);
+		// }
+		// puts("\n");
+		// for(int j = 0; j < test_cases[i].out_len; j++) {
+		// 	printf("%02x", out_buffers[i][j]);
+		// }
+		// puts("\n");
+		ASSERT_EQ_PTR ("expand_message_dyn", out_buffers[i], test_cases[i].expected_output, test_cases[i].out_len);
+		// printf("expand_message_dyn test case %d passed\n", i);
 	}
 	
 	return 0;
