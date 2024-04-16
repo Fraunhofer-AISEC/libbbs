@@ -2,17 +2,6 @@
 #include "test_util.h"
 #include "bbs_util.h"
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-
-int
-bbs_fix_expand_message ()
-{
-	return 0;
-}
-
-
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
 typedef struct
 {
 	uint8_t *msg;
@@ -21,6 +10,7 @@ typedef struct
 	uint8_t *expected_output;
 } expand_message_rfc_9380_expand_message_xof_test;
 
+/// Only tests shake256
 int
 bbs_fix_expand_message ()
 {
@@ -149,6 +139,3 @@ bbs_fix_expand_message ()
 
 	return 0;
 }
-
-
-#endif

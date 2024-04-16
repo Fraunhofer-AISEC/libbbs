@@ -43,6 +43,8 @@ bbs_fix_generators ()
 		bbs_cipher_suite_t cipher_suite = cipher_suites[i];
 		bbs_fix_generators_fixture_t fixture = test_cases[i];
 
+		printf("Testing %s\n", cipher_suite.cipher_suite_id);
+
 		if (core_init () != RLC_OK)
 		{
 			core_clean ();
