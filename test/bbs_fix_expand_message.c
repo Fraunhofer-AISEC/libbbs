@@ -46,14 +46,7 @@ bbs_fix_expand_message ()
 	uint8_t out_10[
 		rfc_9380_k6_expand_message_xof_out_len_10];
 
-	uint8_t                                        *out_buffers[10] = { out_1, out_2, out_3,
-									    out_4,
-									    out_5,
-									    out_6,
-									    out_7,
-									    out_8,
-									    out_9,
-									    out_10 };
+	uint8_t *out_buffers[10] = { out_1, out_2, out_3, out_4, out_5, out_6, out_7, out_8, out_9, out_10 };
 
 	expand_message_rfc_9380_expand_message_xof_test test_cases[10] = {
 		{
