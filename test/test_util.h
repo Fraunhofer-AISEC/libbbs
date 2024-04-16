@@ -19,7 +19,6 @@
 	}
 
 #define ASSERT_EQ_PTR(purpose, actual, ref, len) \
-	int fail = 0; \
 	for (size_t assert_eq_index = 0; assert_eq_index < len; assert_eq_index++) { \
 		if (actual[assert_eq_index] != ref[assert_eq_index]) { \
 			puts ("Mismatch in " purpose); \
