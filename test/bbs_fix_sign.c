@@ -1,110 +1,201 @@
 #include "fixtures.h"
 #include "test_util.h"
 
-#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-#define sign                 bbs_sha256_sign
-#define signature1_SK        fixture_bls12_381_sha_256_signature1_SK
-#define signature1_PK        fixture_bls12_381_sha_256_signature1_PK
-#define signature1_header    fixture_bls12_381_sha_256_signature1_header
-#define signature1_m_1       fixture_bls12_381_sha_256_signature1_m_1
-#define signature1_signature fixture_bls12_381_sha_256_signature1_signature
+typedef struct
+{
+	bbs_cipher_suite_t  cipher_suite;
+	int (*sign)(const uint8_t *sk,
+		    const uint8_t *pk,
+		    uint8_t       *signature,
+		    const uint8_t *header,
+		    uint64_t       header_len,
+		    uint64_t       num_messages,
+		    ...
+		    );
+	uint8_t  *signature1_SK;
+	uint8_t  *signature1_PK;
+	uint8_t  *signature1_header;
+	uint32_t  signature1_header_len;
+	uint8_t  *signature1_m_1;
+	uint32_t  signature1_m_1_len;
+	uint8_t  *signature1_signature;
+	uint32_t  signature1_signature_len;
 
-#define signature2_SK        fixture_bls12_381_sha_256_signature2_SK
-#define signature2_PK        fixture_bls12_381_sha_256_signature2_PK
-#define signature2_header    fixture_bls12_381_sha_256_signature2_header
-#define signature2_m_1       fixture_bls12_381_sha_256_signature2_m_1
-#define signature2_m_2       fixture_bls12_381_sha_256_signature2_m_2
-#define signature2_m_3       fixture_bls12_381_sha_256_signature2_m_3
-#define signature2_m_4       fixture_bls12_381_sha_256_signature2_m_4
-#define signature2_m_5       fixture_bls12_381_sha_256_signature2_m_5
-#define signature2_m_6       fixture_bls12_381_sha_256_signature2_m_6
-#define signature2_m_7       fixture_bls12_381_sha_256_signature2_m_7
-#define signature2_m_8       fixture_bls12_381_sha_256_signature2_m_8
-#define signature2_m_9       fixture_bls12_381_sha_256_signature2_m_9
-#define signature2_m_10      fixture_bls12_381_sha_256_signature2_m_10
-#define signature2_signature fixture_bls12_381_sha_256_signature2_signature
-
-#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-#define sign                 bbs_shake256_sign
-#define signature1_SK        fixture_bls12_381_shake_256_signature1_SK
-#define signature1_PK        fixture_bls12_381_shake_256_signature1_PK
-#define signature1_header    fixture_bls12_381_shake_256_signature1_header
-#define signature1_m_1       fixture_bls12_381_shake_256_signature1_m_1
-#define signature1_signature fixture_bls12_381_shake_256_signature1_signature
-
-#define signature2_SK        fixture_bls12_381_shake_256_signature2_SK
-#define signature2_PK        fixture_bls12_381_shake_256_signature2_PK
-#define signature2_header    fixture_bls12_381_shake_256_signature2_header
-#define signature2_m_1       fixture_bls12_381_shake_256_signature2_m_1
-#define signature2_m_2       fixture_bls12_381_shake_256_signature2_m_2
-#define signature2_m_3       fixture_bls12_381_shake_256_signature2_m_3
-#define signature2_m_4       fixture_bls12_381_shake_256_signature2_m_4
-#define signature2_m_5       fixture_bls12_381_shake_256_signature2_m_5
-#define signature2_m_6       fixture_bls12_381_shake_256_signature2_m_6
-#define signature2_m_7       fixture_bls12_381_shake_256_signature2_m_7
-#define signature2_m_8       fixture_bls12_381_shake_256_signature2_m_8
-#define signature2_m_9       fixture_bls12_381_shake_256_signature2_m_9
-#define signature2_m_10      fixture_bls12_381_shake_256_signature2_m_10
-#define signature2_signature fixture_bls12_381_shake_256_signature2_signature
-
-#endif
+	uint8_t  *signature2_SK;
+	uint8_t  *signature2_PK;
+	uint8_t  *signature2_header;
+	uint32_t  signature2_header_len;
+	uint8_t  *signature2_m_1;
+	uint32_t  signature2_m_1_len;
+	uint8_t  *signature2_m_2;
+	uint32_t  signature2_m_2_len;
+	uint8_t  *signature2_m_3;
+	uint32_t  signature2_m_3_len;
+	uint8_t  *signature2_m_4;
+	uint32_t  signature2_m_4_len;
+	uint8_t  *signature2_m_5;
+	uint32_t  signature2_m_5_len;
+	uint8_t  *signature2_m_6;
+	uint32_t  signature2_m_6_len;
+	uint8_t  *signature2_m_7;
+	uint32_t  signature2_m_7_len;
+	uint8_t  *signature2_m_8;
+	uint32_t  signature2_m_8_len;
+	uint8_t  *signature2_m_9;
+	uint32_t  signature2_m_9_len;
+	uint8_t  *signature2_m_10;
+	uint32_t  signature2_m_10_len;
+	uint8_t  *signature2_signature;
+	uint32_t  signature2_signature_len;
+} bbs_fix_sign_fixture_t;
 
 int
 bbs_fix_sign ()
 {
-	if (core_init () != RLC_OK)
-	{
-		core_clean ();
-		return 1;
-	}
-	if (pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
-		return 1;
-	}
+	// *INDENT-OFF* - Preserve formatting
+	bbs_fix_sign_fixture_t fixtures[] = {
+		{
+			.cipher_suite = bbs_shake256_cipher_suite,
+			.sign =                  &bbs_shake256_sign,
+			.signature1_SK =         fixture_bls12_381_shake_256_signature1_SK,
+			.signature1_PK =         fixture_bls12_381_shake_256_signature1_PK,
+			.signature1_header =     fixture_bls12_381_shake_256_signature1_header,
+			.signature1_header_len = sizeof(fixture_bls12_381_shake_256_signature1_header),
+			.signature1_m_1 =        fixture_bls12_381_shake_256_signature1_m_1,
+			.signature1_m_1_len =    sizeof(fixture_bls12_381_shake_256_signature1_m_1),
+			.signature1_signature =  fixture_bls12_381_shake_256_signature1_signature,
+			.signature1_signature_len = sizeof(fixture_bls12_381_shake_256_signature1_signature),
 
-	bbs_signature sig;
-	if (BBS_OK != sign (signature1_SK, signature1_PK, sig, signature1_header,
-			    sizeof(signature1_header), 1, // num_messages
-			    signature1_m_1, sizeof(signature1_m_1)))
-	{
-		puts ("Error during signature 1 generation");
-		return 1;
-	}
-	ASSERT_EQ ("signature 1 generation", sig, signature1_signature);
+			.signature2_SK =         fixture_bls12_381_shake_256_signature2_SK,
+			.signature2_PK =         fixture_bls12_381_shake_256_signature2_PK,
+			.signature2_header =     fixture_bls12_381_shake_256_signature2_header,
+			.signature2_header_len = sizeof(fixture_bls12_381_shake_256_signature2_header),
+			.signature2_m_1 =        fixture_bls12_381_shake_256_signature2_m_1,
+			.signature2_m_1_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_1),
+			.signature2_m_2 =        fixture_bls12_381_shake_256_signature2_m_2,
+			.signature2_m_2_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_2),
+			.signature2_m_3 =        fixture_bls12_381_shake_256_signature2_m_3,
+			.signature2_m_3_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_3),
+			.signature2_m_4 =        fixture_bls12_381_shake_256_signature2_m_4,
+			.signature2_m_4_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_4),
+			.signature2_m_5 =        fixture_bls12_381_shake_256_signature2_m_5,
+			.signature2_m_5_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_5),
+			.signature2_m_6 =        fixture_bls12_381_shake_256_signature2_m_6,
+			.signature2_m_6_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_6),
+			.signature2_m_7 =        fixture_bls12_381_shake_256_signature2_m_7,
+			.signature2_m_7_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_7),
+			.signature2_m_8 =        fixture_bls12_381_shake_256_signature2_m_8,
+			.signature2_m_8_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_8),
+			.signature2_m_9 =        fixture_bls12_381_shake_256_signature2_m_9,
+			.signature2_m_9_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_9),
+			.signature2_m_10 =       fixture_bls12_381_shake_256_signature2_m_10,
+			.signature2_m_10_len =   sizeof(fixture_bls12_381_shake_256_signature2_m_10),
+			.signature2_signature =  fixture_bls12_381_shake_256_signature2_signature,
+			.signature2_signature_len =  sizeof(fixture_bls12_381_shake_256_signature2_signature),
+		},
+		{
+			.cipher_suite = bbs_shake256_cipher_suite,
+			.sign =                  &bbs_sha256_sign,
+			.signature1_SK =         fixture_bls12_381_sha_256_signature1_SK,
+			.signature1_PK =         fixture_bls12_381_sha_256_signature1_PK,
+			.signature1_header =     fixture_bls12_381_sha_256_signature1_header,
+			.signature1_header_len = sizeof(fixture_bls12_381_sha_256_signature1_header),
+			.signature1_m_1 =        fixture_bls12_381_sha_256_signature1_m_1,
+			.signature1_m_1_len =    sizeof(fixture_bls12_381_sha_256_signature1_m_1),
+			.signature1_signature =  fixture_bls12_381_sha_256_signature1_signature,
+			.signature1_signature_len = sizeof(fixture_bls12_381_sha_256_signature1_signature),
 
-	if (BBS_OK != sign (signature2_SK,
-			    signature2_PK,
-			    sig,
-			    signature2_header,
-			    sizeof(signature2_header),
-			    10,
-	                    // num_messages
-			    signature2_m_1,
-			    sizeof(signature2_m_1),
-			    signature2_m_2,
-			    sizeof(signature2_m_2),
-			    signature2_m_3,
-			    sizeof(signature2_m_3),
-			    signature2_m_4,
-			    sizeof(signature2_m_4),
-			    signature2_m_5,
-			    sizeof(signature2_m_5),
-			    signature2_m_6,
-			    sizeof(signature2_m_6),
-			    signature2_m_7,
-			    sizeof(signature2_m_7),
-			    signature2_m_8,
-			    sizeof(signature2_m_8),
-			    signature2_m_9,
-			    sizeof(signature2_m_9),
-			    signature2_m_10,
-			    sizeof(signature2_m_10)))
-	{
-		puts ("Error during signature 2 generation");
-		return 1;
-	}
-	ASSERT_EQ ("signature 2 generation", sig, signature2_signature);
+			.signature2_SK =         fixture_bls12_381_sha_256_signature2_SK,
+			.signature2_PK =         fixture_bls12_381_sha_256_signature2_PK,
+			.signature2_header =     fixture_bls12_381_sha_256_signature2_header,
+			.signature2_header_len = sizeof(fixture_bls12_381_sha_256_signature2_header),
+			.signature2_m_1 =        fixture_bls12_381_sha_256_signature2_m_1,
+			.signature2_m_1_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_1),
+			.signature2_m_2 =        fixture_bls12_381_sha_256_signature2_m_2,
+			.signature2_m_2_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_2),
+			.signature2_m_3 =        fixture_bls12_381_sha_256_signature2_m_3,
+			.signature2_m_3_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_3),
+			.signature2_m_4 =        fixture_bls12_381_sha_256_signature2_m_4,
+			.signature2_m_4_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_4),
+			.signature2_m_5 =        fixture_bls12_381_sha_256_signature2_m_5,
+			.signature2_m_5_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_5),
+			.signature2_m_6 =        fixture_bls12_381_sha_256_signature2_m_6,
+			.signature2_m_6_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_6),
+			.signature2_m_7 =        fixture_bls12_381_sha_256_signature2_m_7,
+			.signature2_m_7_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_7),
+			.signature2_m_8 =        fixture_bls12_381_sha_256_signature2_m_8,
+			.signature2_m_8_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_8),
+			.signature2_m_9 =        fixture_bls12_381_sha_256_signature2_m_9,
+			.signature2_m_9_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_9),
+			.signature2_m_10 =       fixture_bls12_381_sha_256_signature2_m_10,
+			.signature2_m_10_len =   sizeof(fixture_bls12_381_sha_256_signature2_m_10),
+			.signature2_signature =  fixture_bls12_381_sha_256_signature2_signature,
+			.signature2_signature_len =  sizeof(fixture_bls12_381_sha_256_signature2_signature),
+		}
+	};
+	// *INDENT-ON* - Preserve formatting
 
+	for (int cipher_suite_index = 0; cipher_suite_index < 2; cipher_suite_index++ )
+	{
+		bbs_fix_sign_fixture_t test_case = fixtures[cipher_suite_index];
+		if (core_init () != RLC_OK)
+		{
+			core_clean ();
+			return 1;
+		}
+		if (pc_param_set_any () != RLC_OK)
+		{
+			core_clean ();
+			return 1;
+		}
+
+		bbs_signature sig;
+		if (BBS_OK != test_case.sign (test_case.signature1_SK, test_case.signature1_PK, sig,
+					      test_case.signature1_header,
+					      test_case.signature1_header_len, 1, // num_messages
+					      test_case.signature1_m_1,
+					      test_case.signature1_m_1_len))
+		{
+			puts ("Error during signature 1 generation");
+			return 1;
+		}
+		ASSERT_EQ_PTR ("signature 1 generation",
+			       sig,
+			       test_case.signature1_signature,
+			       test_case.signature1_signature_len);
+
+		if (BBS_OK != test_case.sign (test_case.signature2_SK, test_case.signature2_PK, sig,
+					      test_case.signature2_header,
+					      test_case.signature2_header_len, 10,
+		                              // num_messages
+					      test_case.signature2_m_1,
+					      test_case.signature2_m_1_len,
+					      test_case.signature2_m_2,
+					      test_case.signature2_m_2_len,
+					      test_case.signature2_m_3,
+					      test_case.signature2_m_3_len,
+					      test_case.signature2_m_4,
+					      test_case.signature2_m_4_len,
+					      test_case.signature2_m_5,
+					      test_case.signature2_m_5_len,
+					      test_case.signature2_m_6,
+					      test_case.signature2_m_6_len,
+					      test_case.signature2_m_7,
+					      test_case.signature2_m_7_len,
+					      test_case.signature2_m_8,
+					      test_case.signature2_m_8_len,
+					      test_case.signature2_m_9,
+					      test_case.signature2_m_9_len,
+					      test_case.signature2_m_10,
+					      test_case.signature2_m_10_len))
+		{
+			puts ("Error during signature 2 generation");
+			return 1;
+		}
+		ASSERT_EQ_PTR ("signature 2 generation",
+			       sig,
+			       test_case.signature2_signature,
+			       test_case.signature2_signature_len);
+	}
 	return 0;
 }
