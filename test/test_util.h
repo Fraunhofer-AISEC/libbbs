@@ -9,8 +9,8 @@
 #include <inttypes.h>
 
 #define ASSERT_EQ(purpose, actual, ref) \
-	for (int i = 0; i < sizeof(ref); i++) { \
-		if (actual[i] != ref[i]) { \
+	for (int assert_eq_index = 0; assert_eq_index < sizeof(ref); assert_eq_index++) { \
+		if (actual[assert_eq_index] != ref[assert_eq_index]) { \
 			puts ("Mismatch in " purpose); \
 			DEBUG ("Should be:", ref,    sizeof(ref)); \
 			DEBUG ("Is:",        actual, sizeof(actual)); \
