@@ -2,7 +2,7 @@
 #include "test_util.h"
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-
+#define cipher_suite bbs_sha256_cipher_suite
 #define proof_SEED                 fixture_bls12_381_sha_256_proof_SEED
 #define proof_DST                  fixture_bls12_381_sha_256_proof_DST
 #define proof_random_scalar_1      fixture_bls12_381_sha_256_proof_random_scalar_1
@@ -49,7 +49,7 @@
 #define proof3_proof               fixture_bls12_381_sha_256_proof3_proof
 
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
+#define cipher_suite bbs_shake256_cipher_suite
 #define proof_SEED                 fixture_bls12_381_shake_256_proof_SEED
 #define proof_DST                  fixture_bls12_381_shake_256_proof_DST
 #define proof_random_scalar_1      fixture_bls12_381_shake_256_proof_random_scalar_1
@@ -150,12 +150,6 @@ fill_randomness (
 	int ret     = BBS_ERROR;
 	int out_len = count * 48;
 
-	#if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-	bbs_cipher_suite_t cipher_suite = bbs_sha256_cipher_suite;
-	#elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-	bbs_cipher_suite_t cipher_suite = bbs_shake256_cipher_suite;
-	#endif
-
 	if (BBS_OK != expand_message_dyn(&cipher_suite, cipher_suite.hash_ctx, rand, out_len, seed, seed_len, dst, dst_len))
 	{
 		goto cleanup;
@@ -195,7 +189,7 @@ mocked_proof_gen (
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != bbs_proof_gen_det (&bbs_sha256_cipher_suite, pk, signature, proof, header, header_len,
+	if (BBS_OK != bbs_proof_gen_det (&cipher_suite, pk, signature, proof, header, header_len,
 					 presentation_header, presentation_header_len,
 					 disclosed_indexes, disclosed_indexes_len, num_messages,
 					 mocked_prf, randomness, ap))

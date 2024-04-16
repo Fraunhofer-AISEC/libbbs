@@ -2,7 +2,7 @@
 #include "test_util.h"
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-
+#define proof_verify bbs_sha256_proof_verify
 #define proof_SEED                 fixture_bls12_381_sha_256_proof_SEED
 #define proof_DST                  fixture_bls12_381_sha_256_proof_DST
 #define proof_random_scalar_1      fixture_bls12_381_sha_256_proof_random_scalar_1
@@ -54,7 +54,7 @@
 
 
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
+#define proof_verify bbs_shake256_proof_verify
 #define proof_SEED                 fixture_bls12_381_shake_256_proof_SEED
 #define proof_DST                  fixture_bls12_381_shake_256_proof_DST
 #define proof_random_scalar_1      fixture_bls12_381_shake_256_proof_random_scalar_1
@@ -116,7 +116,7 @@ int bbs_fix_proof_verify() {
 		return 1;
 	}
 
-	if(BBS_OK != bbs_sha256_proof_verify(
+	if(BBS_OK != proof_verify(
 				proof1_public_key,
 				proof1_proof,
 				sizeof(proof1_proof),
@@ -133,7 +133,7 @@ int bbs_fix_proof_verify() {
 		return 1;
 	}
 
-	if(BBS_OK != bbs_sha256_proof_verify(
+	if(BBS_OK != proof_verify(
 				proof2_public_key,
 				proof2_proof,
 				sizeof(proof2_proof),
@@ -169,7 +169,7 @@ int bbs_fix_proof_verify() {
 	}
 
 	// Only some messages are being revealed here
-	if(BBS_OK != bbs_sha256_proof_verify(
+	if(BBS_OK != proof_verify(
 				proof3_public_key,
 				proof3_proof,
 				sizeof(proof3_proof),

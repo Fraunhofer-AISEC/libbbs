@@ -2,7 +2,7 @@
 #include "test_util.h"
 
 #if BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHA_256
-
+#define sign bbs_sha256_sign
 #define signature1_SK fixture_bls12_381_sha_256_signature1_SK
 #define signature1_PK fixture_bls12_381_sha_256_signature1_PK
 #define signature1_header fixture_bls12_381_sha_256_signature1_header
@@ -25,7 +25,7 @@
 #define signature2_signature fixture_bls12_381_sha_256_signature2_signature
 
 #elif BBS_CIPHER_SUITE == BBS_CIPHER_SUITE_BLS12_381_SHAKE_256
-
+#define sign bbs_shake256_sign
 #define signature1_SK fixture_bls12_381_shake_256_signature1_SK
 #define signature1_PK fixture_bls12_381_shake_256_signature1_PK
 #define signature1_header fixture_bls12_381_shake_256_signature1_header
@@ -60,7 +60,7 @@ int bbs_fix_sign() {
 	}
 
 	bbs_signature sig;
-	if(BBS_OK != bbs_sha256_sign(
+	if(BBS_OK != sign(
 				signature1_SK,
 				signature1_PK,
 				sig,
@@ -74,7 +74,7 @@ int bbs_fix_sign() {
 	}
 	ASSERT_EQ("signature 1 generation", sig, signature1_signature);
 
-	if(BBS_OK != bbs_sha256_sign(
+	if(BBS_OK != sign(
 				signature2_SK,
 				signature2_PK,
 				sig,

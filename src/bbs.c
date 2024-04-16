@@ -23,16 +23,16 @@ SHA256Context bbs_sha256_ch_ctx_t;
 
 #define BBS_SHAKE256_CIPHER_SUITE_ID 		"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_"
 #define BBS_SHAKE256_CIPHER_SUITE_LENGTH 	37
-#define BBS_SHAKE256_DEFAULT_KEY_DST 		BBS_SHA256_CIPHER_SUITE_ID "KEYGEN_DST_"
-#define BBS_SHAKE256_DEFAULT_KEY_DST_LENGTH BBS_SHA256_CIPHER_SUITE_LENGTH + 11
-#define BBS_SHAKE256_API_ID          		BBS_SHA256_CIPHER_SUITE_ID "H2G_HM2S_"
-#define BBS_SHAKE256_API_ID_LENGTH   		BBS_SHA256_CIPHER_SUITE_LENGTH + 9
-#define BBS_SHAKE256_SIGNATURE_DST   		BBS_SHA256_API_ID "H2S_"
-#define BBS_SHAKE256_SIGNATURE_DST_LENGTH BBS_SHA256_API_ID_LENGTH + 4
-#define BBS_SHAKE256_CHALLENGE_DST   		BBS_SHA256_API_ID "H2S_"
-#define BBS_SHAKE256_CHALLENGE_DST_LENGTH BBS_SHA256_API_ID_LENGTH + 4
-#define BBS_SHAKE256_MAP_DST         		BBS_SHA256_API_ID "MAP_MSG_TO_SCALAR_AS_HASH_"
-#define BBS_SHAKE256_MAP_DST_LENGTH  		BBS_SHA256_API_ID_LENGTH + 26
+#define BBS_SHAKE256_DEFAULT_KEY_DST 		BBS_SHAKE256_CIPHER_SUITE_ID "KEYGEN_DST_"
+#define BBS_SHAKE256_DEFAULT_KEY_DST_LENGTH BBS_SHAKE256_CIPHER_SUITE_LENGTH + 11
+#define BBS_SHAKE256_API_ID          		BBS_SHAKE256_CIPHER_SUITE_ID "H2G_HM2S_"
+#define BBS_SHAKE256_API_ID_LENGTH   		BBS_SHAKE256_CIPHER_SUITE_LENGTH + 9
+#define BBS_SHAKE256_SIGNATURE_DST   		BBS_SHAKE256_API_ID "H2S_"
+#define BBS_SHAKE256_SIGNATURE_DST_LENGTH BBS_SHAKE256_API_ID_LENGTH + 4
+#define BBS_SHAKE256_CHALLENGE_DST   		BBS_SHAKE256_API_ID "H2S_"
+#define BBS_SHAKE256_CHALLENGE_DST_LENGTH BBS_SHAKE256_API_ID_LENGTH + 4
+#define BBS_SHAKE256_MAP_DST         		BBS_SHAKE256_API_ID "MAP_MSG_TO_SCALAR_AS_HASH_"
+#define BBS_SHAKE256_MAP_DST_LENGTH  		BBS_SHAKE256_API_ID_LENGTH + 26
 
 
 Keccak_HashInstance  bbs_shake256_hash_ctx_t;
@@ -141,6 +141,28 @@ int bbs_sha256_keygen(
 	);
 }
 
+int bbs_shake256_keygen(
+	bbs_secret_key sk, 
+	const uint8_t *key_material, 
+	uint16_t key_material_len, 
+	const uint8_t *key_info, 
+	uint16_t key_info_len, 
+	const uint8_t *key_dst, 
+	uint8_t key_dst_len
+) {
+	return bbs_keygen(
+		&bbs_shake256_cipher_suite, 
+		sk, 
+		key_material, 
+		key_material_len, 
+		key_info, 
+		key_info_len, 
+		key_dst, 
+		key_dst_len
+	);
+}
+
+
 int
 bbs_keygen (
 	bbs_cipher_suite_t *cipher_suite,
@@ -243,6 +265,23 @@ bbs_sha256_sign (
 	va_list args;
 	va_start(args, num_messages);
 	int result = bbs_sign(&bbs_sha256_cipher_suite, sk, pk, signature, header, header_len, num_messages, args);
+	va_end(args);
+	return result;
+}
+
+int
+bbs_shake256_sign (
+	const bbs_secret_key  sk,
+	const bbs_public_key  pk,
+	bbs_signature         signature,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	...
+) {
+	va_list args;
+	va_start(args, num_messages);
+	int result = bbs_sign(&bbs_shake256_cipher_suite, sk, pk, signature, header, header_len, num_messages, args);
 	va_end(args);
 	return result;
 }
@@ -449,6 +488,22 @@ int bbs_sha256_verify (
 	va_end(args);
 	return result;
 }
+
+int bbs_shake256_verify (
+	const bbs_public_key pk,
+	const bbs_signature signature,
+	const uint8_t *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	...
+) {
+	va_list args;
+	va_start (args, num_messages);
+	int result = bbs_verify(&bbs_shake256_cipher_suite, pk, signature, header, header_len, num_messages, args);
+	va_end(args);
+	return result;
+}
+
 
 int
 bbs_verify (
@@ -1128,6 +1183,27 @@ int bbs_sha256_proof_verify(
 	va_list args;
 	va_start (args, num_messages);
 	int result = bbs_proof_verify(&bbs_sha256_cipher_suite, pk, proof, proof_len, header, header_len, presentation_header, presentation_header_len, disclosed_indexes, disclosed_indexes_len, num_messages, args);
+	va_end(args);
+	return result;
+
+}
+
+int bbs_shake256_proof_verify(
+	const bbs_public_key  pk,
+	const uint8_t        *proof,
+	uint64_t              proof_len,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	...
+) {
+	va_list args;
+	va_start (args, num_messages);
+	int result = bbs_proof_verify(&bbs_shake256_cipher_suite, pk, proof, proof_len, header, header_len, presentation_header, presentation_header_len, disclosed_indexes, disclosed_indexes_len, num_messages, args);
 	va_end(args);
 	return result;
 
