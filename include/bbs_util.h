@@ -279,10 +279,11 @@ int create_generator_next (
 // message scalar, other scalars have input 0 and input_type i indicates the
 // i-th such scalar. This is because there may be up to 2^64 messages, bringing
 // the total possible message count slightly above 2^64.
-typedef int (bbs_bn_prf)(bn_t      out,
-			 uint8_t   input_type,
-			 uint64_t  input,
-			 void     *cookie
+typedef int (bbs_bn_prf)(bbs_cipher_suite_t *cipher_suite,
+			 bn_t                out,
+			 uint8_t             input_type,
+			 uint64_t            input,
+			 void               *cookie
 			 );
 
 // Defined in bbs.c, but included here to hide it from bbs.h importers

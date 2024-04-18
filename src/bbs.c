@@ -913,15 +913,15 @@ bbs_proof_gen_det (
 	}
 
 	// Derive random scalars. The msg_scalar_tilde scalars are derived later
-	if (BBS_OK != prf (r1,       1, 0, prf_cookie))
+	if (BBS_OK != prf (cipher_suite, r1,       1, 0, prf_cookie))
 		goto cleanup;
-	if (BBS_OK != prf (r2,       2, 0, prf_cookie))
+	if (BBS_OK != prf (cipher_suite, r2,       2, 0, prf_cookie))
 		goto cleanup;
-	if (BBS_OK != prf (e_tilde,  3, 0, prf_cookie))
+	if (BBS_OK != prf (cipher_suite, e_tilde,  3, 0, prf_cookie))
 		goto cleanup;
-	if (BBS_OK != prf (r1_tilde, 4, 0, prf_cookie))
+	if (BBS_OK != prf (cipher_suite, r1_tilde, 4, 0, prf_cookie))
 		goto cleanup;
-	if (BBS_OK != prf (r3_tilde, 5, 0, prf_cookie))
+	if (BBS_OK != prf (cipher_suite, r3_tilde, 5, 0, prf_cookie))
 		goto cleanup;
 
 	// Calculate Q_1
@@ -989,7 +989,7 @@ bbs_proof_gen_det (
 		{
 			// This message is undisclosed. Derive new random scalar
 			// and accumulate it onto T2
-			if (BBS_OK != prf (msg_scalar_tilde, 0, undisclosed_indexes_idx, prf_cookie)
+			if (BBS_OK != prf (cipher_suite, msg_scalar_tilde, 0, undisclosed_indexes_idx, prf_cookie)
 			    )
 			{
 				goto cleanup;
@@ -1216,7 +1216,7 @@ bbs_proof_gen_det (
 	     undisclosed_indexes_idx < undisclosed_indexes_len;
 	     undisclosed_indexes_idx++)
 	{
-		if (BBS_OK != prf (msg_scalar_tilde, 0, undisclosed_indexes_idx, prf_cookie))
+		if (BBS_OK != prf (cipher_suite, msg_scalar_tilde, 0, undisclosed_indexes_idx, prf_cookie))
 		{
 			goto cleanup;
 		}
@@ -1262,6 +1262,7 @@ cleanup:
 
 int
 bbs_proof_prf (
+	bbs_cipher_suite_t *cipher_suite,
 	bn_t      out,
 	uint8_t   input_type,
 	uint64_t  input,
@@ -1277,7 +1278,7 @@ bbs_proof_prf (
 
 	if (input_type >= LEN (dsts))
 		return BBS_ERROR;
-	return hash_to_scalar (&bbs_sha256_cipher_suite,
+	return hash_to_scalar (cipher_suite,
 			       out,
 			       dsts[input_type],
 			       17,

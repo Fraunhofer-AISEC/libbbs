@@ -58,6 +58,7 @@ typedef struct
 // Mocked random scalars for bbs_proof_gen_det
 int
 mocked_prf (
+	bbs_cipher_suite_t *cipher_suite,
 	bn_t      out,
 	uint8_t   input_type,
 	uint64_t  input,
@@ -377,7 +378,7 @@ bbs_fix_proof_gen ()
 		RLC_CATCH_ANY { puts ("Write error"); return 1;}
 		for (int i = 0; i < 5; i++)
 		{
-			if (BBS_OK != mocked_prf (scalar, i + 1, 0, randomness))
+			if (BBS_OK != mocked_prf (&test_case.cipher_suite, scalar, i + 1, 0, randomness))
 			{
 				puts ("Read error");
 				return 1;
@@ -391,7 +392,7 @@ bbs_fix_proof_gen ()
 
 		for (int i = 0; i < 5; i++)
 		{
-			if (BBS_OK != mocked_prf (scalar, 0, i, randomness))
+			if (BBS_OK != mocked_prf (&test_case.cipher_suite, scalar, 0, i, randomness))
 			{
 				puts ("Read error");
 				return 1;
