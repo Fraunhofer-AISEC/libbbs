@@ -68,7 +68,7 @@ ExternalProject_Add(
   KeccakCodePackage
   PREFIX ${CMAKE_BINARY_DIR}/KeccakCodePackage
   GIT_REPOSITORY https://github.com/XKCP/XKCP.git
-  GIT_TAG master
+  GIT_TAG 07ed6e44dc9032708b438ad19740970a40b3b285
   GIT_SUBMODULES "support/XKCBuild"
   UPDATE_DISCONNECTED 1
   CONFIGURE_COMMAND ""
