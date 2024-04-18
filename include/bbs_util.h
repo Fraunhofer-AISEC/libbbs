@@ -99,14 +99,6 @@ int bbs_shake256_expand_message_update (
 	uint32_t       msg_len
 	);
 
-int expand_message_finalize_48B (
-	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
-	uint8_t             out[48],
-	const uint8_t      *dst,
-	uint8_t             dst_len
-	);
-
 int bbs_sha256_expand_message_finalize_48B (
 	void          *ctx,
 	uint8_t        out[48],
@@ -119,6 +111,15 @@ int bbs_shake256_expand_message_finalize_48B (
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
+	);
+
+/// @brief Expand a message to a 48 byte output
+int expand_message_finalize_48B (
+	bbs_cipher_suite_t *cipher_suite,
+	void               *ctx,
+	uint8_t             out[48],
+	const uint8_t      *dst,
+	uint8_t             dst_len
 	);
 
 int bbs_shake256_expand_message_finalize_dyn (
