@@ -415,7 +415,6 @@ shake_expand_message['vectors'].each_with_index do |m,idx|
   hex_string(expand_message_xof + "dst_prime_#{idx+1}", m["DST_prime"])
   hex_string(expand_message_xof + "msg_prime_#{idx+1}", m["msg_prime"])
   hex_string(expand_message_xof + "output_#{idx+1}", m["uniform_bytes"])
-  # TODO: add length for dst, msg
 end
 
 if $gen_header
