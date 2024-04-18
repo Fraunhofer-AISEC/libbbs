@@ -114,20 +114,10 @@ bbs_fix_expand_message ()
 
 			return 1;
 		}
-		// printf("expand_message_dyn test case %d\n", i);
-		// for(int j = 0; j < test_cases[i].out_len; j++) {
-		// 	printf("%02x", test_cases[i].expected_output[j]);
-		// }
-		// puts("\n");
-		// for(int j = 0; j < test_cases[i].out_len; j++) {
-		// 	printf("%02x", out_buffers[i][j]);
-		// }
-		// puts("\n");
 		ASSERT_EQ_PTR ("expand_message_dyn",
 			       out_buffers[i],
 			       test_cases[i].expected_output,
 			       test_cases[i].out_len);
-		// printf("expand_message_dyn test case %d passed\n", i);
 	}
 
 	return 0;
