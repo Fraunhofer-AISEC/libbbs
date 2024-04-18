@@ -158,6 +158,9 @@ ep2_read_bbs (
 }
 
 
+// Note: Incremental expand_message API with fixed 48B output needed multiple times during BBS execution. 
+// During generator creation bigger outputs are needed, however not with an incremental API.
+
 int
 expand_message_init (bbs_cipher_suite_t *cipher_suite,
 		     void               *ctx
@@ -386,6 +389,9 @@ bbs_sha256_expand_message_dyn (
 	uint8_t        dst_len
 	)
 {
+	// Hash to curve g1
+	// relic does implement this as ep_map_sswum, but hard-codes the dst, so
+	// we need to reimplement the high level parts here
 	RLC_TRY {
 		md_xmd (out, out_len, msg, msg_len, dst, dst_len);
 	}
@@ -1002,10 +1008,6 @@ create_generator_next (
 
 	for (int i = 0; i < 18; i++)
 		dst_buf[i + api_id_len] = "SIG_GENERATOR_DST_"[i];
-
-	// Hash to curve g1
-	// relic does implement this as ep_map_sswum, but hard-codes the dst, so
-	// we need to reimplement the high level parts here
 
 	if (BBS_OK != cipher_suite->expand_message_dyn (cipher_suite->hash_ctx,
 							rand_buf,

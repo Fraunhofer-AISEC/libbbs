@@ -130,7 +130,6 @@ int bbs_shake256_expand_message_finalize_dyn (
 	);
 
 /// @brief Expand a message to a dynamically sized output
-/// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
 int expand_message_dyn (
 	bbs_cipher_suite_t *cipher_suite,
 	void               *ctx,
@@ -142,8 +141,6 @@ int expand_message_dyn (
 	uint8_t             dst_len
 	);
 
-/// @brief Expand a message to a dynamically sized output with sha256 hashing
-/// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
 int bbs_sha256_expand_message_dyn (
 	void          *ctx,
 	uint8_t       *out,
@@ -154,8 +151,6 @@ int bbs_sha256_expand_message_dyn (
 	uint8_t        dst_len
 	);
 
-/// @brief Expand a message to a 128 byte output with shake256 hashing
-/// @return BBS_OK if the message was expanded successfully, BBS_ERROR otherwise
 int bbs_shake256_expand_message_dyn (
 	void          *ctx,
 	uint8_t       *out,
@@ -166,7 +161,6 @@ int bbs_shake256_expand_message_dyn (
 	uint8_t        dst_len
 	);
 
-/// Expand a message to a 48 byte output
 int expand_message_48B (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t             out[48],

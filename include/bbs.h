@@ -9,11 +9,13 @@
 /// cipher suite, keeping the same overall control flow for the caller.
 typedef struct
 {
-	/// Execution needs multiple hash contexts simultaneously
+	// Execution needs multiple hash contexts simultaneously
 	void    *hash_ctx;
 	void    *dom_ctx;
 	void    *ch_ctx;
 	uint8_t *p1;
+
+	// Incremental expand_message API with fixed 48B output (needed at multiple points in protocol)
 	int (*expand_message_init) (
 		void *ctx
 		);
@@ -28,6 +30,8 @@ typedef struct
 		const uint8_t *dst,
 		uint8_t        dst_len
 		);
+
+	// One-shot expand_message API with variable output length (only needed in create_generator_next)
 	int (*expand_message_dyn)(
 		void          *ctx,
 		uint8_t       *out,
@@ -37,6 +41,8 @@ typedef struct
 		const uint8_t *dst,
 		uint8_t        dst_len
 		);
+
+	/// DST
 	char    *cipher_suite_id;
 	uint8_t  cipher_suite_id_len;
 	char    *default_key_dst;

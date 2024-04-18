@@ -1,4 +1,3 @@
-
 find_library(GMP_LIB gmp REQUIRED)
 find_path(GMP_PATH gmp.h REQUIRED)
 message(STATUS "GMP_PATH: ${GMP_PATH}")

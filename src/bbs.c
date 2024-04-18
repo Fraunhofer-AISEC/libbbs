@@ -17,6 +17,9 @@
 #define BBS_SHA256_MAP_DST                BBS_SHA256_API_ID "MAP_MSG_TO_SCALAR_AS_HASH_"
 #define BBS_SHA256_MAP_DST_LENGTH         BBS_SHA256_API_ID_LENGTH + 26
 
+// The above collision stems from the ID. Possible oversight? Should not compromise
+// security too much...
+
 SHA256Context bbs_sha256_hash_ctx_t;
 SHA256Context bbs_sha256_dom_ctx_t;
 SHA256Context bbs_sha256_ch_ctx_t;
@@ -58,9 +61,9 @@ bbs_cipher_suite_t bbs_sha256_cipher_suite = {
 	.dom_ctx = &bbs_sha256_dom_ctx_t,
 	.ch_ctx = &bbs_sha256_ch_ctx_t,
 	.p1 = BBS_SHA256_P1,
-    .expand_message_init = bbs_sha256_expand_message_init,
-    .expand_message_update = bbs_sha256_expand_message_update,
-    .expand_message_finalize_48B = bbs_sha256_expand_message_finalize_48B,
+	.expand_message_init = bbs_sha256_expand_message_init,
+	.expand_message_update = bbs_sha256_expand_message_update,
+	.expand_message_finalize_48B = bbs_sha256_expand_message_finalize_48B,
 	.expand_message_dyn = bbs_sha256_expand_message_dyn,
 	.cipher_suite_id = (char*) BBS_SHA256_CIPHER_SUITE_ID,
 	.cipher_suite_id_len = BBS_SHA256_CIPHER_SUITE_LENGTH,
@@ -81,9 +84,9 @@ bbs_cipher_suite_t bbs_shake256_cipher_suite = {
 	.dom_ctx = &bbs_shake256_dom_ctx_t,
 	.ch_ctx = &bbs_shake256_ch_ctx_t,
 	.p1 = BBS_SHAKE256_P1,
-    .expand_message_init = bbs_shake256_expand_message_init,
-    .expand_message_update = bbs_shake256_expand_message_update,
-    .expand_message_finalize_48B = bbs_shake256_expand_message_finalize_48B,
+	.expand_message_init = bbs_shake256_expand_message_init,
+	.expand_message_update = bbs_shake256_expand_message_update,
+	.expand_message_finalize_48B = bbs_shake256_expand_message_finalize_48B,
 	.expand_message_dyn = bbs_shake256_expand_message_dyn,
 	.cipher_suite_id = (char*) BBS_SHAKE256_CIPHER_SUITE_ID,
 	.cipher_suite_id_len = BBS_SHAKE256_CIPHER_SUITE_LENGTH,
@@ -99,9 +102,6 @@ bbs_cipher_suite_t bbs_shake256_cipher_suite = {
 	.map_dst_len = BBS_SHAKE256_MAP_DST_LENGTH,
 };
 // *INDENT-ON* - Restore formatting
-
-// The above collision stems from the ID. Possible oversight? Should not compromise
-// security too much...
 
 int
 bbs_keygen_full (
