@@ -797,27 +797,6 @@ cleanup:
 	return res;
 }
 
-
-// int bbs_sha256_proof_gen_det(
-// 	const bbs_public_key  pk,
-// 	const bbs_signature   signature,
-// 	uint8_t              *proof,
-// 	const uint8_t        *header,
-// 	uint64_t              header_len,
-// 	const uint8_t        *presentation_header,
-// 	uint64_t              presentation_header_len,
-// 	const uint64_t       *disclosed_indexes,
-// 	uint64_t              disclosed_indexes_len,
-// 	uint64_t              num_messages,
-// 	bbs_bn_prf            prf,
-// 	void                 *prf_cookie,
-// 	va_list               ap
-// ) {
-// 	return bbs_proof_gen_det(&bbs_sha256_cipher_suite, pk, signature, proof, header, header_len, presentation_header, presentation_header_len, disclosed_indexes, disclosed_indexes_len, num_messages, prf, prf_cookie, ap);
-
-// }
-
-
 // bbs_proof_gen, but makes callbacks to prf for random scalars
 // We need to control the random scalars for the fixture tests. This way we do
 // not need to compile a dedicated library for the tests.
