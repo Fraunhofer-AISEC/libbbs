@@ -94,7 +94,7 @@ bbs_fix_sign ()
 			.signature2_signature_len =  sizeof(fixture_bls12_381_shake_256_signature2_signature),
 		},
 		{
-			.cipher_suite = bbs_shake256_cipher_suite,
+			.cipher_suite = bbs_sha256_cipher_suite,
 			.sign =                  &bbs_sha256_sign,
 			.signature1_SK =         fixture_bls12_381_sha_256_signature1_SK,
 			.signature1_PK =         fixture_bls12_381_sha_256_signature1_PK,
