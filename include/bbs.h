@@ -78,13 +78,22 @@ typedef uint8_t  bbs_secret_key[BBS_SK_LEN];
 typedef uint8_t  bbs_public_key[BBS_PK_LEN];
 typedef uint8_t  bbs_signature[BBS_SIG_LEN];
 
-#define bbs_sha256_keygen_full   bbs_keygen_full
-#define bbs_shake256_keygen_full bbs_keygen_full
-
 // Key Generation
-int bbs_keygen_full (
+
+int bbs_sha256_keygen_full (
 	bbs_secret_key  sk,
 	bbs_public_key  pk
+	);
+
+int bbs_shake256_keygen_full (
+	bbs_secret_key  sk,
+	bbs_public_key  pk
+	);
+
+int bbs_keygen_full (
+	bbs_cipher_suite_t *cipher_suite,
+	bbs_secret_key      sk,
+	bbs_public_key      pk
 	);
 
 int bbs_sha256_keygen (
@@ -193,10 +202,7 @@ int bbs_verify (
 
 // Proof Generation
 
-#define bbs_sha256_proof_gen   bbs_proof_gen
-#define bbs_shake256_proof_gen bbs_proof_gen
-
-int bbs_proof_gen (
+int bbs_sha256_proof_gen (
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
 	uint8_t              *proof,
@@ -208,6 +214,36 @@ int bbs_proof_gen (
 	uint64_t              disclosed_indexes_len,
 	uint64_t              num_messages,
 	...
+	);
+
+int bbs_shake256_proof_gen (
+	const bbs_public_key  pk,
+	const bbs_signature   signature,
+	uint8_t              *proof,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	...
+	);
+
+
+int bbs_proof_gen (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const bbs_signature   signature,
+	uint8_t              *proof,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	va_list               ap
 	);
 
 // Proof Verification
