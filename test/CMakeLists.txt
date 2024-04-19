@@ -26,16 +26,12 @@ target_link_libraries(bbs-test-e2e-bench PRIVATE bbs)
 target_compile_definitions(bbs-test-e2e-bench PUBLIC ENABLE_BENCHMARK)
 add_custom_target(bench COMMAND bbs-test-e2e-bench)
 
-set(fixture-test-list ${BBS_FIX_TESTS})
-
-set(e2e-test-list ${BBS_E2E_TESTS})
-
-foreach(test ${fixture-test-list})
+foreach(test ${BBS_FIX_TESTS})
   get_filename_component(TName ${test} NAME_WE)
   add_test(NAME ${TName} COMMAND bbs-test-fixtures ${TName})
 endforeach()
 
-foreach(test ${e2e-test-list})
+foreach(test ${BBS_E2E_TESTS})
   get_filename_component(TName ${test} NAME_WE)
   add_test(NAME ${TName} COMMAND bbs-test-e2e ${TName})
 endforeach()
