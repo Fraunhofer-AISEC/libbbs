@@ -1,20 +1,19 @@
-create_test_sourcelist(fixture-tests
-	bbs-test-fixtures.c
-	bbs_fix_msg_scalars.c
-	bbs_fix_generators.c
-	bbs_fix_keygen.c
-	bbs_fix_sign.c
-	bbs_fix_verify.c
-	bbs_fix_proof_gen.c
-	bbs_fix_proof_verify.c
-	bbs_fix_hash_to_scalar.c
-	bbs_fix_expand_message.c
-	)
+set(BBS_FIX_TESTS
+    bbs_fix_msg_scalars.c
+    bbs_fix_generators.c
+    bbs_fix_keygen.c
+    bbs_fix_sign.c
+    bbs_fix_verify.c
+    bbs_fix_proof_gen.c
+    bbs_fix_proof_verify.c
+    bbs_fix_hash_to_scalar.c
+    bbs_fix_expand_message.c)
 
-create_test_sourcelist(e2e-tests
-	bbs-test-e2e.c
-	bbs_e2e_sign_n_proof.c
-	)
+create_test_sourcelist(fixture-tests bbs-test-fixtures.c ${BBS_FIX_TESTS})
+
+set(BBS_E2E_TESTS bbs_e2e_sign_n_proof.c)
+
+create_test_sourcelist(e2e-tests bbs-test-e2e.c ${BBS_E2E_TESTS})
 
 add_executable(bbs-test-fixtures ${fixture-tests} fixtures.c)
 target_link_libraries(bbs-test-fixtures PRIVATE bbs)
@@ -27,25 +26,12 @@ target_link_libraries(bbs-test-e2e-bench PRIVATE bbs)
 target_compile_definitions(bbs-test-e2e-bench PUBLIC ENABLE_BENCHMARK)
 add_custom_target(bench COMMAND bbs-test-e2e-bench)
 
-set(fixture-test-list ${fixture-tests})
-remove(fixture-test-list bbs-test-fixtures.c)
-
-set(e2e-test-list ${e2e-tests})
-remove(e2e-test-list bbs-test-e2e.c)
-
-foreach(test ${fixture-test-list})
-	get_filename_component (TName ${test} NAME_WE)
-	add_test(
-		NAME ${TName}
-		COMMAND bbs-test-fixtures ${TName}
-		)
+foreach(test ${BBS_FIX_TESTS})
+  get_filename_component(TName ${test} NAME_WE)
+  add_test(NAME ${TName} COMMAND bbs-test-fixtures ${TName})
 endforeach()
 
-foreach(test ${e2e-test-list})
-	get_filename_component (TName ${test} NAME_WE)
-	add_test(
-		NAME ${TName}
-		COMMAND bbs-test-e2e ${TName}
-		)
+foreach(test ${BBS_E2E_TESTS})
+  get_filename_component(TName ${test} NAME_WE)
+  add_test(NAME ${TName} COMMAND bbs-test-e2e ${TName})
 endforeach()
-
