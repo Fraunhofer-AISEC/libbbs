@@ -405,7 +405,7 @@ bbs_fix_proof_gen ()
 		}
 
 		uint8_t proof1[BBS_PROOF_LEN (0)];
-		BBS_BENCH_START ()
+		BBS_BENCH_START (mocked_proof_gen)
 		if (BBS_OK != mocked_proof_gen (test_case, test_case.proof1_public_key,
 						test_case.proof1_signature, proof1,
 						test_case.proof1_header,
@@ -419,7 +419,7 @@ bbs_fix_proof_gen ()
 			puts ("Error during proof 1 generation");
 			return 1;
 		}
-		BBS_BENCH_END ("Valid Single Message Proof");
+		BBS_BENCH_END (mocked_proof_gen, "Valid Single Message Proof");
 		ASSERT_EQ_PTR ("proof 1 generation",
 			       proof1,
 			       test_case.proof1_proof,
@@ -448,7 +448,6 @@ bbs_fix_proof_gen ()
 			puts ("Error during proof 2 generation");
 			return 1;
 		}
-		BBS_BENCH_END ("Valid Multi-Message, All Messages Disclosed Proof")
 		ASSERT_EQ_PTR ("proof 2 generation",
 			       proof2,
 			       test_case.proof2_proof,
@@ -478,7 +477,6 @@ bbs_fix_proof_gen ()
 			puts ("Error during proof 3 generation");
 			return 1;
 		}
-		BBS_BENCH_END ("Valid Multi-Message, Some Messages Disclosed Proof")
 		ASSERT_EQ_PTR ("proof 3 generation",
 			       proof3,
 			       test_case.proof3_proof,
