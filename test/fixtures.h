@@ -5,6 +5,7 @@
 #define FIXTURESH
 
 #include <stdint.h>
+#include <stddef.h>
 
 // Messages
 extern uint8_t  fixture_m_1[32];
@@ -687,5 +688,73 @@ extern uint8_t  fixture_bls12_381_sha_256_a_proof2_proof[464];
 #define fixture_bls12_381_sha_256_h2s_msg fixture_m_1
 extern uint8_t  fixture_bls12_381_sha_256_h2s_dst[48];
 extern uint8_t  fixture_bls12_381_sha_256_h2s_scalar[32];
+
+// 
+// RFC 9380 K.6 expand_message_xof SHAKE256 Test Vectors
+// 
+
+// Expand Message Test Vectors
+extern uint8_t rfc_9380_k6_expand_message_xof_dst[];
+extern size_t rfc_9380_k6_expand_message_xof_dst_len;
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_1[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_1_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_1;
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_dst_prime_1[37];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_1[39];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_1[32];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_2[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_2_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_2;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_2 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_2[42];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_2[32];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_3[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_3_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_3;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_3 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_3[55];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_3[32];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_4[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_4_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_4;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_4 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_4[172];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_4[32];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_5[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_5_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_5;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_5 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_5[556];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_5[32];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_6[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_6_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_6;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_6 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_6[39];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_6[128];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_7[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_7_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_7;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_7 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_7[42];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_7[128];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_8[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_8_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_8;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_8 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_8[55];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_8[128];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_9[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_9_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_9;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_9 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_9[172];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_9[128];
+extern uint8_t rfc_9380_k6_expand_message_xof_msg_10[];
+extern size_t rfc_9380_k6_expand_message_xof_msg_10_len;
+extern size_t rfc_9380_k6_expand_message_xof_out_len_10;
+#define fixture_rfc_9380_k6_expand_message_xof_dst_prime_10 fixture_rfc_9380_k6_expand_message_xof_dst_prime_1
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_10[556];
+extern uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_10[128];
 
 #endif /* FIXTURESH */
