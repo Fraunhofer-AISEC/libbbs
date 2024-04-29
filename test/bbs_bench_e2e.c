@@ -12,15 +12,12 @@ bbs_bench_e2e ()
 	#define MSG_LEN_END      135168
 	#define MSG_LEN_STEP     1024
 	#define USE_HEADER       0
-	char msg1[ITERATIONS_END][MSG_LEN_END];
-	char msg2[ITERATIONS_END][MSG_LEN_END];
-	for (int i = 0; i < ITERATIONS_END; i++)
+	char msg1[MSG_LEN_END];
+	char msg2[MSG_LEN_END];
+	for (int j = 0; j < MSG_LEN_END; j++)
 	{
-		for (int j = 0; j < MSG_LEN_END; j++)
-		{
-			msg1[i][j] = (char) rand ();
-			msg2[i][j] = (char) rand ();
-		}
+		msg1[j] = (char) rand ();
+		msg2[j] = (char) rand ();
 	}
 	for (int iterations_count = ITERATIONS_START;
 	     iterations_count < ITERATIONS_END;
@@ -65,16 +62,16 @@ bbs_bench_e2e ()
 		#endif
 
 				if (BBS_OK != bbs_sha256_sign (sk, pk, sig, (uint8_t*) header,
-							       strlen (header), 2, msg1[i], msg_len,
-							       msg2[i], msg_len))
+							       strlen (header), 2, msg1, msg_len,
+							       msg2, msg_len))
 				{
 					puts ("Error during signing");
 					return 1;
 				}
 
 				if (BBS_OK != bbs_sha256_verify (pk, sig, (uint8_t*) header,
-								 strlen (header), 2, msg1[i],
-								 msg_len, msg2[i], msg_len))
+								 strlen (header), 2, msg1,
+								 msg_len, msg2, msg_len))
 				{
 					puts ("Error during signature verification");
 					return 1;
@@ -88,7 +85,7 @@ bbs_bench_e2e ()
 								    (uint8_t*) header,
 								    strlen (header), (uint8_t*) ph,
 								    strlen (ph), disclosed_indexes,
-								    1, 2, msg1[i], msg_len, msg2[i],
+								    1, 2, msg1, msg_len, msg2,
 								    msg_len))
 				{
 					puts ("Error during proof generation");
@@ -100,7 +97,7 @@ bbs_bench_e2e ()
 								       strlen (header),
 								       (uint8_t*) ph, strlen (ph),
 								       disclosed_indexes, 1, 2,
-								       msg1[i], msg_len))
+								       msg1, msg_len))
 				{
 					puts ("Error during proof verification");
 					return 1;

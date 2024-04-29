@@ -13,21 +13,33 @@ Dependencies:
 - `gmp`
 - `cmake` (build only)
 
-### Installation
-
 ```zsh
 mkdir build
 cd build
 cmake ..
+```
+
+### Installation
+
+Within `build`:
+
+```zsh
 make install
 ```
 
 ### Test
 
+Within `build`:
+
 ```zsh
-mkdir build
-cd build
-cmake ..
-make -j
+make
 make test
+```
+
+### Benchmark
+
+Within `build`:
+
+```zsh
+make bench
 ```
