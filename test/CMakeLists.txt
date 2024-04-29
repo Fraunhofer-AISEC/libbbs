@@ -12,6 +12,7 @@ set(BBS_FIX_TESTS
 create_test_sourcelist(fixture-tests bbs-test-fixtures.c ${BBS_FIX_TESTS})
 
 set(BBS_E2E_TESTS bbs_e2e_sign_n_proof.c)
+set(BBS_BENCH_TESTS bbs_e2e_sign_n_proof.c, bbs_e2e_bench.c)
 
 create_test_sourcelist(e2e-tests bbs-test-e2e.c ${BBS_E2E_TESTS})
 
