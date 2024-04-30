@@ -11,6 +11,7 @@ Provides a library `libbbs` implementing the `BLS12381-SHA-256` and `BLS12-381-S
 Dependencies:
 
 - `gmp`
+- `xsltproc` (indirect dependency of XKCP Keccak hash library)
 - `cmake` (build only)
 
 ```zsh
