@@ -49,7 +49,7 @@ Benchmark on Apple M1 Pro 2021 16GB:
 
 - 2 messages each of size 64 bytes
 - Disclosing first message only
-- Runtime averaged over 1000 iterations
+- Runtime averaged over 1000 iterations without warmup
 
 | Function                 | SHA256 (ms) | SHAKE256 (ms) |
 | ------------------------ | ----------- | ------------- |
