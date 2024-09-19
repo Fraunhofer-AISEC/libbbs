@@ -3,15 +3,7 @@
 
 typedef struct
 {
-	int (*key_gen) (
-		bbs_secret_key  sk,
-		const uint8_t  *key_material,
-		uint16_t        key_material_len,
-		const uint8_t  *key_info,
-		uint16_t        key_info_len,
-		const uint8_t  *key_dst,
-		uint8_t         key_dst_len
-		);
+	bbs_cipher_suite_t *cipher_suite;
 	uint8_t        *key_material;
 	uint16_t        key_material_len;
 	uint8_t        *key_info;
@@ -27,7 +19,7 @@ bbs_fix_keygen ()
 {
 	bbs_fix_keygen_fixture_t test_cases[] = {
 		{
-			.key_gen          = bbs_sha256_keygen,
+			.cipher_suite     = bbs_sha256_cipher_suite,
 			.key_material     = fixture_bls12_381_sha_256_key_material,
 			.key_material_len = sizeof(fixture_bls12_381_sha_256_key_material),
 			.key_info         = fixture_bls12_381_sha_256_key_info,
@@ -37,7 +29,7 @@ bbs_fix_keygen ()
 			.expected_SK      = fixture_bls12_381_sha_256_SK,
 			.expected_PK      = fixture_bls12_381_sha_256_PK,
 		},{
-			.key_gen          = bbs_shake256_keygen,
+			.cipher_suite     = bbs_shake256_cipher_suite,
 			.key_material     = fixture_bls12_381_shake_256_key_material,
 			.key_material_len = sizeof(fixture_bls12_381_shake_256_key_material),
 			.key_info         = fixture_bls12_381_shake_256_key_info,
@@ -65,7 +57,7 @@ bbs_fix_keygen ()
 		bbs_fix_keygen_fixture_t fixture = test_cases[i];
 
 		bbs_secret_key sk;
-		if (BBS_OK != fixture.key_gen (sk, fixture.key_material, fixture.key_material_len
+		if (BBS_OK != bbs_keygen(fixture.cipher_suite, sk, fixture.key_material, fixture.key_material_len
 					       , fixture.key_info,
 					       fixture.key_info_len, fixture.key_dst,
 					       fixture.key_dst_len))
@@ -76,7 +68,7 @@ bbs_fix_keygen ()
 		ASSERT_EQ_PTR ("secret key generation", sk, fixture.expected_SK, BBS_SK_LEN);
 
 		bbs_public_key pk;
-		if (BBS_OK != bbs_sk_to_pk (fixture.expected_SK, pk))
+		if (BBS_OK != bbs_sk_to_pk (fixture.cipher_suite, fixture.expected_SK, pk))
 		{
 			puts ("Error during public key generation");
 			return 1;

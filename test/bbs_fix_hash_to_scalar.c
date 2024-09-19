@@ -18,12 +18,12 @@ bbs_fix_hash_to_scalar ()
 {
 	bbs_fix_hash_to_scalar_fixture_t test_cases[] = {
 		{
-			.cipher_suite = &bbs_sha256_cipher_suite,
+			.cipher_suite = bbs_sha256_cipher_suite,
 			.msg          = fixture_bls12_381_sha_256_h2s_msg, .msg_len     = 32,
 			.dst          = fixture_bls12_381_sha_256_h2s_dst, .dst_len     = 48,
 			.scalar       = fixture_bls12_381_sha_256_h2s_scalar, .scalar_len  = 32,
 		},{
-			.cipher_suite = &bbs_shake256_cipher_suite,
+			.cipher_suite = bbs_shake256_cipher_suite,
 			.msg          = fixture_bls12_381_shake_256_h2s_msg, .msg_len     = 32,
 			.dst          = fixture_bls12_381_shake_256_h2s_dst, .dst_len     = 50,
 			.scalar       = fixture_bls12_381_shake_256_h2s_scalar, .scalar_len  = 32,
@@ -57,7 +57,7 @@ bbs_fix_hash_to_scalar ()
 		}
 
 		if (BBS_OK != hash_to_scalar (fixture.cipher_suite, scalar, fixture.dst, fixture.dst_len,
-					      fixture.msg, fixture.msg_len, 0))
+					      1, fixture.msg, fixture.msg_len))
 		{
 			puts ("Error during hash to scalar");
 			return 1;

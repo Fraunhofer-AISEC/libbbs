@@ -10,7 +10,7 @@
 #include <relic.h>
 
 // This header specifies useful functions for several utility algorithms.
-// Use these if you want to hack on BBS signatures and want to stay close to the
+// Use these ifyou want to hack on BBS signatures and want to stay close to the
 // RFC draft.
 
 #define LEN(m)          (sizeof(m) / sizeof(m[0]))
@@ -20,6 +20,60 @@
 #define BBS_SCALAR_LEN  32
 #define BBS_G1_ELEM_LEN 48
 #define BBS_G2_ELEM_LEN 96
+
+// Enough memory for any defined hash function
+union bbs_hash_context {
+	SHA256Context sha256;
+	Keccak_HashInstance shake256;
+};
+
+/// @brief BBS cipher suite interface
+/// @note Strategy pattern to dispatch to the correct hash function for the
+/// cipher suite, keeping the same overall control flow for the caller.
+struct bbs_cipher_suite
+{
+	uint8_t p1[BBS_G1_ELEM_LEN];
+
+	// Incremental expand_message API with fixed 48B output (needed at multiple points in protocol)
+	int (*expand_message_init) (
+		union bbs_hash_context *ctx
+		);
+	int (*expand_message_update) (
+		union bbs_hash_context *ctx,
+		const uint8_t *msg,
+		uint32_t       msg_len
+		);
+	int (*expand_message_finalize_48B) (
+		union bbs_hash_context *ctx,
+		uint8_t        out[48],
+		const uint8_t *dst,
+		uint8_t        dst_len
+		);
+
+	// One-shot expand_message API with variable output length (only needed in create_generator_next)
+	int (*expand_message_dyn)(
+		uint8_t       *out,
+		uint32_t       out_len,
+		const uint8_t *msg,
+		uint32_t       msg_lg,
+		const uint8_t *dst,
+		uint8_t        dst_len
+		);
+
+	/// DST
+	char    *cipher_suite_id;
+	uint8_t  cipher_suite_id_len;
+	char    *default_key_dst;
+	uint8_t  default_key_dst_len;
+	char    *api_id;
+	uint8_t  api_id_len;
+	char    *signature_dst;
+	uint8_t  signature_dst_len;
+	char    *challenge_dst;
+	uint8_t  challenge_dst_len;
+	char    *map_dst;
+	uint8_t  map_dst_len;
+};
 
 // Serialization
 // These functions should be called in a RLC_TRY block
@@ -67,83 +121,41 @@ void ep2_read_bbs (
 // Implementation of expand_message with expand_len = 48
 // relic implements this as md_xmd, but here we built it with an incremental API
 // or varargs for the message
-int expand_message_init (
-	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx
+int expand_message_init_sha256 (
+	union bbs_hash_context *ctx
 	);
 
-int bbs_sha256_expand_message_init (
-	void *ctx
+int expand_message_init_shake256 (
+	union bbs_hash_context *ctx
 	);
 
-int bbs_shake256_expand_message_init (
-	void *ctx
-	);
-
-int expand_message_update (
-	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
-	const uint8_t      *msg,
-	uint32_t            msg_len
-	);
-
-int bbs_sha256_expand_message_update (
-	void          *ctx,
+int expand_message_update_sha256 (
+	union bbs_hash_context *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	);
 
-int bbs_shake256_expand_message_update (
-	void          *ctx,
+int expand_message_update_shake256 (
+	union bbs_hash_context *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	);
 
-int bbs_sha256_expand_message_finalize_48B (
-	void          *ctx,
+int expand_message_finalize_48B_sha256 (
+	union bbs_hash_context *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
 	);
 
-int bbs_shake256_expand_message_finalize_48B (
-	void          *ctx,
+int expand_message_finalize_48B_shake256 (
+	union bbs_hash_context *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
 	);
 
-/// @brief Expand a message to a 48 byte output
-int expand_message_finalize_48B (
-	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
-	uint8_t             out[48],
-	const uint8_t      *dst,
-	uint8_t             dst_len
-	);
-
-int bbs_shake256_expand_message_finalize_dyn (
-	void          *ctx,
-	uint8_t       *out,
-	uint32_t       out_len,
-	const uint8_t *dst,
-	uint8_t        dst_len
-	);
-
-/// @brief Expand a message to a dynamically sized output
-int expand_message_dyn (
-	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
-	uint8_t            *out,
-	uint32_t            out_len,
-	const uint8_t      *msg,
-	uint32_t            msg_len,
-	const uint8_t      *dst,
-	uint8_t             dst_len
-	);
-
-int bbs_sha256_expand_message_dyn (
-	void          *ctx,
+int expand_message_dyn_sha256 (
 	uint8_t       *out,
 	uint32_t       out_len,
 	const uint8_t *msg,
@@ -152,40 +164,31 @@ int bbs_sha256_expand_message_dyn (
 	uint8_t        dst_len
 	);
 
-int bbs_shake256_expand_message_dyn (
-	void          *ctx,
+int expand_message_dyn_shake256 (
 	uint8_t       *out,
 	uint32_t       out_len,
 	const uint8_t *msg,
 	uint32_t       msg_len,
 	const uint8_t *dst,
 	uint8_t        dst_len
-	);
-
-int expand_message_48B (
-	bbs_cipher_suite_t *cipher_suite,
-	uint8_t             out[48],
-	const uint8_t      *dst,
-	uint8_t             dst_len,
-	...
 	);
 
 // Hash to Scalar
 int hash_to_scalar_init (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx
+	union bbs_hash_context *ctx
 	);
 
 int hash_to_scalar_update (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	const uint8_t      *msg,
 	uint32_t            msg_len
 	);
 
 int hash_to_scalar_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	bn_t                out,
 	const uint8_t      *dst,
 	uint8_t             dst_len
@@ -196,26 +199,27 @@ int hash_to_scalar (
 	bn_t                out,
 	const uint8_t      *dst,
 	uint8_t             dst_len,
+	uint64_t            num_messages,
 	...
 	);
 
 // you need to call update exactly num_messages + 1 times.
 int calculate_domain_init (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	const uint8_t       pk[BBS_PK_LEN],
 	uint64_t            num_messages
 	);
 
 int calculate_domain_update (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	const ep_t          generator
 	);
 
 int calculate_domain_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	bn_t                out,
 	const uint8_t      *header,
 	uint64_t            header_len,
@@ -223,6 +227,8 @@ int calculate_domain_finalize (
 	uint8_t             api_id_len
 	);
 
+
+/* Out of business due to some undefined varargs behavior
 int calculate_domain (
 	bbs_cipher_suite_t *cipher_suite,
 	bn_t                out,
@@ -234,6 +240,7 @@ int calculate_domain (
 	uint8_t             api_id_len,
 	...
 	);
+*/
 
 /**
  * @brief Create a generator for the BBS+ signature scheme
@@ -248,7 +255,7 @@ int create_generator_init (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t             state[48 + 8],
 	const uint8_t      *api_id,
-	uint8_t             api_id_len
+	uint32_t            api_id_len
 	);
 
 /**
@@ -266,7 +273,7 @@ int create_generator_next (
 	uint8_t             state[48 + 8],
 	ep_t                generator,
 	const uint8_t      *api_id,
-	uint8_t             api_id_len
+	uint32_t            api_id_len
 	);
 
 // You can control the randomness for bbs_proof_gen by supplying a prf.

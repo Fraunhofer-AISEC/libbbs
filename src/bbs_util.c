@@ -33,19 +33,16 @@ ep_write_bbs (
 {
 	ep_t t;
 	ep_null (t);
+
 	if (ep_is_infty (p))
 	{
-		for (int i = 0; i<BBS_G1_ELEM_LEN / 8; i++)
-			((uint64_t*) bin)[i] = 0LL;
-		bin[0] = (1 << 7) | (1 << 6);
+		RLC_THROW (ERR_NO_VALID);
 	}
-	else
-	{
-		ep_norm (t, p);
-		ep_pck (t, t);
-		fp_write_bin (bin, BBS_G1_ELEM_LEN, t->x);
-		bin[0] |= (1 << 7) | (fp_get_bit (t->y, 0) << 5);
-	}
+
+	ep_norm (t, p);
+	ep_pck (t, t);
+	fp_write_bin (bin, BBS_G1_ELEM_LEN, t->x);
+	bin[0] |= (1 << 7) | (fp_get_bit (t->y, 0) << 5);
 	ep_free (t);
 }
 
@@ -62,26 +59,19 @@ ep_read_bbs (
 	for (int i = 0; i<BBS_G1_ELEM_LEN / 8; i++)
 		((uint64_t*) buffer)[i] = ((uint64_t*) bin)[i];
 	buffer[0] ^= flags;
-	if (0xc0 == flags)
+	if (0x80 != flags && 0xa0 != flags)
 	{
-		for (int i = 0; i<BBS_G1_ELEM_LEN / 8; i++)
-			if (0LL != ((uint64_t*) buffer)[i])
-				RLC_THROW (ERR_NO_VALID);
-		ep_set_infty (p);
-	}
-	else if (0x80 == flags || 0xa0 == flags)
-	{
-		p->coord = BASIC;
-		fp_read_bin (p->x, buffer, BBS_G1_ELEM_LEN);
-		fp_zero (p->y);
-		fp_set_bit (p->y, 0, (flags >> 5) & 1);
-		fp_set_dig (p->z, 1);
-		ep_upk (p, p);
-	}
-	else
-	{
+		// In particular, we should never read the neutral element!
+		// Allowing that would make the algorithms insecure.
 		RLC_THROW (ERR_NO_VALID);
 	}
+
+	p->coord = BASIC;
+	fp_read_bin (p->x, buffer, BBS_G1_ELEM_LEN);
+	fp_zero (p->y);
+	fp_set_bit (p->y, 0, (flags >> 5) & 1);
+	fp_set_dig (p->z, 1);
+	ep_upk (p, p);
 
 	if (! ep_on_curve (p))
 	{
@@ -98,20 +88,18 @@ ep2_write_bbs (
 {
 	ep2_t t;
 	ep2_null (t);
+
 	if (ep2_is_infty (p))
 	{
-		for (int i = 0; i<BBS_G2_ELEM_LEN / 8; i++)
-			((uint64_t*) bin)[i] = 0LL;
-		bin[0] = (1 << 7) | (1 << 6);
+		// Should not happen
+		RLC_THROW (ERR_NO_VALID);
 	}
-	else
-	{
-		ep2_norm (t, p);
-		ep2_pck (t, t);
-		fp_write_bin (bin,                       BBS_G2_ELEM_LEN / 2, t->x[1]);
-		fp_write_bin (bin + BBS_G2_ELEM_LEN / 2, BBS_G2_ELEM_LEN / 2, t->x[0]);
-		bin[0] |= (1 << 7) | (fp_get_bit (t->y[0], 0) << 5);
-	}
+
+	ep2_norm (t, p);
+	ep2_pck (t, t);
+	fp_write_bin (bin,                       BBS_G2_ELEM_LEN / 2, t->x[1]);
+	fp_write_bin (bin + BBS_G2_ELEM_LEN / 2, BBS_G2_ELEM_LEN / 2, t->x[0]);
+	bin[0] |= (1 << 7) | (fp_get_bit (t->y[0], 0) << 5);
 	ep2_free (t);
 }
 
@@ -128,28 +116,21 @@ ep2_read_bbs (
 	for (int i = 0; i<BBS_G2_ELEM_LEN / 8; i++)
 		((uint64_t*) buffer)[i] = ((uint64_t*) bin)[i];
 	buffer[0] ^= flags;
-	if (0xc0 == flags)
+	if (0x80 != flags && 0xa0 != flags)
 	{
-		for (int i = 1; i<BBS_G2_ELEM_LEN / 8; i++)
-			if (0LL != ((uint64_t*) buffer)[i])
-				RLC_THROW (ERR_NO_VALID);
-		ep2_set_infty (p);
-	}
-	else if (0x80 == flags || 0xa0 == flags)
-	{
-		p->coord = BASIC;
-		fp_read_bin (p->x[1], buffer,                       BBS_G2_ELEM_LEN / 2);
-		fp_read_bin (p->x[0], buffer + BBS_G2_ELEM_LEN / 2, BBS_G2_ELEM_LEN / 2);
-		fp2_zero (p->y);
-		fp_set_bit (p->y[0], 0, (flags >> 5) & 1);
-		fp_zero (p->y[1]);
-		fp2_set_dig (p->z, 1);
-		ep2_upk (p, p);
-	}
-	else
-	{
+		// In particular, we should never read the neutral element!
+		// Allowing that would make the algorithms insecure.
 		RLC_THROW (ERR_NO_VALID);
 	}
+
+	p->coord = BASIC;
+	fp_read_bin (p->x[1], buffer,                       BBS_G2_ELEM_LEN / 2);
+	fp_read_bin (p->x[0], buffer + BBS_G2_ELEM_LEN / 2, BBS_G2_ELEM_LEN / 2);
+	fp2_zero (p->y);
+	fp_set_bit (p->y[0], 0, (flags >> 5) & 1);
+	fp_zero (p->y[1]);
+	fp2_set_dig (p->z, 1);
+	ep2_upk (p, p);
 
 	if (! ep2_on_curve (p))
 	{
@@ -161,27 +142,17 @@ ep2_read_bbs (
 // Note: Incremental expand_message API with fixed 48B output needed multiple times during BBS execution. 
 // During generator creation bigger outputs are needed, however not with an incremental API.
 
-int
-expand_message_init (bbs_cipher_suite_t *cipher_suite,
-		     void               *ctx
-		     )
-{
-	return cipher_suite->expand_message_init (ctx);
-}
-
-
-int
-bbs_sha256_expand_message_init (
-	void *ctx
+// SHA256
+int expand_message_init_sha256 (
+	union bbs_hash_context *ctx
 	)
 {
-	SHA256Context *sha_ctx = (SHA256Context*) ctx;
 	uint64_t       zero[]  = {0, 0, 0, 0, 0, 0, 0, 0};
 	int            res     = BBS_ERROR;
 
-	if (shaSuccess != SHA256Reset (sha_ctx))
+	if (shaSuccess != SHA256Reset (&ctx->sha256))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, (uint8_t*) zero, 64))
+	if (shaSuccess != SHA256Input (&ctx->sha256, (uint8_t*) zero, 64))
 		goto cleanup;
 
 	res = BBS_OK;
@@ -190,46 +161,15 @@ cleanup:
 }
 
 
-int
-bbs_shake256_expand_message_init (
-	void *ctx
-	)
-{
-	Keccak_HashInstance *shake_ctx = (Keccak_HashInstance*) ctx;
-	HashReturn           res       = Keccak_HashInitialize_SHAKE256 (shake_ctx);
-	if (res == KECCAK_SUCCESS)
-	{
-		return BBS_OK;
-	}
-	else
-	{
-		return BBS_ERROR;
-	}
-}
-
-
-int
-expand_message_update (bbs_cipher_suite_t *cipher_suite,
-		       void               *ctx,
-		       const uint8_t      *msg,
-		       uint32_t            msg_len
-		       )
-{
-	return cipher_suite->expand_message_update (ctx, msg, msg_len);
-}
-
-
-int
-bbs_sha256_expand_message_update (
-	void          *ctx,
+int expand_message_update_sha256 (
+	union bbs_hash_context *ctx,
 	const uint8_t *msg,
 	uint32_t       msg_len
 	)
 {
-	SHA256Context *sha_ctx = (SHA256Context*) ctx;
 	int            res     = BBS_ERROR;
 
-	if (shaSuccess != SHA256Input (sha_ctx, msg, msg_len))
+	if (shaSuccess != SHA256Input (&ctx->sha256, msg, msg_len))
 		goto cleanup;
 
 	res = BBS_OK;
@@ -238,41 +178,8 @@ cleanup:
 }
 
 
-int
-bbs_shake256_expand_message_update (
-	void          *ctx,
-	const uint8_t *msg,
-	uint32_t       msg_len
-	)
-{
-	Keccak_HashInstance *shake_ctx = (Keccak_HashInstance*) ctx;
-	HashReturn           res       = Keccak_HashUpdate (shake_ctx, msg, msg_len * 8);
-	if (res == KECCAK_SUCCESS)
-	{
-		return BBS_OK;
-	}
-	else
-	{
-		return BBS_ERROR;
-	}
-}
-
-
-int
-expand_message_finalize_48B (bbs_cipher_suite_t *cipher_suite,
-			     void               *ctx,
-			     uint8_t             out[48],
-			     const uint8_t      *dst,
-			     uint8_t             dst_len
-			     )
-{
-	return cipher_suite->expand_message_finalize_48B (ctx, out, dst, dst_len);
-}
-
-
-int
-bbs_sha256_expand_message_finalize_48B (
-	void          *ctx,
+int expand_message_finalize_48B_sha256 (
+	union bbs_hash_context *ctx,
 	uint8_t        out[48],
 	const uint8_t *dst,
 	uint8_t        dst_len
@@ -283,36 +190,35 @@ bbs_sha256_expand_message_finalize_48B (
 	uint8_t        b_2[32];
 	int            res     = BBS_ERROR;
 	uint8_t        num     = 0;
-	SHA256Context *sha_ctx = (SHA256Context*) ctx;
 
-	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &num, 1))
 		goto cleanup;
 	num = 48;
-	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &num, 1))
 		goto cleanup;
 	num = 0;
-	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &num, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, dst, dst_len))
+	if (shaSuccess != SHA256Input (&ctx->sha256, dst, dst_len))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, &dst_len, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &dst_len, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Result (sha_ctx, b_0))
+	if (shaSuccess != SHA256Result (&ctx->sha256, b_0))
 		goto cleanup;
 
 	// b_1 = H( b_0, I2OSP(1,1), dst, I2OSP(dst_len, 1))
-	if (shaSuccess != SHA256Reset (sha_ctx))
+	if (shaSuccess != SHA256Reset (&ctx->sha256))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, b_0, 32))
+	if (shaSuccess != SHA256Input (&ctx->sha256, b_0, 32))
 		goto cleanup;
 	num = 1;
-	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &num, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, dst, dst_len))
+	if (shaSuccess != SHA256Input (&ctx->sha256, dst, dst_len))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, &dst_len, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &dst_len, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Result (sha_ctx, b_1))
+	if (shaSuccess != SHA256Result (&ctx->sha256, b_1))
 		goto cleanup;
 
 	// b_0 ^= b_1
@@ -320,18 +226,18 @@ bbs_sha256_expand_message_finalize_48B (
 		((uint64_t*) b_0)[i] ^= ((uint64_t*) b_1)[i];
 
 	// b_2 = H( b_0, I2OSP(2,1), dst, I2OSP(dst_len, 1))
-	if (shaSuccess != SHA256Reset (sha_ctx))
+	if (shaSuccess != SHA256Reset (&ctx->sha256))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, b_0, 32))
+	if (shaSuccess != SHA256Input (&ctx->sha256, b_0, 32))
 		goto cleanup;
 	num = 2;
-	if (shaSuccess != SHA256Input (sha_ctx, &num, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &num, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, dst, dst_len))
+	if (shaSuccess != SHA256Input (&ctx->sha256, dst, dst_len))
 		goto cleanup;
-	if (shaSuccess != SHA256Input (sha_ctx, &dst_len, 1))
+	if (shaSuccess != SHA256Input (&ctx->sha256, &dst_len, 1))
 		goto cleanup;
-	if (shaSuccess != SHA256Result (sha_ctx, b_2))
+	if (shaSuccess != SHA256Result (&ctx->sha256, b_2))
 		goto cleanup;
 
 	for (int i = 0; i<4; i++)
@@ -345,42 +251,7 @@ cleanup:
 }
 
 
-/**
- * @brief Finalizes the expand_message xof operation with fixed output size of 48 bytes.
- *
- * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
-*/
-int
-bbs_shake256_expand_message_finalize_48B (
-	void          *ctx,
-	uint8_t        out[48],
-	const uint8_t *dst,
-	uint8_t        dst_len
-	)
-{
-	return bbs_shake256_expand_message_finalize_dyn (ctx, out, 48, dst, dst_len);
-}
-
-
-int
-expand_message_dyn (
-	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
-	uint8_t            *out,
-	uint32_t            out_len,
-	const uint8_t      *msg,
-	uint32_t            msg_len,
-	const uint8_t      *dst,
-	uint8_t             dst_len
-	)
-{
-	return cipher_suite->expand_message_dyn (ctx, out, out_len, msg, msg_len, dst, dst_len);
-}
-
-
-int
-bbs_sha256_expand_message_dyn (
-	void          *ctx,
+int expand_message_dyn_sha256 (
 	uint8_t       *out,
 	uint32_t       out_len,
 	const uint8_t *msg,
@@ -402,14 +273,49 @@ bbs_sha256_expand_message_dyn (
 }
 
 
+// SHAKE256
+int expand_message_init_shake256 (
+	union bbs_hash_context *ctx
+	)
+{
+	HashReturn           res       = Keccak_HashInitialize_SHAKE256 (&ctx->shake256);
+	if (res == KECCAK_SUCCESS)
+	{
+		return BBS_OK;
+	}
+	else
+	{
+		return BBS_ERROR;
+	}
+}
+
+
+int expand_message_update_shake256 (
+	union bbs_hash_context *ctx,
+	const uint8_t *msg,
+	uint32_t       msg_len
+	)
+{
+	HashReturn           res       = Keccak_HashUpdate (&ctx->shake256, msg, msg_len * 8);
+	if (res == KECCAK_SUCCESS)
+	{
+		return BBS_OK;
+	}
+	else
+	{
+		return BBS_ERROR;
+	}
+}
+
+
 /**
  * @brief Finalizes the expand_message xof operation with flexible output size.
  *
  * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
 */
 int
-bbs_shake256_expand_message_finalize_dyn (
-	void          *ctx,
+expand_message_finalize_dyn_shake256 (
+	union bbs_hash_context *ctx,
 	uint8_t       *out,
 	uint32_t       out_len,
 	const uint8_t *dst,
@@ -427,19 +333,19 @@ bbs_shake256_expand_message_finalize_dyn (
 	}
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
 	uint8_t num = out_len / 256;
-	if (Keccak_HashUpdate (ctx, &num, 1 * 8) != KECCAK_SUCCESS)
+	if (Keccak_HashUpdate (&ctx->shake256, &num, 1 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
 	num = out_len % 256;
-	if (Keccak_HashUpdate (ctx, &num, 1 * 8) != KECCAK_SUCCESS)
+	if (Keccak_HashUpdate (&ctx->shake256, &num, 1 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (Keccak_HashUpdate (ctx, dst, dst_len * 8) != KECCAK_SUCCESS)
+	if (Keccak_HashUpdate (&ctx->shake256, dst, dst_len * 8) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (Keccak_HashUpdate (ctx, &dst_len, 1 * 8) != KECCAK_SUCCESS)
+	if (Keccak_HashUpdate (&ctx->shake256, &dst_len, 1 * 8) != KECCAK_SUCCESS)
 		goto cleanup;
 
-	if (Keccak_HashFinal (ctx, NULL) != KECCAK_SUCCESS)
+	if (Keccak_HashFinal (&ctx->shake256, NULL) != KECCAK_SUCCESS)
 		goto cleanup;
-	if (Keccak_HashSqueeze (ctx, out, out_len * 8) != KECCAK_SUCCESS)
+	if (Keccak_HashSqueeze (&ctx->shake256, out, out_len * 8) != KECCAK_SUCCESS)
 		goto cleanup;
 	res = BBS_OK;
 cleanup:
@@ -447,9 +353,24 @@ cleanup:
 }
 
 
+/**
+ * @brief Finalizes the expand_message xof operation with fixed output size of 48 bytes.
+ *
+ * https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof
+*/
+int expand_message_finalize_48B_shake256 (
+	union bbs_hash_context *ctx,
+	uint8_t        out[48],
+	const uint8_t *dst,
+	uint8_t        dst_len
+	)
+{
+	return expand_message_finalize_dyn_shake256 (ctx, out, 48, dst, dst_len);
+}
+
+
 int
-bbs_shake256_expand_message_dyn (
-	void          *ctx,
+expand_message_dyn_shake256 (
 	uint8_t       *out,
 	uint32_t       out_len,
 	const uint8_t *msg,
@@ -458,20 +379,20 @@ bbs_shake256_expand_message_dyn (
 	uint8_t        dst_len
 	)
 {
-	Keccak_HashInstance *shake_ctx = (Keccak_HashInstance*) ctx;
+	union bbs_hash_context ctx;
 	int                  res       = BBS_ERROR;
 
-	if (BBS_OK !=  bbs_shake256_expand_message_init (shake_ctx))
+	if (BBS_OK !=  expand_message_init_shake256 (&ctx))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != bbs_shake256_expand_message_update (shake_ctx, msg, msg_len))
+	if (BBS_OK != expand_message_update_shake256 (&ctx, msg, msg_len))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != bbs_shake256_expand_message_finalize_dyn (shake_ctx,
+	if (BBS_OK != expand_message_finalize_dyn_shake256 (&ctx,
 								out,
 								out_len,
 								dst,
@@ -486,56 +407,10 @@ cleanup:
 }
 
 
-int
-expand_message_48B (
-	bbs_cipher_suite_t *cipher_suite,
-	uint8_t             out[48],
-	const uint8_t      *dst,
-	uint8_t             dst_len,
-	...
-	)
-{
-	va_list  ap;
-	uint8_t *msg     = 0;
-	uint32_t msg_len = 0;
-	int      res     = BBS_ERROR;
-
-	if (BBS_OK !=  cipher_suite->expand_message_init (cipher_suite->hash_ctx))
-	{
-		goto cleanup;
-	}
-
-	va_start (ap, dst_len);
-	while ((msg = va_arg (ap, uint8_t*)))
-	{
-		msg_len = va_arg (ap, uint32_t);
-		if (BBS_OK != cipher_suite->expand_message_update (cipher_suite->hash_ctx,
-								   msg,
-								   msg_len))
-		{
-			goto cleanup;
-		}
-	}
-	va_end (ap);
-
-	if (BBS_OK != cipher_suite->expand_message_finalize_48B (cipher_suite->hash_ctx,
-								 out,
-								 dst,
-								 dst_len))
-	{
-		goto cleanup;
-	}
-
-	res = BBS_OK;
-cleanup:
-	return res;
-}
-
-
 inline int
 hash_to_scalar_init (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx
+	union bbs_hash_context *ctx
 	)
 {
 	return cipher_suite->expand_message_init (ctx);
@@ -545,7 +420,7 @@ hash_to_scalar_init (
 inline int
 hash_to_scalar_update (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	const uint8_t      *msg,
 	uint32_t            msg_len
 	)
@@ -557,7 +432,7 @@ hash_to_scalar_update (
 inline int
 hash_to_scalar_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	bn_t                out,
 	const uint8_t      *dst,
 	uint8_t             dst_len
@@ -591,25 +466,28 @@ hash_to_scalar (
 	bn_t                out,
 	const uint8_t      *dst,
 	uint8_t             dst_len,
+	uint64_t            num_messages,
 	...
 	)
 {
 	va_list  ap;
 	uint8_t *msg     = 0;
 	uint32_t msg_len = 0;
+	union bbs_hash_context hash_ctx;
 	int      res     = BBS_ERROR;
 
-	if (BBS_OK != hash_to_scalar_init (cipher_suite, cipher_suite->hash_ctx))
+	if (BBS_OK != hash_to_scalar_init (cipher_suite, &hash_ctx))
 	{
 		goto cleanup;
 	}
 
-	va_start (ap, dst_len);
-	while ((msg = va_arg (ap, uint8_t*)))
+	va_start (ap, num_messages);
+	for(uint64_t i=0; i< num_messages; i++)
 	{
+		msg = va_arg (ap, uint8_t*);
 		msg_len = va_arg (ap, uint32_t);
 		if (BBS_OK != hash_to_scalar_update (cipher_suite,
-						     cipher_suite->hash_ctx,
+						     &hash_ctx,
 						     msg,
 						     msg_len))
 		{
@@ -619,7 +497,7 @@ hash_to_scalar (
 	va_end (ap);
 
 	if (BBS_OK != hash_to_scalar_finalize (cipher_suite,
-					       cipher_suite->hash_ctx,
+					       &hash_ctx,
 					       out,
 					       dst,
 					       dst_len))
@@ -636,7 +514,7 @@ cleanup:
 int
 calculate_domain_init (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	const uint8_t       pk[BBS_PK_LEN],
 	uint64_t            num_messages
 	)
@@ -668,7 +546,7 @@ cleanup:
 int
 calculate_domain_update (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	const ep_t          generator
 	)
 {
@@ -696,7 +574,7 @@ cleanup:
 int
 calculate_domain_finalize (
 	bbs_cipher_suite_t *cipher_suite,
-	void               *ctx,
+	union bbs_hash_context *ctx,
 	bn_t                out,
 	const uint8_t      *header,
 	uint64_t            header_len,
@@ -743,7 +621,7 @@ cleanup:
 	return res;
 }
 
-
+/*
 int
 calculate_domain (
 	bbs_cipher_suite_t *cipher_suite,
@@ -759,9 +637,10 @@ calculate_domain (
 {
 	va_list ap;
 	ep_t   *generator;
+	union bbs_hash_context hash_ctx;
 	int     res = BBS_ERROR;
 
-	if (BBS_OK != calculate_domain_init (cipher_suite, cipher_suite->hash_ctx, pk,
+	if (BBS_OK != calculate_domain_init (cipher_suite, &hash_ctx, pk,
 					     num_messages))
 	{
 		goto cleanup;
@@ -771,7 +650,7 @@ calculate_domain (
 	while ((generator = va_arg (ap, ep_t*)))
 	{
 		if (BBS_OK != calculate_domain_update (cipher_suite,
-						       cipher_suite->hash_ctx,
+						       &hash_ctx,
 						       *generator))
 		{
 			goto cleanup;
@@ -780,7 +659,7 @@ calculate_domain (
 	va_end (ap);
 
 	if (BBS_OK != calculate_domain_finalize (cipher_suite,
-						 cipher_suite->hash_ctx,
+						 &hash_ctx,
 						 out,
 						 header,
 						 header_len,
@@ -795,17 +674,18 @@ calculate_domain (
 cleanup:
 	return res;
 }
-
+*/
 
 int
 create_generator_init (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t             state[48 + 8],
 	const uint8_t      *api_id,
-	uint8_t             api_id_len
+	uint32_t            api_id_len
 	)
 {
 	uint8_t buffer[256];
+	union bbs_hash_context hash_ctx;
 	int     res = BBS_ERROR;
 
 	if (api_id_len > 255 - 19)
@@ -818,29 +698,26 @@ create_generator_init (
 	for (int i = 0; i < 19; i++)
 		buffer[i + api_id_len] = "SIG_GENERATOR_SEED_"[i];
 
-	if (BBS_OK != expand_message_init (cipher_suite, cipher_suite->hash_ctx))
+	if (BBS_OK != cipher_suite->expand_message_init (&hash_ctx))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite,
-					     cipher_suite->hash_ctx,
+	if (BBS_OK != cipher_suite->expand_message_update (&hash_ctx,
 					     api_id,
 					     api_id_len))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite,
-					     cipher_suite->hash_ctx,
+	if (BBS_OK != cipher_suite->expand_message_update (&hash_ctx,
 					     (uint8_t*) "MESSAGE_GENERATOR_SEED",
 					     22))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_finalize_48B (cipher_suite,
-						   cipher_suite->hash_ctx,
+	if (BBS_OK != cipher_suite->expand_message_finalize_48B (&hash_ctx,
 						   state,
 						   buffer,
 						   api_id_len + 19))
@@ -953,12 +830,13 @@ create_generator_next (
 	uint8_t             state[48 + 8],
 	ep_t                generator,
 	const uint8_t      *api_id,
-	uint8_t             api_id_len
+	uint32_t            api_id_len
 	)
 {
 	uint8_t  dst_buf[256];
 	uint8_t  rand_buf[128];
 	uint64_t i_be = UINT64_H2BE (*((uint64_t*) (state + 48)));
+	union bbs_hash_context hash_ctx;
 	int      res  = BBS_ERROR;
 
 	if (api_id_len > 255 - 19)
@@ -979,26 +857,24 @@ create_generator_next (
 	for (int i = 0; i < 19; i++)
 		dst_buf[i + api_id_len] = "SIG_GENERATOR_SEED_"[i];
 
-	if (BBS_OK != expand_message_init (cipher_suite, cipher_suite->hash_ctx))
+	if (BBS_OK != cipher_suite->expand_message_init (&hash_ctx))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite, cipher_suite->hash_ctx, state, 48))
+	if (BBS_OK != cipher_suite->expand_message_update (&hash_ctx, state, 48))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_update (cipher_suite,
-					     cipher_suite->hash_ctx,
+	if (BBS_OK != cipher_suite->expand_message_update (&hash_ctx,
 					     (uint8_t*) &i_be,
 					     8))
 	{
 		goto cleanup;
 	}
 
-	if (BBS_OK != expand_message_finalize_48B (cipher_suite,
-						   cipher_suite->hash_ctx,
+	if (BBS_OK != cipher_suite->expand_message_finalize_48B (&hash_ctx,
 						   state,
 						   dst_buf,
 						   api_id_len + 19))
@@ -1009,8 +885,7 @@ create_generator_next (
 	for (int i = 0; i < 18; i++)
 		dst_buf[i + api_id_len] = "SIG_GENERATOR_DST_"[i];
 
-	if (BBS_OK != cipher_suite->expand_message_dyn (cipher_suite->hash_ctx,
-							rand_buf,
+	if (BBS_OK != cipher_suite->expand_message_dyn (rand_buf,
 							128,
 							state,
 							48,

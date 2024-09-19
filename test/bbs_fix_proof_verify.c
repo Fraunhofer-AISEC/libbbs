@@ -3,19 +3,7 @@
 
 typedef struct
 {
-	int (*proof_verify) (
-		const bbs_public_key  pk,
-		const uint8_t        *proof,
-		uint64_t              proof_len,
-		const uint8_t        *header,
-		uint64_t              header_len,
-		const uint8_t        *presentation_header,
-		uint64_t              presentation_header_len,
-		const uint64_t       *disclosed_indexes,
-		uint64_t              disclosed_indexes_len,
-		uint64_t              num_messages,
-		...
-		);
+	bbs_cipher_suite_t *cipher_suite;
 	uint8_t  *proof_SEED;
 	size_t    proof_SEED_len;
 	uint8_t  *proof_DST;
@@ -114,7 +102,7 @@ bbs_fix_proof_verify ()
 	// *INDENT-OFF* - Preserve formatting
 	proof_fixture_t test_cases[] = {
 		{
-			.proof_verify = &bbs_sha256_proof_verify,
+			.cipher_suite = bbs_sha256_cipher_suite,
 			.proof_SEED = fixture_bls12_381_sha_256_proof_SEED,
 			.proof_SEED_len = sizeof(fixture_bls12_381_sha_256_proof_SEED),
 			.proof_DST = fixture_bls12_381_sha_256_proof_DST,
@@ -207,7 +195,7 @@ bbs_fix_proof_verify ()
 			.proof3_m_7_len = sizeof(fixture_bls12_381_sha_256_proof3_m_7),
 		},
 		{
-			.proof_verify = &bbs_shake256_proof_verify,
+			.cipher_suite = bbs_sha256_cipher_suite,
 			.proof_SEED = fixture_bls12_381_shake_256_proof_SEED,
 			.proof_SEED_len = sizeof(fixture_bls12_381_shake_256_proof_SEED),
 			.proof_DST = fixture_bls12_381_shake_256_proof_DST,
@@ -315,7 +303,7 @@ bbs_fix_proof_verify ()
 	for (int cipher_suite_index = 0; cipher_suite_index < 2; cipher_suite_index++)
 	{
 		proof_fixture_t test_case = test_cases[cipher_suite_index];
-		if (BBS_OK != test_case.proof_verify (test_case.proof1_public_key,
+		if (BBS_OK != bbs_proof_verify(test_case.cipher_suite, test_case.proof1_public_key,
 						      test_case.proof1_proof,
 						      test_case.proof1_proof_len,
 						      test_case.proof1_header,
@@ -331,7 +319,7 @@ bbs_fix_proof_verify ()
 			return 1;
 		}
 
-		if (BBS_OK != test_case.proof_verify (test_case.proof2_public_key,
+		if (BBS_OK != bbs_proof_verify(test_case.cipher_suite, test_case.proof2_public_key,
 						      test_case.proof2_proof,
 						      test_case.proof2_proof_len,
 						      test_case.proof2_header,
@@ -366,7 +354,7 @@ bbs_fix_proof_verify ()
 		}
 
 		// Only some messages are being revealed here
-		if (BBS_OK != test_case.proof_verify (test_case.proof3_public_key,
+		if (BBS_OK != bbs_proof_verify(test_case.cipher_suite, test_case.proof3_public_key,
 						      test_case.proof3_proof,
 						      test_case.proof3_proof_len,
 						      test_case.proof3_header,

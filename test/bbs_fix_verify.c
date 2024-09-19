@@ -4,14 +4,7 @@
 
 typedef struct
 {
-	bbs_cipher_suite_t cipher_suite;
-	int (*verify)(const uint8_t *pk,
-		      const uint8_t *signature,
-		      const uint8_t *header,
-		      uint64_t       header_len,
-		      uint64_t       num_messages,
-		      ...
-		      );
+	bbs_cipher_suite_t *cipher_suite;
 	uint8_t  *signature1_SK;
 	uint8_t  *signature1_PK;
 	uint8_t  *signature1_header;
@@ -57,7 +50,6 @@ bbs_fix_verify ()
 	bbs_fix_verify_fixture_t test_cases[] = {
 		{
 			.cipher_suite = bbs_sha256_cipher_suite,
-			.verify = bbs_sha256_verify,
 			.signature1_SK = fixture_bls12_381_sha_256_signature1_SK,
 			.signature1_PK = fixture_bls12_381_sha_256_signature1_PK,
 			.signature1_header = fixture_bls12_381_sha_256_signature1_header,
@@ -96,7 +88,6 @@ bbs_fix_verify ()
 		},
 		{
 			.cipher_suite = bbs_shake256_cipher_suite,
-			.verify = bbs_shake256_verify,
 			.signature1_SK = fixture_bls12_381_shake_256_signature1_SK,
 			.signature1_PK = fixture_bls12_381_shake_256_signature1_PK,
 			.signature1_header = fixture_bls12_381_shake_256_signature1_header,
@@ -139,7 +130,7 @@ bbs_fix_verify ()
 	for (int cipher_suite_index = 0; cipher_suite_index < 2; cipher_suite_index++)
 	{
 		bbs_fix_verify_fixture_t test_case = test_cases[cipher_suite_index];
-		printf("Testing cipher suite %s\n", test_case.cipher_suite.cipher_suite_id);
+		printf("Testing cipher suite %s\n", test_case.cipher_suite->cipher_suite_id);
 		if (core_init () != RLC_OK)
 		{
 			core_clean ();
@@ -151,7 +142,7 @@ bbs_fix_verify ()
 			return 1;
 		}
 
-		if (BBS_OK != test_case.verify (test_case.signature1_PK,
+		if (BBS_OK != bbs_verify(test_case.cipher_suite, test_case.signature1_PK,
 						test_case.signature1_signature,
 						test_case.signature1_header,
 						test_case.signature1_header_len, 1,
@@ -162,7 +153,7 @@ bbs_fix_verify ()
 			return 1;
 		}
 
-		if (BBS_OK != test_case.verify (test_case.signature2_PK,
+		if (BBS_OK != bbs_verify(test_case.cipher_suite, test_case.signature2_PK,
 						test_case.signature2_signature,
 						test_case.signature2_header,
 						test_case.signature2_header_len, 10,

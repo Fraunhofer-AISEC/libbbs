@@ -3,7 +3,7 @@
 
 typedef struct
 {
-	bbs_cipher_suite_t  cipher_suite;
+	bbs_cipher_suite_t  *cipher_suite;
 
 	uint8_t            *proof_SEED;
 	size_t              proof_SEED_len;
@@ -97,7 +97,7 @@ cleanup:
 
 int
 fill_randomness (
-	bbs_cipher_suite_t  cipher_suite,
+	bbs_cipher_suite_t  *cipher_suite,
 	uint8_t            *rand,
 	int                 count,
 	const uint8_t      *seed,
@@ -109,9 +109,7 @@ fill_randomness (
 	int ret     = BBS_ERROR;
 	int out_len = count * 48;
 
-	if (BBS_OK != expand_message_dyn (&cipher_suite,
-					  cipher_suite.hash_ctx,
-					  rand,
+	if (BBS_OK != cipher_suite->expand_message_dyn (rand,
 					  out_len,
 					  seed,
 					  seed_len,
@@ -161,7 +159,7 @@ mocked_proof_gen (
 	{
 		goto cleanup;
 	}
-	if (BBS_OK != bbs_proof_gen_det (&test_case.cipher_suite,
+	if (BBS_OK != bbs_proof_gen_det (test_case.cipher_suite,
 					 pk,
 					 signature,
 					 proof,
@@ -340,7 +338,7 @@ bbs_fix_proof_gen ()
 	{
 		fixture_proof_gen_t test_case = test_cases[cipher_suite_index];
 		printf ("Testing BBS Proof Generation with cipher suite %s\n",
-			test_case.cipher_suite.cipher_suite_id);
+			test_case.cipher_suite->cipher_suite_id);
 		if (core_init () != RLC_OK)
 		{
 			core_clean ();
@@ -378,7 +376,7 @@ bbs_fix_proof_gen ()
 		RLC_CATCH_ANY { puts ("Write error"); return 1;}
 		for (int i = 0; i < 5; i++)
 		{
-			if (BBS_OK != mocked_prf (&test_case.cipher_suite, scalar, i + 1, 0, randomness))
+			if (BBS_OK != mocked_prf (test_case.cipher_suite, scalar, i + 1, 0, randomness))
 			{
 				puts ("Read error");
 				return 1;
@@ -392,7 +390,7 @@ bbs_fix_proof_gen ()
 
 		for (int i = 0; i < 5; i++)
 		{
-			if (BBS_OK != mocked_prf (&test_case.cipher_suite, scalar, 0, i, randomness))
+			if (BBS_OK != mocked_prf (test_case.cipher_suite, scalar, 0, i, randomness))
 			{
 				puts ("Read error");
 				return 1;

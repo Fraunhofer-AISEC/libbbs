@@ -103,8 +103,7 @@ bbs_fix_expand_message ()
 	};
 	for (int i = 0; i < 10; i++)
 	{
-		if (BBS_OK != expand_message_dyn (&bbs_shake256_cipher_suite,
-						  bbs_shake256_cipher_suite.hash_ctx,
+		if (BBS_OK != bbs_shake256_cipher_suite->expand_message_dyn (
 						  out_buffers[i], test_cases[i].out_len,
 						  test_cases[i].msg, test_cases[i].msg_len,
 						  rfc_9380_k6_expand_message_xof_dst,

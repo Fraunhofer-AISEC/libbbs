@@ -10,7 +10,7 @@ typedef struct
 int
 bbs_fix_generators ()
 {
-	bbs_cipher_suite_t           cipher_suites[] = {
+	bbs_cipher_suite_t           *cipher_suites[] = {
 		bbs_sha256_cipher_suite, bbs_shake256_cipher_suite
 	};
 
@@ -40,10 +40,10 @@ bbs_fix_generators ()
 
 	for (int i = 0; i < 2; i++)
 	{
-		bbs_cipher_suite_t cipher_suite = cipher_suites[i];
+		bbs_cipher_suite_t *cipher_suite = cipher_suites[i];
 		bbs_fix_generators_fixture_t fixture = test_cases[i];
 
-		printf("Testing %s\n", cipher_suite.cipher_suite_id);
+		printf("Testing %s\n", cipher_suite->cipher_suite_id);
 
 		if (core_init () != RLC_OK)
 		{
@@ -66,16 +66,18 @@ bbs_fix_generators ()
 		}
 		RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 
-		const uint8_t *api_id     = (uint8_t *) cipher_suite.api_id;
-		const uint8_t  api_id_len = cipher_suite.api_id_len;
+		const uint8_t *api_id     = (uint8_t *) cipher_suite->api_id;
+		const uint8_t  api_id_len = cipher_suite->api_id_len;
 
-		if (BBS_OK != create_generator_init (&cipher_suite, state, api_id, api_id_len))
+		if (BBS_OK != create_generator_init (cipher_suite, state, api_id, api_id_len))
 		{
 			puts ("Error during generator initialization");
 			return 1;
 		}
 
-		if (BBS_OK != create_generator_next (&cipher_suite, state, generator, api_id,
+		DEBUG("TEST", state, 56);
+
+		if (BBS_OK != create_generator_next (cipher_suite, state, generator, api_id,
 						     api_id_len))
 		{
 			puts ("Error during generator Q_1 creation");
@@ -85,10 +87,10 @@ bbs_fix_generators ()
 			ep_write_bbs (bin, generator);
 		} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 
-		ASSERT_EQ ("generator Q_1 creation", bin, fixture.q_1);
+		ASSERT_EQ_PTR ("generator Q_1 creation", bin, fixture.q_1, BBS_G1_ELEM_LEN);
 
 		for (int j = 0; j < 10; j++) {
-			if (BBS_OK != create_generator_next (&cipher_suite, state, generator, api_id,
+			if (BBS_OK != create_generator_next (cipher_suite, state, generator, api_id,
 								api_id_len))
 			{
 				printf ("Error during generator %d creation", j + 1);

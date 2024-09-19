@@ -3,7 +3,7 @@
 
 typedef struct
 {
-	bbs_cipher_suite_t  cipher_suite;
+	bbs_cipher_suite_t  *cipher_suite;
 	const uint8_t      *msg[10];
 	size_t              msg_len;
 } fixture_msg_scalar;
@@ -79,15 +79,14 @@ bbs_fix_msg_scalars ()
 		}
 		RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 
-		const uint8_t *map_dst     = (uint8_t *) fixture.cipher_suite.map_dst;
-		const uint8_t  map_dst_len = fixture.cipher_suite.map_dst_len;
+		const uint8_t *map_dst     = (uint8_t *) fixture.cipher_suite->map_dst;
+		const uint8_t  map_dst_len = fixture.cipher_suite->map_dst_len;
 
 		for (int i = 0; i < 10; i++)
 		{
 
-			if (BBS_OK != hash_to_scalar (&fixture.cipher_suite, scalar, map_dst,
-						      map_dst_len, fixture_ms[i], fixture_ms_len[i],
-						      0))
+			if (BBS_OK != hash_to_scalar (fixture.cipher_suite, scalar, map_dst,
+						      map_dst_len, 1, fixture_ms[i], fixture_ms_len[i]))
 			{
 				puts ("Error during hash to scalar for message 1");
 				return 1;

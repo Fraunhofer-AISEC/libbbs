@@ -5,68 +5,12 @@
 int
 bbs_e2e_sign_n_proof ()
 {
-	int (*bbs_keygen_full[]) (
-		bbs_secret_key      sk,
-		bbs_public_key      pk
-		) = {
-		bbs_sha256_keygen_full, bbs_shake256_keygen_full
-	};
-
-	int (*sign[])(
-		const bbs_secret_key  sk,
-		const bbs_public_key  pk,
-		bbs_signature         signature,
-		const uint8_t        *header,
-		uint64_t              header_len,
-		uint64_t              num_messages,
-		...
-		) = {
-		bbs_sha256_sign, bbs_shake256_sign
-	};
-	int (*verify[])(
-		const bbs_public_key  pk,
-		const bbs_signature   signature,
-		const uint8_t        *header,
-		uint64_t              header_len,
-		uint64_t              num_messages,
-		...
-		) = {
-		bbs_sha256_verify, bbs_shake256_verify
-	};
-	int (*proof_gen[])(
-		const bbs_public_key  pk,
-		const bbs_signature   signature,
-		uint8_t              *proof,
-		const uint8_t        *header,
-		uint64_t              header_len,
-		const uint8_t        *presentation_header,
-		uint64_t              presentation_header_len,
-		const uint64_t       *disclosed_indexes,
-		uint64_t              disclosed_indexes_len,
-		uint64_t              num_messages,
-		...
-		) = {
-		bbs_sha256_proof_gen, bbs_shake256_proof_gen
-	};
-	int (*proof_verify[])(
-		const bbs_public_key  pk,
-		const uint8_t        *proof,
-		uint64_t              proof_len,
-		const uint8_t        *header,
-		uint64_t              header_len,
-		const uint8_t        *challenge,
-		uint64_t              challenge_len,
-		const uint64_t       *disclosed_indexes,
-		uint64_t              num_disclosed_indexes,
-		uint64_t              num_messages,
-		...
-		) = {
-		bbs_sha256_proof_verify, bbs_shake256_proof_verify
-	};
+	bbs_cipher_suite_t *cipher_suites[] = { bbs_sha256_cipher_suite, bbs_shake256_cipher_suite };
 
 	for (int cipher_suite_index = 0; cipher_suite_index < 2; cipher_suite_index++)
 	{
 		char *cipher_suite_names[] = {"SHA256", "SHAKE256"};
+		bbs_cipher_suite_t *suite = cipher_suites[cipher_suite_index];
 		printf("Testing cipher suite %s\n", cipher_suite_names[cipher_suite_index]);
 		if (core_init () != RLC_OK)
 		{
@@ -83,7 +27,7 @@ bbs_e2e_sign_n_proof ()
 		bbs_public_key pk;
 
 		BBS_BENCH_START (keygen)
-		if (BBS_OK != bbs_keygen_full[cipher_suite_index] (sk, pk))
+		if (BBS_OK != bbs_keygen_full (suite, sk, pk))
 		{
 			puts ("Error during key generation");
 			return 1;
@@ -96,7 +40,7 @@ bbs_e2e_sign_n_proof ()
 		static char header[] = "But I am a header!";
 
 		BBS_BENCH_START (sign)
-		if (BBS_OK != sign[cipher_suite_index] (sk, pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
+		if (BBS_OK != bbs_sign (suite, sk, pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
 				       strlen (msg1), msg2, strlen (msg2)))
 		{
 			puts ("Error during signing");
@@ -105,7 +49,7 @@ bbs_e2e_sign_n_proof ()
 		BBS_BENCH_END (sign, "bbs_sign (2 messages, 1 header)")
 
 		BBS_BENCH_START (verify)
-		if (BBS_OK != verify[cipher_suite_index] (pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
+		if (BBS_OK != bbs_verify (suite, pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
 					 strlen (msg1), msg2, strlen (msg2)))
 		{
 			puts ("Error during signature verification");
@@ -118,7 +62,7 @@ bbs_e2e_sign_n_proof ()
 		static char ph[]                = "I am a challenge nonce!";
 
 		BBS_BENCH_START (proof_gen)
-		if (BBS_OK != proof_gen[cipher_suite_index] (pk, sig, proof, (uint8_t*) header, strlen (header),
+		if (BBS_OK != bbs_proof_gen(suite, pk, sig, proof, (uint8_t*) header, strlen (header),
 					    (uint8_t*) ph, strlen (ph), disclosed_indexes, 1, 2,
 					    msg1, strlen (msg1), msg2, strlen (msg2)))
 		{
@@ -128,7 +72,7 @@ bbs_e2e_sign_n_proof ()
 		BBS_BENCH_END (proof_gen, "bbs_proof_gen (2 messages, 1 header, 1 disclosed index)")
 
 		BBS_BENCH_START (proof_verify)
-		if (BBS_OK != proof_verify[cipher_suite_index] (pk, proof, BBS_PROOF_LEN (1), (uint8_t*) header,
+		if (BBS_OK != bbs_proof_verify(suite, pk, proof, BBS_PROOF_LEN (1), (uint8_t*) header,
 					       strlen (header), (uint8_t*) ph, strlen (ph),
 					       disclosed_indexes, 1, 2, msg1, strlen (msg1)))
 		{
