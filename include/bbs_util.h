@@ -4,7 +4,7 @@
 #include "bbs.h"
 
 #include <sha.h>
-#include "KeccakHash.h"
+#include "sha3.h" 
 
 #undef ALIGN
 #include <relic.h>
@@ -24,7 +24,7 @@
 // Enough memory for any defined hash function
 union bbs_hash_context {
 	SHA256Context sha256;
-	Keccak_HashInstance shake256;
+	sha3_ctx_t shake256;
 };
 
 /// @brief BBS cipher suite interface

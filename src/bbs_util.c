@@ -278,8 +278,8 @@ int expand_message_init_shake256 (
 	union bbs_hash_context *ctx
 	)
 {
-	HashReturn           res       = Keccak_HashInitialize_SHAKE256 (&ctx->shake256);
-	if (res == KECCAK_SUCCESS)
+	int           res       = shake256_init (&ctx->shake256);
+	if (res)
 	{
 		return BBS_OK;
 	}
@@ -296,8 +296,8 @@ int expand_message_update_shake256 (
 	uint32_t       msg_len
 	)
 {
-	HashReturn           res       = Keccak_HashUpdate (&ctx->shake256, msg, msg_len * 8);
-	if (res == KECCAK_SUCCESS)
+	int           res       = shake_update (&ctx->shake256, msg, msg_len);
+	if (res)
 	{
 		return BBS_OK;
 	}
@@ -333,20 +333,20 @@ expand_message_finalize_dyn_shake256 (
 	}
 	// H(msg || I2OSP(len_in_bytes, 2) || DST || I2OSP(len(DST), 1), len_in_bytes)
 	uint8_t num = out_len / 256;
-	if (Keccak_HashUpdate (&ctx->shake256, &num, 1 * 8) != KECCAK_SUCCESS)
+	if (shake_update (&ctx->shake256, &num, 1) == 0)
 		goto cleanup;
 	num = out_len % 256;
-	if (Keccak_HashUpdate (&ctx->shake256, &num, 1 * 8) != KECCAK_SUCCESS)
+	if (shake_update (&ctx->shake256, &num, 1) == 0)
 		goto cleanup;
-	if (Keccak_HashUpdate (&ctx->shake256, dst, dst_len * 8) != KECCAK_SUCCESS)
+	if (shake_update (&ctx->shake256, dst, dst_len) == 0)
 		goto cleanup;
-	if (Keccak_HashUpdate (&ctx->shake256, &dst_len, 1 * 8) != KECCAK_SUCCESS)
+	if (shake_update (&ctx->shake256, &dst_len, 1) == 0)
 		goto cleanup;
 
-	if (Keccak_HashFinal (&ctx->shake256, NULL) != KECCAK_SUCCESS)
-		goto cleanup;
-	if (Keccak_HashSqueeze (&ctx->shake256, out, out_len * 8) != KECCAK_SUCCESS)
-		goto cleanup;
+	shake_xof (&ctx->shake256);
+	// if (Keccak_HashFinal (&ctx->shake256, NULL) != KECCAK_SUCCESS)
+	//	goto cleanup;
+	shake_out (&ctx->shake256, out, out_len);
 	res = BBS_OK;
 cleanup:
 	return res;
