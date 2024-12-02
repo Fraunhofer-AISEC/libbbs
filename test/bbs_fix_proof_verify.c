@@ -96,6 +96,11 @@ typedef struct
 	size_t    proof3_m_7_len;
 } proof_fixture_t;
 
+static const char *suite_names[] = {
+	"BLS12_381_SHA256",
+	"BLS12_381_SHAKE256"
+};
+
 int
 bbs_fix_proof_verify ()
 {
@@ -315,7 +320,8 @@ bbs_fix_proof_verify ()
 						      test_case.proof1_m_1,
 						      test_case.proof1_m_1_len))
 		{
-			puts ("Error during proof 1 verification");
+			printf ("Error during proof 1 verification for suite `%s'\n",
+					suite_names[cipher_suite_index]);
 			return 1;
 		}
 
@@ -349,7 +355,8 @@ bbs_fix_proof_verify ()
 						      test_case.proof2_m_10,
 						      test_case.proof2_m_10_len))
 		{
-			puts ("Error during proof 2 verification");
+			printf ("Error during proof 2 verification for suite `%s'\n",
+					suite_names[cipher_suite_index]);
 			return 1;
 		}
 
@@ -372,7 +379,8 @@ bbs_fix_proof_verify ()
 						      test_case.proof3_m_7,
 						      test_case.proof3_m_7_len))
 		{
-			puts ("Error during proof 3 verification");
+			printf ("Error during proof 3 verification for suite `%s'\n",
+					suite_names[cipher_suite_index]);
 			return 1;
 		}
 
