@@ -736,11 +736,13 @@ cleanup:
 //
 // BEGIN Excerpt from relic's src/ep/relic_ep_map.c
 //
-#include <relic_tmpl_map.h>
+#include <relic_core.h>
+#include <relic_md.h>
+#include <relic_ep_map_tmpl.h>
 TMPL_MAP_HORNER (fp, fp_st);
 TMPL_MAP_ISOGENY_MAP (ep, fp, iso);
 #define EP_MAP_COPY_COND(O, I, C) dv_copy_cond (O, I, RLC_FP_DIGS, C)
-TMPL_MAP_SSWU (ep, fp, dig_t, EP_MAP_COPY_COND);
+TMPL_MAP_SSWU (ep, fp, dig_t);
 
 static void
 ep_map_from_field (ep_t p,
@@ -785,7 +787,7 @@ ep_map_from_field (ep_t p,
 		/* compare sign of y and sign of t; fix if necessary */                         \
 		neg = neg != fp_is_even (PT->y);                                                                         \
 		fp_neg (t, PT->y);                                                                                                       \
-		dv_copy_cond (PT->y, t, RLC_FP_DIGS, neg);                                                       \
+		dv_copy_sec (PT->y, t, RLC_FP_DIGS, neg);                                                       \
 	} while (0)
 
 		/* first map invocation */
