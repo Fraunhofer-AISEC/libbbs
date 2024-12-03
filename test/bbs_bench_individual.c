@@ -8,7 +8,7 @@
 int
 bbs_bench_individual ()
 {
-	#define CIPHERSUITE                         sha256
+	#define CIPHERSUITE                         shake256
 	// Use an additional macro to ensure full expansion before concatenation
 	#define CONCAT_INTERNAL(a, b, c)            a ## _ ## b ## _ ## c
 	#define BBS_EXECUTE(cipher_suite, function) CONCAT_INTERNAL (bbs, cipher_suite, function)
