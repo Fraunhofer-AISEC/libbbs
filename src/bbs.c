@@ -1047,8 +1047,8 @@ bbs_proof_prf (
 			       2,
 			       seed,
 			       (uint32_t)32,
-			       input,
-			       (uint32_t)8);
+			       &input,
+			       (uint32_t)4);
 }
 
 int

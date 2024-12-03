@@ -5,7 +5,7 @@
 int
 bbs_e2e_sign_n_proof ()
 {
-	bbs_cipher_suite_t *cipher_suites[] = { bbs_sha256_cipher_suite, bbs_shake256_cipher_suite };
+	bbs_cipher_suite_t *cipher_suites[] = { bbs_shake256_cipher_suite, bbs_sha256_cipher_suite };
 
 	for (int cipher_suite_index = 0; cipher_suite_index < 2; cipher_suite_index++)
 	{
