@@ -200,7 +200,7 @@ bbs_fix_proof_verify ()
 			.proof3_m_7_len = sizeof(fixture_bls12_381_sha_256_proof3_m_7),
 		},
 		{
-			.cipher_suite = bbs_sha256_cipher_suite,
+			.cipher_suite = bbs_shake256_cipher_suite,
 			.proof_SEED = fixture_bls12_381_shake_256_proof_SEED,
 			.proof_SEED_len = sizeof(fixture_bls12_381_shake_256_proof_SEED),
 			.proof_DST = fixture_bls12_381_shake_256_proof_DST,
