@@ -42,10 +42,12 @@ make test
 Within `build`:
 
 ```zsh
-make bench
+./test/bbs-test-bench
 ```
 
-Benchmark on Apple M1 Pro 2021 16GB:
+ 
+
+Benchmark (`bbs_bench_individual`) on M1 Pro 2021 16GB:
 
 - 2 messages each of size 64 bytes
 - Disclosing first message only
