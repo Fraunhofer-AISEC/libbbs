@@ -11,7 +11,7 @@ Provides a library `libbbs` implementing the `BLS12381-SHA-256` and `BLS12-381-S
 Dependencies:
 
 - `cmake` (build only)
-- `gmp` (optional)
+- `gmp` (optional, faster than the default)
 
 ```zsh
 mkdir build
@@ -47,7 +47,7 @@ Within `build`:
 
  
 
-Benchmark (`bbs_bench_individual`) on M1 Pro 2021 16GB:
+Benchmark (`bbs_bench_individual`) on M1 Pro 2021 16GB with `-DRELIC_ARITH="gmp"`:
 
 - 2 messages each of size 64 bytes
 - Disclosing first message only
