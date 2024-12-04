@@ -29,6 +29,7 @@ else()
   message(STATUS "-finline-small-functions not supported.")
 endif()
 
+SET(RELIC_ARITH "easy" CACHE STRING "The ARITH value for RELIC build")
 
 message(STATUS "Relic CFLAGS: ${RELIC_CFLAGS}")
 include(ExternalProject)
@@ -48,7 +49,7 @@ ExternalProject_Add(
              -DTIMER=
              -DCHECK=off
              -DVERBS=off
-             -DARITH=gmp
+	     -DARITH=${RELIC_ARITH}
              -DFP_PRIME=381
              "-DFP_METHD=BASIC^^COMBA^^COMBA^^MONTY^^MONTY^^JMPDS^^SLIDE"
              "-DCFLAGS=${RELIC_CFLAGS}"

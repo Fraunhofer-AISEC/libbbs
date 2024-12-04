@@ -10,13 +10,14 @@ Provides a library `libbbs` implementing the `BLS12381-SHA-256` and `BLS12-381-S
 
 Dependencies:
 
-- `gmp`
 - `cmake` (build only)
+- `gmp` (optional)
 
 ```zsh
 mkdir build
 cd build
-cmake ..
+cmake .. # Without GMP or
+cmake -DRELIC_ARITH="gmp" .. # (if you have gmp)
 ```
 
 ### Installation

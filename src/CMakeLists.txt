@@ -1,6 +1,8 @@
-find_library(GMP_LIB gmp REQUIRED)
-find_path(GMP_PATH gmp.h REQUIRED)
-message(STATUS "GMP_PATH: ${GMP_PATH}")
+if(RELIC_ARITH STREQUAL "gmp")
+	find_library(GMP_LIB gmp REQUIRED)
+	find_path(GMP_PATH gmp.h REQUIRED)
+	message(STATUS "GMP_PATH: ${GMP_PATH}")
+endif()
 
 add_library(bbs SHARED
 	bbs.c
