@@ -11,9 +11,9 @@ typedef struct
 int
 bbs_fix_msg_scalars ()
 {
-	fixture_msg_scalar test_cases[] = {
-		{
-			.cipher_suite = bbs_sha256_cipher_suite, 
+	fixture_msg_scalar fixture = {
+#ifdef LIBBBS_TEST_SUITE_SHA256
+			.cipher_suite = bbs_sha256_cipher_suite,
 			.msg          = {
 				fixture_bls12_381_sha_256_msg_scalar_1,
 				fixture_bls12_381_sha_256_msg_scalar_2,
@@ -25,11 +25,10 @@ bbs_fix_msg_scalars ()
 				fixture_bls12_381_sha_256_msg_scalar_8,
 				fixture_bls12_381_sha_256_msg_scalar_9,
 				fixture_bls12_381_sha_256_msg_scalar_10,
-			}, 
+			},
 			.msg_len = sizeof(fixture_bls12_381_sha_256_msg_scalar_1)
-		},
-		{
-			.cipher_suite = bbs_shake256_cipher_suite, 
+#elif LIBBBS_TEST_SUITE_SHAKE256
+			.cipher_suite = bbs_shake256_cipher_suite,
 			.msg          = {
 				fixture_bls12_381_shake_256_msg_scalar_1,
 				fixture_bls12_381_shake_256_msg_scalar_2,
@@ -41,9 +40,9 @@ bbs_fix_msg_scalars ()
 				fixture_bls12_381_shake_256_msg_scalar_8,
 				fixture_bls12_381_shake_256_msg_scalar_9,
 				fixture_bls12_381_shake_256_msg_scalar_10,
-			}, 
+			},
 			.msg_len = sizeof(fixture_bls12_381_shake_256_msg_scalar_1)
-		}
+#endif
 	};
 
 	uint8_t           *fixture_ms[10] = {
@@ -56,9 +55,6 @@ bbs_fix_msg_scalars ()
 		sizeof(fixture_m_9), sizeof(fixture_m_10)
 	};
 
-	for (int cipher_suite_index = 0; cipher_suite_index < 2; cipher_suite_index++)
-	{
-		fixture_msg_scalar fixture = test_cases[cipher_suite_index];
 		if (core_init () != RLC_OK)
 		{
 			core_clean ();
@@ -96,8 +92,6 @@ bbs_fix_msg_scalars ()
 			} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 			ASSERT_EQ_PTR ("scalar 1 generation", bin, fixture.msg[i], fixture.msg_len);
 		}
-	}
-
 	bn_free (scalar);
 	return 0;
 }
