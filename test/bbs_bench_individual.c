@@ -8,14 +8,19 @@
 int
 bbs_bench_individual ()
 {
-	#define CIPHERSUITE                         shake256
+#ifdef LIBBBS_TEST_SUITE_SHA256
+#define CIPHERSUITE                         sha256
+	printf ("Benchmarking %s \n",    "BLS12-381-SHA-256");
+#elif LIBBBS_TEST_SUITE_SHAKE256
+#define CIPHERSUITE                         shake256
+	printf ("Benchmarking %s \n",    "BLS12-381-SHAKE-256");
+#endif
 	// Use an additional macro to ensure full expansion before concatenation
 	#define CONCAT_INTERNAL(a, b, c)            a ## _ ## b ## _ ## c
 	#define BBS_EXECUTE(cipher_suite, function) CONCAT_INTERNAL (bbs, cipher_suite, function)
 
 	#define USE_HEADER                          0
 
-	printf ("Benchmarking %s \n",    TOSTRING (CIPHERSUITE));
 	printf ("Include header: %d \n", USE_HEADER);
 
 	#define ITERATIONS 1000

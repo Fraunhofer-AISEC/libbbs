@@ -14,6 +14,11 @@ bbs_bench_e2e ()
 	#define USE_HEADER       0
 	char msg1[MSG_LEN_END];
 	char msg2[MSG_LEN_END];
+#ifdef LIBBBS_TEST_SUITE_SHA256
+  bbs_cipher_suite_t *suite = bbs_sha256_cipher_suite;
+#elif LIBBBS_TEST_SUITE_SHAKE256
+  bbs_cipher_suite_t *suite = bbs_shake256_cipher_suite;
+#endif
 	for (int j = 0; j < MSG_LEN_END; j++)
 	{
 		msg1[j] = (char) rand ();
@@ -48,7 +53,7 @@ bbs_bench_e2e ()
 				bbs_secret_key sk;
 				bbs_public_key pk;
 
-				if (BBS_OK != bbs_sha256_keygen_full (sk, pk))
+				if (BBS_OK != bbs_keygen_full (suite, sk, pk))
 				{
 					puts ("Error during key generation");
 					return 1;
@@ -61,7 +66,7 @@ bbs_bench_e2e ()
 				static char   header[] = "";
 		#endif
 
-				if (BBS_OK != bbs_sha256_sign (sk, pk, sig, (uint8_t*) header,
+				if (BBS_OK != bbs_sign (suite, sk, pk, sig, (uint8_t*) header,
 							       strlen (header), 2, msg1, msg_len,
 							       msg2, msg_len))
 				{
@@ -69,7 +74,7 @@ bbs_bench_e2e ()
 					return 1;
 				}
 
-				if (BBS_OK != bbs_sha256_verify (pk, sig, (uint8_t*) header,
+				if (BBS_OK != bbs_verify (suite, pk, sig, (uint8_t*) header,
 								 strlen (header), 2, msg1,
 								 msg_len, msg2, msg_len))
 				{
@@ -81,7 +86,7 @@ bbs_bench_e2e ()
 				uint64_t    disclosed_indexes[] = {0};
 				static char ph[]                = "I am a challenge nonce!";
 
-				if (BBS_OK != bbs_sha256_proof_gen (pk, sig, proof,
+				if (BBS_OK != bbs_proof_gen (suite, pk, sig, proof,
 								    (uint8_t*) header,
 								    strlen (header), (uint8_t*) ph,
 								    strlen (ph), disclosed_indexes,
@@ -92,7 +97,7 @@ bbs_bench_e2e ()
 					return 1;
 				}
 
-				if (BBS_OK != bbs_sha256_proof_verify (pk, proof, BBS_PROOF_LEN (1),
+				if (BBS_OK != bbs_proof_verify (suite, pk, proof, BBS_PROOF_LEN (1),
 								       (uint8_t*) header,
 								       strlen (header),
 								       (uint8_t*) ph, strlen (ph),
