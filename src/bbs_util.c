@@ -693,9 +693,9 @@ create_generator_init (
 		goto cleanup;
 	}
 
-	for (int i = 0; i < api_id_len; i++)
+	for (uint32_t i = 0; i < api_id_len; i++)
 		buffer[i] = api_id[i];
-	for (int i = 0; i < 19; i++)
+	for (uint32_t i = 0; i < 19; i++)
 		buffer[i + api_id_len] = "SIG_GENERATOR_SEED_"[i];
 
 	if (BBS_OK != cipher_suite->expand_message_init (&hash_ctx))
@@ -854,9 +854,9 @@ create_generator_next (
 
 	*((uint64_t*) (state + 48)) += 1LL;
 
-	for (int i = 0; i < api_id_len; i++)
+	for (uint32_t i = 0; i < api_id_len; i++)
 		dst_buf[i] = api_id[i];
-	for (int i = 0; i < 19; i++)
+	for (uint32_t i = 0; i < 19; i++)
 		dst_buf[i + api_id_len] = "SIG_GENERATOR_SEED_"[i];
 
 	if (BBS_OK != cipher_suite->expand_message_init (&hash_ctx))

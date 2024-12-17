@@ -312,7 +312,7 @@ bbs_sign (
 		goto cleanup;
 	}
 
-	for (int i = 0; i<num_messages; i++)
+	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
 		if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, H_i,
@@ -509,7 +509,7 @@ bbs_verify (
 		goto cleanup;
 	}
 
-	for (int i = 0; i<num_messages; i++)
+	for (uint64_t i = 0; i<num_messages; i++)
 	{
 		// Calculate H_i
 		if (BBS_OK != create_generator_next (cipher_suite, generator_ctx, H_i,
