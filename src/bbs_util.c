@@ -732,100 +732,6 @@ cleanup:
 	return res;
 }
 
-
-//
-// BEGIN Excerpt from relic's src/ep/relic_ep_map.c
-//
-#include <relic_core.h>
-#include <relic_md.h>
-#include <relic_ep_map_tmpl.h>
-TMPL_MAP_HORNER (fp, fp_st);
-TMPL_MAP_ISOGENY_MAP (ep, fp, iso);
-#define EP_MAP_COPY_COND(O, I, C) dv_copy_cond (O, I, RLC_FP_DIGS, C)
-TMPL_MAP_SSWU (ep, fp, dig_t);
-
-static void
-ep_map_from_field (ep_t p,
-		   const uint8_t *uniform_bytes,
-		   size_t len,
-		   void (*const map_fn)(ep_t, const fp_t)
-		   )
-{
-	bn_t         k;
-	fp_t         t;
-	ep_t         q;
-	int          neg;
-	/* enough space for two field elements plus extra bytes for uniformity */
-	const size_t len_per_elm = (FP_PRIME + ep_param_level () + 7) / 8;
-
-	bn_null (k);
-	fp_null (t);
-	ep_null (q);
-
-	RLC_TRY {
-		if (len != 2 * len_per_elm)
-		{
-			RLC_THROW (ERR_NO_VALID);
-		}
-
-		bn_new (k);
-		fp_new (t);
-		ep_new (q);
-
-#define EP_MAP_CONVERT_BYTES(IDX)                                                                                       \
-	do {                                                                                                                                        \
-		bn_read_bin (k, uniform_bytes + IDX * len_per_elm, len_per_elm);         \
-		fp_prime_conv (t, k);                                                                                            \
-	} while (0)
-
-#define EP_MAP_APPLY_MAP(PT)                                                                                            \
-	do {                                                                                                                                        \
-		/* check sign of t */                                                                                           \
-		neg = fp_is_even (t);                                                                                            \
-		/* convert */                                                                                                           \
-		map_fn (PT, t);                                                                                                          \
-		/* compare sign of y and sign of t; fix if necessary */                         \
-		neg = neg != fp_is_even (PT->y);                                                                         \
-		fp_neg (t, PT->y);                                                                                                       \
-		dv_copy_sec (PT->y, t, RLC_FP_DIGS, neg);                                                       \
-	} while (0)
-
-		/* first map invocation */
-		EP_MAP_CONVERT_BYTES (0);
-		EP_MAP_APPLY_MAP (p);
-		TMPL_MAP_CALL_ISOMAP (ep, p);
-
-		/* second map invocation */
-		EP_MAP_CONVERT_BYTES (1);
-		EP_MAP_APPLY_MAP (q);
-		TMPL_MAP_CALL_ISOMAP (ep, q);
-
-		/* XXX(rsw) could add p and q and then apply isomap,
-		 * but need ep_add to support addition on isogeny curves */
-
-#undef EP_MAP_CONVERT_BYTES
-#undef EP_MAP_APPLY_MAP
-
-		/* sum the result */
-		ep_add (p, p, q);
-		ep_norm (p, p);
-		ep_mul_cof (p, p);
-	}
-	RLC_CATCH_ANY {
-		RLC_THROW (ERR_CAUGHT);
-	}
-	RLC_FINALLY {
-		bn_free (k);
-		fp_free (t);
-		ep_free (q);
-	}
-}
-
-
-//
-// END Excerpt from relic's src/ep/relic_ep_map.c
-//
-
 int
 create_generator_next (
 	bbs_cipher_suite_t *cipher_suite,
@@ -898,7 +804,7 @@ create_generator_next (
 	}
 
 	RLC_TRY {
-		ep_map_from_field (generator, rand_buf, 128, ep_map_sswu);
+		ep_map_rnd(generator, rand_buf, 128);
 	}
 	RLC_CATCH_ANY {
 		goto cleanup;

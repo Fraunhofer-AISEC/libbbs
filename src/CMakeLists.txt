@@ -12,9 +12,7 @@ add_library(bbs SHARED
 # set_property(TARGET bbs PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(bbs PUBLIC ../include)
 ExternalProject_Get_Property(relic SOURCE_DIR)
-target_include_directories(bbs PUBLIC ${SOURCE_DIR}/include)
 target_include_directories(bbs PUBLIC ${SOURCE_DIR}/src/md)
-target_include_directories(bbs PUBLIC ${SOURCE_DIR}/src/tmpl)
 target_include_directories(bbs PUBLIC ${BINARY_DIR}/include)
 target_include_directories(bbs PUBLIC ${GMP_PATH})
 

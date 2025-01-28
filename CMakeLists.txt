@@ -36,7 +36,7 @@ include(ExternalProject)
 ExternalProject_Add(
   relic
   GIT_REPOSITORY https://github.com/relic-toolkit/relic.git
-  GIT_TAG 3b9a4a8
+  GIT_TAG 7b8be9b
   UPDATE_DISCONNECTED 1
   STEP_TARGETS update
   LIST_SEPARATOR ^^
