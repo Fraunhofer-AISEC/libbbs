@@ -73,5 +73,20 @@ if(DEFINED LIBBBS_DEBUG)
   add_compile_definitions(LIBBBS_DEBUG)
 endif()
 
+# Code Coverage
+if (NOT DEFINED ENABLE_CODE_COVERAGE)
+  set(ENABLE_CODE_COVERAGE OFF CACHE STRING "Enable or disable code coverage" FORCE)
+endif()
+
+if (ENABLE_CODE_COVERAGE)
+  message(STATUS "Code coverage enabled")
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+
+else()
+  message(STATUS "No code coverage")
+endif()
+
 add_subdirectory(src)
 add_subdirectory(test)
