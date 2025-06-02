@@ -42,14 +42,9 @@ bbs_fix_keygen ()
 		.expected_PK      = fixture_bls12_381_sha_256_PK,
 	};
 #endif
-	if (core_init () != RLC_OK)
+	if (bbs_init ())
 	{
-		core_clean ();
-		return 1;
-	}
-	if (pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
+		bbs_deinit ();
 		return 1;
 	}
 

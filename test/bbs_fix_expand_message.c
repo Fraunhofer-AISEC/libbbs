@@ -14,14 +14,9 @@ typedef struct
 int
 bbs_fix_expand_message ()
 {
-	if (core_init () != RLC_OK)
+	if (bbs_init ())
 	{
-		core_clean ();
-		return 1;
-	}
-	if (pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
+		bbs_deinit ();
 		return 1;
 	}
 

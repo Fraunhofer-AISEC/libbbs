@@ -55,14 +55,9 @@ bbs_fix_msg_scalars ()
 		sizeof(fixture_m_9), sizeof(fixture_m_10)
 	};
 
-		if (core_init () != RLC_OK)
+		if (bbs_init ())
 		{
-			core_clean ();
-			return 1;
-		}
-		if (pc_param_set_any () != RLC_OK)
-		{
-			core_clean ();
+			bbs_deinit ();
 			return 1;
 		}
 

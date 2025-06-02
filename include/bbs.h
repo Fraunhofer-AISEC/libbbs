@@ -23,6 +23,13 @@ typedef uint8_t  bbs_public_key[BBS_PK_LEN];
 typedef uint8_t  bbs_signature[BBS_SIG_LEN];
 typedef struct bbs_cipher_suite bbs_cipher_suite_t;
 
+// Subsystem init
+int
+bbs_init (void);
+
+int
+bbs_deinit (void);
+
 // Key Generation
 
 int bbs_keygen_full (

@@ -32,14 +32,9 @@ bbs_fix_hash_to_scalar ()
 	};
 #endif
 
-	if (core_init () != RLC_OK)
+	if (bbs_init ())
 	{
-		core_clean ();
-		return 1;
-	}
-	if (pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
+		bbs_deinit ();
 		return 1;
 	}
 

@@ -127,14 +127,9 @@ bbs_fix_sign ()
 	// *INDENT-ON* - Preserve formatting
 
 	printf("Testing cipher suite %s\n", fixture.cipher_suite->cipher_suite_id);
-	if (core_init () != RLC_OK)
+	if (bbs_init ())
 	{
-		core_clean ();
-		return 1;
-	}
-	if (pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
+		bbs_deinit ();
 		return 1;
 	}
 

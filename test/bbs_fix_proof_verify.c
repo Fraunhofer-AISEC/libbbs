@@ -291,14 +291,9 @@ bbs_fix_proof_verify ()
 #endif
 	// *INDENT-ON* - Preserve formatting
 
-	if (core_init () != RLC_OK)
+	if (bbs_init ())
 	{
-		core_clean ();
-		return 1;
-	}
-	if (pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
+		bbs_deinit ();
 		return 1;
 	}
 	if (BBS_OK != bbs_proof_verify(test_case.cipher_suite, test_case.proof1_public_key,

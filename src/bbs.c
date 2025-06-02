@@ -189,6 +189,28 @@ cleanup:
 	return res;
 }
 
+int
+bbs_init (void)
+{
+	if (core_init () != RLC_OK)
+	{
+		core_clean ();
+		return 1;
+	}
+	if (pc_param_set_any () != RLC_OK)
+	{
+		core_clean ();
+		return 1;
+	}
+  return 0;
+}
+
+int
+bbs_deinit (void)
+{
+	core_clean ();
+  return 0;
+}
 
 int
 bbs_sk_to_pk (
