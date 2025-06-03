@@ -36,12 +36,11 @@ jobs:
     - name: Run tests and generate coverage
       run: |
         lcov --capture --directory ${{github.workspace}}/build --output-file coverage.info
-        genhtml coverage.info --output-directory coverage
+        genhtml coverage.info --output-directory doc/lcov
 
     - name: Deploy Doxygen Documentation and Coverage to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: |
-          ./doc/html
-          ./coverage
+        publish_dir: doc
+        exclude_assets: ".github,Doxyfile"
