@@ -4,9 +4,7 @@ Specification-compliant and performant implementation of the [BBS signature sche
 
 Provides a library `libbbs` implementing the `BLS12381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
 
-## Setup
-
-### Prerequisites
+## Prerequisites
 
 Dependencies:
 
@@ -20,7 +18,7 @@ cmake .. # Without GMP or
 cmake -DRELIC_ARITH="gmp" .. # (if you have gmp)
 ```
 
-### Installation
+## Installation
 
 Within `build`:
 
@@ -28,7 +26,7 @@ Within `build`:
 make install
 ```
 
-### Test
+## Test
 
 Within `build`:
 
@@ -37,7 +35,7 @@ make
 make test
 ```
 
-### Benchmark
+## Benchmark
 
 Within `build`:
 
