@@ -18,7 +18,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install -y xsltproc doxygen lcov
+        sudo apt-get install -y doxygen lcov
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DENABLE_CODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
