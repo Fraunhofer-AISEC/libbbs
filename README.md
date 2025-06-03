@@ -58,3 +58,12 @@ Benchmark (`bbs_bench_individual`) on M1 Pro 2021 16GB with `-DRELIC_ARITH="gmp"
 | verify                   | 3,877       | 3,829         |
 | proof generation         | 3,289       | 3,220         |
 | proof verification       | 4,532       | 4,482         |
+
+
+## Documentation
+
+See https://fraunhofer-aisec.github.io/libbbs/doxy/html/
+
+## Code coverage
+
+See https://fraunhofer-aisec.github.io/libbbs/lcov
