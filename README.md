@@ -1,8 +1,8 @@
 # libbbs
 
-Specification-compliant and performant implementation of the [BBS signature scheme](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/).
+Specification-compliant and performant C implementation of the [BBS signature scheme](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/) with little to no third party dependencies.
 
-Provides a library `libbbs` implementing the `BLS12381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
+Provides a library `libbbs` implementing the `BLS12-381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
 
 ## Prerequisites
 
