@@ -55,23 +55,12 @@ bbs_fix_generators ()
 	}
 	RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 
-	const uint8_t *api_id     = (uint8_t *) cipher_suite->api_id;
-	const uint8_t api_id_len = cipher_suite->api_id_len;
-
-	if (BBS_OK != create_generator_init (cipher_suite, state, api_id, api_id_len))
-	{
-		puts ("Error during generator initialization");
-		return 1;
-	}
+	create_generator_init (cipher_suite, state);
 
 	DEBUG("TEST", state, 56);
 
-	if (BBS_OK != create_generator_next (cipher_suite, state, generator, api_id,
-	                                     api_id_len))
-	{
-		puts ("Error during generator Q_1 creation");
-		return 1;
-	}
+	create_generator_next (cipher_suite, state, generator);
+
 	RLC_TRY {
 		ep_write_bbs (bin, generator);
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
@@ -79,12 +68,8 @@ bbs_fix_generators ()
 	ASSERT_EQ_PTR ("generator Q_1 creation", bin, fixture.q_1, BBS_G1_ELEM_LEN);
 
 	for (int j = 0; j < 10; j++) {
-		if (BBS_OK != create_generator_next (cipher_suite, state, generator, api_id,
-		                                     api_id_len))
-		{
-			printf ("Error during generator %d creation", j + 1);
-			return 1;
-		}
+		create_generator_next (cipher_suite, state, generator);
+
 		RLC_TRY {
 			ep_write_bbs (bin, generator);
 		} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }

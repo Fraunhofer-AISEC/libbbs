@@ -16,12 +16,31 @@ create_test_sourcelist(fixture-tests bbs-test-fixtures.c ${BBS_FIX_TESTS})
 create_test_sourcelist(e2e-tests bbs-test-e2e.c ${BBS_E2E_TESTS})
 create_test_sourcelist(bench-tests bbs-test-bench.c ${BBS_BENCH_TESTS})
 
+# For the fixture tests we need to be able to mock the proof-prf.
+# We create a copy of the object file exposing the inner workings.
+set(MOCKED_BBS "${CMAKE_CURRENT_BINARY_DIR}/libbbs_mocked.so")
+add_custom_command(OUTPUT ${MOCKED_BBS}
+	COMMAND ${CMAKE_OBJCOPY}
+		-G bbs_proof_gen_init
+		-G bbs_proof_gen_update
+		-G bbs_proof_gen_finalize
+		$<TARGET_FILE:bbs> ${MOCKED_BBS}
+	MAIN_DEPENDENCY bbs)
+add_custom_target(bbs_mocked_target DEPENDS ${MOCKED_BBS})
+add_library(bbs_mocked SHARED IMPORTED GLOBAL)
+add_dependencies(bbs_mocked bbs_mocked_target)
+set_target_properties(bbs_mocked PROPERTIES IMPORTED_LOCATION ${MOCKED_BBS})
+
 add_executable(bbs-test-fixtures-suite-bls12-381-shake-256 ${fixture-tests} fixtures.c)
 target_compile_definitions(bbs-test-fixtures-suite-bls12-381-shake-256 PUBLIC LIBBBS_TEST_SUITE_SHAKE256)
 add_executable(bbs-test-fixtures-suite-bls12-381-sha-256 ${fixture-tests} fixtures.c)
 target_compile_definitions(bbs-test-fixtures-suite-bls12-381-sha-256 PUBLIC LIBBBS_TEST_SUITE_SHA256)
-target_link_libraries(bbs-test-fixtures-suite-bls12-381-sha-256 PRIVATE bbs)
-target_link_libraries(bbs-test-fixtures-suite-bls12-381-shake-256 PRIVATE bbs)
+target_link_libraries(bbs-test-fixtures-suite-bls12-381-sha-256 PRIVATE bbs_mocked)
+target_link_libraries(bbs-test-fixtures-suite-bls12-381-shake-256 PRIVATE bbs_mocked)
+target_include_directories(bbs-test-fixtures-suite-bls12-381-sha-256 PUBLIC
+	../include ../src ${BINARY_DIR}/include)
+target_include_directories(bbs-test-fixtures-suite-bls12-381-shake-256 PUBLIC
+	../include ../src ${BINARY_DIR}/include)
 
 add_executable(bbs-test-e2e-suite-bls12-381-sha-256 ${e2e-tests})
 target_compile_definitions(bbs-test-e2e-suite-bls12-381-sha-256 PUBLIC LIBBBS_TEST_SUITE_SHAKE256)
