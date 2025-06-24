@@ -96,18 +96,14 @@ bbs_fix_expand_message ()
 			.expected_output = fixture_rfc_9380_k6_expand_message_xof_output_10
 		}
 	};
+
+	union bbs_hash_context ctx;
 	for (int i = 0; i < 10; i++)
 	{
-		if (BBS_OK != bbs_shake256_cipher_suite->expand_message_dyn (
-						  out_buffers[i], test_cases[i].out_len,
-						  test_cases[i].msg, test_cases[i].msg_len,
-						  rfc_9380_k6_expand_message_xof_dst,
-						  rfc_9380_k6_expand_message_xof_dst_len))
-		{
-			printf ("Error in expand_message_dyn test case %d\n", i);
-
-			return 1;
-		}
+		bbs_shake256_cipher_suite->expand_message_init(&ctx);
+		bbs_shake256_cipher_suite->expand_message_update(&ctx, test_cases[i].msg, test_cases[i].msg_len);
+		bbs_shake256_cipher_suite->expand_message_finalize(&ctx, out_buffers[i], test_cases[i].out_len,
+				rfc_9380_k6_expand_message_xof_dst, rfc_9380_k6_expand_message_xof_dst_len);
 		ASSERT_EQ_PTR ("expand_message_dyn",
 			       out_buffers[i],
 			       test_cases[i].expected_output,

@@ -1,5 +1,63 @@
 #include "fixtures.h"
 #include "test_util.h"
+#include <stdbool.h>
+
+// BEGIN declarations of bbs.c
+// These are usually static, but made global in a modified library
+typedef struct {
+	bbs_cipher_suite_t   *cipher_suite;
+	uint8_t                generator_ctx[48 + 8];
+	union bbs_hash_context dom_ctx;
+	ep_t Q_1;
+	// Final output
+	ep_t B;
+	// Temporary outputs
+	ep_t H_i;
+	bn_t msg_scalar; // Also used for domain
+} bbs_acc_ctx;
+typedef struct {
+	bbs_acc_ctx acc;
+	ep_t T2;
+	union bbs_hash_context ch_ctx;
+	uint64_t disclosed_ctr;
+	uint64_t undisclosed_ctr;
+	bbs_bn_prf           *prf;
+	void                 *prf_cookie;
+} bbs_proof_gen_ctx;
+
+void
+bbs_proof_gen_init (
+	bbs_proof_gen_ctx *ctx,
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	uint64_t              num_messages,
+	uint64_t              num_disclosed,
+	bbs_bn_prf            prf,
+	void                 *prf_cookie
+	);
+
+void
+bbs_proof_gen_update (
+	bbs_proof_gen_ctx *ctx,
+	uint8_t *proof,
+	uint8_t *msg,
+	uint64_t msg_len,
+	bool disclosed
+	);
+
+int
+bbs_proof_gen_finalize (
+	bbs_proof_gen_ctx *ctx,
+	const bbs_signature   signature,
+	uint8_t              *proof,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	uint64_t              num_messages,
+	uint64_t              num_disclosed
+	);
+// END declarations of bbs.c
 
 typedef struct
 {
@@ -56,7 +114,7 @@ typedef struct
 } fixture_proof_gen_t;
 
 // Mocked random scalars for bbs_proof_gen_det
-int
+void
 mocked_prf (
 	bbs_cipher_suite_t *cipher_suite,
 	bn_t out,
@@ -68,6 +126,7 @@ mocked_prf (
 	uint8_t *rand = (uint8_t*) cookie;
 	int res  = BBS_ERROR;
 
+	// TODO: Fix mapping
 	if (0 == input_type && 10 > input)
 	{
 		// msg_tilde
@@ -78,24 +137,16 @@ mocked_prf (
 		// other stuff
 		rand += (input_type - 1) * 48;
 	}
-	else
-		goto cleanup;
+	else return; // Will most likely violate the fixtures
 
-	RLC_TRY {
+	RLC_ASSERT(
 		bn_read_bin (out, rand, 48);
 		bn_mod (out, out, &(core_get ()->ep_r));
-	}
-	RLC_CATCH_ANY {
-		goto cleanup;
-	}
-
-	res = BBS_OK;
-cleanup:
-	return res;
+	);
 }
 
 
-int
+void
 fill_randomness (
 	bbs_cipher_suite_t  *cipher_suite,
 	uint8_t            *rand,
@@ -106,23 +157,11 @@ fill_randomness (
 	uint64_t dst_len
 	)
 {
-	int ret     = BBS_ERROR;
-	int out_len = count * 48;
+	union bbs_hash_context ctx;
 
-	if (BBS_OK != cipher_suite->expand_message_dyn (rand,
-	                                                out_len,
-	                                                seed,
-	                                                seed_len,
-	                                                dst,
-	                                                dst_len))
-	{
-		goto cleanup;
-	}
-
-	ret = BBS_OK;
-
-cleanup:
-	return ret;
+	bbs_shake256_cipher_suite->expand_message_init(&ctx);
+	bbs_shake256_cipher_suite->expand_message_update(&ctx, seed, seed_len);
+	bbs_shake256_cipher_suite->expand_message_finalize(&ctx, rand, count*48, dst, dst_len);
 }
 
 
@@ -145,42 +184,28 @@ mocked_proof_gen (
 	// Stores randomness for 15 random scalars, which is as much as we need
 	uint8_t randomness[48 * 15];
 	va_list ap;
-	int ret = BBS_ERROR;
+	bbs_proof_gen_ctx ctx;
+	uint64_t di_idx = 0;
+	bool disclosed;
+
+	fill_randomness (test_case.cipher_suite,
+	                 randomness,
+	                 5 + num_messages - disclosed_indexes_len,
+	                 test_case.proof_SEED,
+	                 test_case.proof_SEED_len,
+	                 test_case.proof_DST,
+	                 test_case.proof_DST_len);
+
 	va_start (ap, num_messages);
-
-	if (BBS_OK != fill_randomness (test_case.cipher_suite,
-	                               randomness,
-	                               5 + num_messages - disclosed_indexes_len,
-	                               test_case.proof_SEED,
-	                               test_case.proof_SEED_len,
-	                               test_case.proof_DST,
-	                               test_case.proof_DST_len)
-	    )
-	{
-		goto cleanup;
+	bbs_proof_gen_init(&ctx, test_case.cipher_suite, pk, num_messages, disclosed_indexes_len, mocked_prf, randomness);
+	for(uint64_t i=0; i< num_messages; i++) {
+		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
+		bbs_proof_gen_update(&ctx, proof, va_arg (ap, uint8_t*), va_arg (ap, uint32_t), disclosed);
+		if(disclosed) di_idx++;
 	}
-	if (BBS_OK != bbs_proof_gen_det (test_case.cipher_suite,
-	                                 pk,
-	                                 signature,
-	                                 proof,
-	                                 header,
-	                                 header_len,
-	                                 presentation_header,
-	                                 presentation_header_len,
-	                                 disclosed_indexes,
-	                                 disclosed_indexes_len,
-	                                 num_messages,
-	                                 mocked_prf,
-	                                 randomness,
-	                                 ap))
-	{
-		goto cleanup;
-	}
+	va_end(ap);
 
-	ret = BBS_OK;
-cleanup:
-	va_end (ap);
-	return ret;
+	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
 }
 
 
@@ -357,23 +382,15 @@ bbs_fix_proof_gen ()
 		puts ("Internal error");
 		return 1;
 	}
-	if (BBS_OK != fill_randomness (test_case.cipher_suite, randomness, 10,
+	fill_randomness (test_case.cipher_suite, randomness, 10,
 	                               test_case.proof_SEED, test_case.proof_SEED_len,
-	                               test_case.proof_DST, test_case.proof_DST_len))
-	{
-		puts ("Error during randomness generation self test");
-		return 1;
-	}
+	                               test_case.proof_DST, test_case.proof_DST_len);
 	#define WRITE_SCALAR RLC_TRY { bn_write_bbs (scalar_buffer, scalar); \
 } \
 		RLC_CATCH_ANY { puts ("Write error"); return 1;}
 	for (int i = 0; i < 5; i++)
 	{
-		if (BBS_OK != mocked_prf (test_case.cipher_suite, scalar, i + 1, 0, randomness))
-		{
-			puts ("Read error");
-			return 1;
-		}
+		mocked_prf (test_case.cipher_suite, scalar, i + 1, 0, randomness);
 		WRITE_SCALAR;
 		ASSERT_EQ_PTR ("scalar test",
 		               scalar_buffer,
@@ -383,11 +400,7 @@ bbs_fix_proof_gen ()
 
 	for (int i = 0; i < 5; i++)
 	{
-		if (BBS_OK != mocked_prf (test_case.cipher_suite, scalar, 0, i, randomness))
-		{
-			puts ("Read error");
-			return 1;
-		}
+		mocked_prf (test_case.cipher_suite, scalar, 0, i, randomness);
 		WRITE_SCALAR;
 		ASSERT_EQ_PTR ("scalar test",
 		               scalar_buffer,
@@ -417,13 +430,13 @@ bbs_fix_proof_gen ()
 	               test_case.proof1_proof_len);
 
 	uint8_t proof2[BBS_PROOF_LEN (0)];
-	if (BBS_OK != mocked_proof_gen (test_case, test_case.proof2_public_key,
+if (BBS_OK != mocked_proof_gen (test_case, test_case.proof2_public_key,
 	                                test_case.proof2_signature, proof2,
 	                                test_case.proof2_header,
 	                                test_case.proof2_header_len,
 	                                test_case.proof2_presentation_header,
 	                                test_case.proof2_presentation_header_len,
-	                                test_case.proof2_revealed_indexes,
+test_case.proof2_revealed_indexes,
 	                                test_case.proof2_revealed_indexes_len, 10,
 	                                test_case.proof2_m[0], test_case.proof2_m_len[0],
 	                                test_case.proof2_m[1], test_case.proof2_m_len[1],

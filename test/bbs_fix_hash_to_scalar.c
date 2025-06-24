@@ -49,12 +49,9 @@ bbs_fix_hash_to_scalar ()
 		return 1;
 	}
 
-	if (BBS_OK != hash_to_scalar (fixture.cipher_suite, scalar, fixture.dst, fixture.dst_len,
-	                              1, fixture.msg, fixture.msg_len))
-	{
-		puts ("Error during hash to scalar");
-		return 1;
-	}
+	hash_to_scalar (fixture.cipher_suite, scalar, fixture.dst, fixture.dst_len,
+	                              1, fixture.msg, fixture.msg_len);
+
 	RLC_TRY {
 		bn_write_bbs (bin, scalar);
 	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }

@@ -76,12 +76,9 @@ bbs_fix_msg_scalars ()
 		for (int i = 0; i < 10; i++)
 		{
 
-			if (BBS_OK != hash_to_scalar (fixture.cipher_suite, scalar, map_dst,
-						      map_dst_len, 1, fixture_ms[i], fixture_ms_len[i]))
-			{
-				puts ("Error during hash to scalar for message 1");
-				return 1;
-			}
+			hash_to_scalar (fixture.cipher_suite, scalar, map_dst,
+					map_dst_len, 1, fixture_ms[i], fixture_ms_len[i]);
+
 			RLC_TRY {
 				bn_write_bbs (bin, scalar);
 			} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
