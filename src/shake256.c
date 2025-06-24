@@ -4,10 +4,20 @@
 // Revised 07-Aug-15 to match with official release of FIPS PUB 202 "SHA3"
 // Revised 03-Sep-15 for portability + OpenSSL - style API
 
-#include "sha3.h"
+#include "shake256.h"
+
+#ifndef KECCAKF_ROUNDS
+#define KECCAKF_ROUNDS 24
+#endif
+
+#ifndef ROTL64
+#define ROTL64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
+#endif
+
 
 // update the state with given number of rounds
 
+static
 void sha3_keccakf(uint64_t st[25])
 {
     // constants
@@ -100,22 +110,21 @@ void sha3_keccakf(uint64_t st[25])
 
 // Initialize the context for SHA3
 
-int sha3_init(sha3_ctx_t *c, int mdlen)
+void shake256_init(shake256_t *c)
 {
     int i;
+    int mdlen = 32;
 
     for (i = 0; i < 25; i++)
         c->st.q[i] = 0;
     c->mdlen = mdlen;
     c->rsiz = 200 - 2 * mdlen;
     c->pt = 0;
-
-    return 1;
 }
 
 // update state with more data
 
-int sha3_update(sha3_ctx_t *c, const void *data, size_t len)
+void shake256_update(shake256_t *c, const void *data, size_t len)
 {
     size_t i;
     int j;
@@ -129,56 +138,19 @@ int sha3_update(sha3_ctx_t *c, const void *data, size_t len)
         }
     }
     c->pt = j;
-
-    return 1;
 }
 
 // finalize and output a hash
 
-int sha3_final(void *md, sha3_ctx_t *c)
+void shake256_finalize(shake256_t *c, void *out, size_t len)
 {
-    int i;
+    size_t i;
+    int j = 0;
 
-    c->st.b[c->pt] ^= 0x06;
-    c->st.b[c->rsiz - 1] ^= 0x80;
-    sha3_keccakf(c->st.q);
-
-    for (i = 0; i < c->mdlen; i++) {
-        ((uint8_t *) md)[i] = c->st.b[i];
-    }
-
-    return 1;
-}
-
-// compute a SHA-3 hash (md) of given byte length from "in"
-
-void *sha3(const void *in, size_t inlen, void *md, int mdlen)
-{
-    sha3_ctx_t sha3;
-
-    sha3_init(&sha3, mdlen);
-    sha3_update(&sha3, in, inlen);
-    sha3_final(md, &sha3);
-
-    return md;
-}
-
-// SHAKE128 and SHAKE256 extensible-output functionality
-
-void shake_xof(sha3_ctx_t *c)
-{
     c->st.b[c->pt] ^= 0x1F;
     c->st.b[c->rsiz - 1] ^= 0x80;
     sha3_keccakf(c->st.q);
-    c->pt = 0;
-}
 
-void shake_out(sha3_ctx_t *c, void *out, size_t len)
-{
-    size_t i;
-    int j;
-
-    j = c->pt;
     for (i = 0; i < len; i++) {
         if (j >= c->rsiz) {
             sha3_keccakf(c->st.q);
@@ -186,6 +158,27 @@ void shake_out(sha3_ctx_t *c, void *out, size_t len)
         }
         ((uint8_t *) out)[i] = c->st.b[j++];
     }
-    c->pt = j;
 }
 
+void xof_shake256_finalize(shake256_t *shake, void *out, uint16_t out_len, const void *dst, size_t dst_len) {
+	uint8_t dst2[32];
+
+	if(dst_len > 255) {
+		shake256_t shake2;
+		shake256_init(&shake2);
+		shake256_update(&shake2, "H2C-OVERSIZE-DST-", 17);
+		shake256_update(&shake2, dst, dst_len);
+		shake256_finalize(&shake2, dst2, 32);
+		dst = dst2;
+		dst_len = 32;
+	}
+
+	uint8_t num = out_len / 256;
+	shake256_update(shake, &num, 1);
+	num = out_len;
+	shake256_update(shake, &num, 1);
+	shake256_update(shake, dst, dst_len);
+	num = dst_len;
+	shake256_update(shake, &num, 1);
+	shake256_finalize(shake, out, out_len);
+}

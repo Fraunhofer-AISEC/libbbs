@@ -3,8 +3,9 @@
 
 #include "bbs.h"
 
-#include <sha.h>
-#include "sha3.h" 
+#include <assert.h>
+#include "sha256.h"
+#include "shake256.h"
 
 #undef ALIGN
 #include <relic.h>
@@ -16,6 +17,7 @@
 #define LEN(m)          (sizeof(m) / sizeof(m[0]))
 #define DEBUG(p, a, l)  do { puts (p); for (int xx = 0; xx<l; xx++) printf ("%02x ", a[xx]); \
 			     puts (""); } while (0);
+#define RLC_ASSERT(expr) RLC_TRY { expr ; } RLC_CATCH_ANY { assert(0); }
 
 #define BBS_SCALAR_LEN  32
 #define BBS_G1_ELEM_LEN 48
@@ -23,8 +25,8 @@
 
 // Enough memory for any defined hash function
 union bbs_hash_context {
-	SHA256Context sha256;
-	sha3_ctx_t shake256;
+	sha256_t sha256;
+	shake256_t shake256;
 };
 
 /// @brief BBS cipher suite interface
@@ -34,44 +36,35 @@ struct bbs_cipher_suite
 {
 	uint8_t p1[BBS_G1_ELEM_LEN];
 
-	// Incremental expand_message API with fixed 48B output (needed at multiple points in protocol)
-	int (*expand_message_init) (
+	// Incremental expand_message API
+	void (*expand_message_init) (
 		union bbs_hash_context *ctx
 		);
-	int (*expand_message_update) (
+	void (*expand_message_update) (
 		union bbs_hash_context *ctx,
 		const uint8_t *msg,
-		uint32_t       msg_len
+		size_t       msg_len
 		);
-	int (*expand_message_finalize_48B) (
+	void (*expand_message_finalize) (
 		union bbs_hash_context *ctx,
-		uint8_t        out[48],
-		const uint8_t *dst,
-		uint8_t        dst_len
-		);
-
-	// One-shot expand_message API with variable output length (only needed in create_generator_next)
-	int (*expand_message_dyn)(
 		uint8_t       *out,
-		uint32_t       out_len,
-		const uint8_t *msg,
-		uint32_t       msg_lg,
+		uint16_t       out_len, // WARNING: only supports up to 255*256
 		const uint8_t *dst,
-		uint8_t        dst_len
+		size_t        dst_len
 		);
 
 	/// DST
-	char    *cipher_suite_id;
+	uint8_t *cipher_suite_id;
 	uint8_t  cipher_suite_id_len;
-	char    *default_key_dst;
+	uint8_t *default_key_dst;
 	uint8_t  default_key_dst_len;
-	char    *api_id;
+	uint8_t *api_id;
 	uint8_t  api_id_len;
-	char    *signature_dst;
+	uint8_t *signature_dst;
 	uint8_t  signature_dst_len;
-	char    *challenge_dst;
+	uint8_t *challenge_dst;
 	uint8_t  challenge_dst_len;
-	char    *map_dst;
+	uint8_t *map_dst;
 	uint8_t  map_dst_len;
 };
 
@@ -118,75 +111,20 @@ void ep2_read_bbs (
 // Array types (e.g. ep_t) are given by reference to the one-shot API
 
 
-// Implementation of expand_message with expand_len = 48
-// relic implements this as md_xmd, but here we built it with an incremental API
-// or varargs for the message
-int expand_message_init_sha256 (
-	union bbs_hash_context *ctx
-	);
-
-int expand_message_init_shake256 (
-	union bbs_hash_context *ctx
-	);
-
-int expand_message_update_sha256 (
-	union bbs_hash_context *ctx,
-	const uint8_t *msg,
-	uint32_t       msg_len
-	);
-
-int expand_message_update_shake256 (
-	union bbs_hash_context *ctx,
-	const uint8_t *msg,
-	uint32_t       msg_len
-	);
-
-int expand_message_finalize_48B_sha256 (
-	union bbs_hash_context *ctx,
-	uint8_t        out[48],
-	const uint8_t *dst,
-	uint8_t        dst_len
-	);
-
-int expand_message_finalize_48B_shake256 (
-	union bbs_hash_context *ctx,
-	uint8_t        out[48],
-	const uint8_t *dst,
-	uint8_t        dst_len
-	);
-
-int expand_message_dyn_sha256 (
-	uint8_t       *out,
-	uint32_t       out_len,
-	const uint8_t *msg,
-	uint32_t       msg_len,
-	const uint8_t *dst,
-	uint8_t        dst_len
-	);
-
-int expand_message_dyn_shake256 (
-	uint8_t       *out,
-	uint32_t       out_len,
-	const uint8_t *msg,
-	uint32_t       msg_len,
-	const uint8_t *dst,
-	uint8_t        dst_len
-	);
-
 // Hash to Scalar
-int hash_to_scalar_init (
+void hash_to_scalar_init (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx
 	);
 
-int hash_to_scalar_update (
+void hash_to_scalar_update (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	const uint8_t      *msg,
 	uint32_t            msg_len
 	);
 
-int hash_to_scalar_finalize (
+void hash_to_scalar_finalize (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	bn_t                out,
@@ -194,7 +132,7 @@ int hash_to_scalar_finalize (
 	uint8_t             dst_len
 	);
 
-int hash_to_scalar (
+void hash_to_scalar (
 	bbs_cipher_suite_t *cipher_suite,
 	bn_t                out,
 	const uint8_t      *dst,
@@ -204,76 +142,52 @@ int hash_to_scalar (
 	);
 
 // you need to call update exactly num_messages + 1 times.
-int calculate_domain_init (
+void calculate_domain_init (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	const uint8_t       pk[BBS_PK_LEN],
 	uint64_t            num_messages
 	);
 
-int calculate_domain_update (
+void calculate_domain_update (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	const ep_t          generator
 	);
 
-int calculate_domain_finalize (
+void calculate_domain_finalize (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	bn_t                out,
 	const uint8_t      *header,
-	uint64_t            header_len,
-	const uint8_t      *api_id,
-	uint8_t             api_id_len
+	uint64_t            header_len
 	);
 
-
-/* Out of business due to some undefined varargs behavior
-int calculate_domain (
-	bbs_cipher_suite_t *cipher_suite,
-	bn_t                out,
-	const uint8_t       pk[BBS_PK_LEN],
-	uint64_t            num_messages,
-	const uint8_t      *header,
-	uint64_t            header_len,
-	const uint8_t      *api_id,
-	uint8_t             api_id_len,
-	...
-	);
-*/
 
 /**
  * @brief Create a generator for the BBS+ signature scheme
  * @param state The state of the generator, includes counter `i` as last 8 bytes
- * @param api_id The API ID
- * @param api_id_len The length of the API ID
  * @return BBS_OK if the generator was created successfully, BBS_ERROR otherwise
  *
  * @note Always supply the same api_id to next as you did to init
 */
-int create_generator_init (
+void create_generator_init (
 	bbs_cipher_suite_t *cipher_suite,
-	uint8_t             state[48 + 8],
-	const uint8_t      *api_id,
-	uint32_t            api_id_len
+	uint8_t             state[48 + 8]
 	);
 
 /**
  * @brief Create the next generator for the BBS+ signature scheme
  * @param state The state of the generator, as set by init / previous call
  * @param generator The generator to be created
- * @param api_id The API ID
- * @param api_id_len The length of the API ID
  * @return BBS_OK if the generator was created successfully, BBS_ERROR otherwise
  *
  * @note Always supply the same api_id to next as you did to init
  */
-int create_generator_next (
+void create_generator_next (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t             state[48 + 8],
-	ep_t                generator,
-	const uint8_t      *api_id,
-	uint32_t            api_id_len
+	ep_t                generator
 	);
 
 // You can control the randomness for bbs_proof_gen by supplying a prf.
@@ -286,30 +200,12 @@ int create_generator_next (
 // message scalar, other scalars have input 0 and input_type i indicates the
 // i-th such scalar. This is because there may be up to 2^64 messages, bringing
 // the total possible message count slightly above 2^64.
-typedef int (bbs_bn_prf)(bbs_cipher_suite_t *cipher_suite,
+typedef void (bbs_bn_prf)(bbs_cipher_suite_t *cipher_suite,
 			 bn_t                out,
 			 uint8_t             input_type,
 			 uint64_t            input,
 			 void               *cookie
 			 );
-
-// Defined in bbs.c, but included here to hide it from bbs.h importers
-int bbs_proof_gen_det (
-	bbs_cipher_suite_t   *cipher_suite,
-	const bbs_public_key  pk,
-	const bbs_signature   signature,
-	uint8_t              *proof,
-	const uint8_t        *header,
-	uint64_t              header_len,
-	const uint8_t        *presentation_header,
-	uint64_t              presentation_header_len,
-	const uint64_t       *disclosed_indexes,
-	uint64_t              disclosed_indexes_len,
-	uint64_t              num_messages,
-	bbs_bn_prf            prf,
-	void                 *prf_cookie,
-	va_list               ap
-	);
 
 // Big endian conversion
 #define UINT64_H2BE(x) (((x & 0xff00000000000000LL) >> 56) | \
