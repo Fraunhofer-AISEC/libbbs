@@ -43,6 +43,7 @@ ExternalProject_Add(
   INSTALL_COMMAND ""
   CMAKE_ARGS -DWSIZE=64
              -DRAND=UDEV
+	     -DALLOC=AUTO
              -DSHLIB=OFF
              -DSTLIB=ON
              -DSTBIN=OFF

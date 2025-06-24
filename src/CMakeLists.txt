@@ -6,13 +6,15 @@ endif()
 
 add_library(bbs SHARED
 	bbs.c
-	sha3/sha3.c
-	bbs_util.c)
+	bbs_ciphersuites.c
+	bbs_util.c
+	sha256.c
+	shake256.c
+)
 
 # set_property(TARGET bbs PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(bbs PUBLIC .)
 target_include_directories(bbs PUBLIC ../include)
-ExternalProject_Get_Property(relic SOURCE_DIR)
-target_include_directories(bbs PUBLIC ${SOURCE_DIR}/src/md)
 target_include_directories(bbs PUBLIC ${BINARY_DIR}/include)
 target_include_directories(bbs PUBLIC ${GMP_PATH})
 
