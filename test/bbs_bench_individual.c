@@ -1,6 +1,8 @@
 #include "fixtures.h"
+#define BBS_NO_UTIL
 #include "test_util.h"
 #include <string.h>
+#include <stdlib.h>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x)  STRINGIFY (x)

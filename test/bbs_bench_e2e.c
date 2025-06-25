@@ -1,6 +1,8 @@
 #include "fixtures.h"
+#define BBS_NO_UTIL
 #include "test_util.h"
 #include <string.h>
+#include <stdlib.h>
 
 int
 bbs_bench_e2e ()

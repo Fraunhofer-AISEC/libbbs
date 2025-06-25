@@ -423,7 +423,8 @@ bbs_proof_verify_init (
 	hash_to_scalar_update (cipher_suite, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
 }
 
-static void
+// Not static, to allow Fixture tests
+void
 bbs_proof_gen_init (
 	bbs_proof_gen_ctx *ctx,
 	bbs_cipher_suite_t   *cipher_suite,
@@ -439,7 +440,8 @@ bbs_proof_gen_init (
 	ctx->prf_cookie = prf_cookie;
 }
 
-static void
+// Not static, to allow Fixture tests
+void
 bbs_proof_gen_update (
 	bbs_proof_gen_ctx *ctx,
 	uint8_t *proof,
@@ -523,7 +525,8 @@ bbs_proof_verify_update (
 	return BBS_OK;
 }
 
-static int
+// Not static, to allow Fixture tests
+int
 bbs_proof_gen_finalize (
 	bbs_proof_gen_ctx *ctx,
 	const bbs_signature   signature,

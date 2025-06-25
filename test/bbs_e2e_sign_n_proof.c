@@ -1,4 +1,5 @@
 #include "fixtures.h"
+#define BBS_NO_UTIL
 #include "test_util.h"
 #include <string.h>
 

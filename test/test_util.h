@@ -2,7 +2,9 @@
 #define TEST_UTIL_H
 
 #include "bbs.h"
+#ifndef BBS_NO_UTIL
 #include "bbs_util.h"
+#endif
 
 #include <stdio.h>
 #include <time.h>
