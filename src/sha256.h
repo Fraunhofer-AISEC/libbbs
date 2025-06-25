@@ -3,10 +3,10 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #ifdef __GLIBC__
 // Dear glibc team. Please support C23. Thank you.
-#include <string.h>
 #define memset_explicit(s, c, n) explicit_bzero(s,n);
 #endif
 

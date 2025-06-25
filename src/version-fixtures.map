@@ -1,0 +1,13 @@
+BBS_FIXTURES_0.1 {
+	global:
+		bbs_init; bbs_deinit; bbs_keygen_full; bbs_keygen; bbs_sk_to_pk;
+		bbs_sign; bbs_verify; bbs_proof_gen; bbs_proof_verify;
+		bbs_sha256_cipher_suite; bbs_shake256_cipher_suite;
+
+		bbs_proof_gen_init; bbs_proof_gen_update;
+		bbs_proof_gen_finalize;
+
+
+	local:
+		*;
+};

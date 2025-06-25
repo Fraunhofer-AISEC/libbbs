@@ -49,7 +49,7 @@ static const SHA_WORD k[SHA_ROUNDS] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 };
 
-const SHA_TYPE sha256_initial_state = {
+static const SHA_TYPE sha256_initial_state = {
     .state[0] = 0x6a09e667,
     .state[1] = 0xbb67ae85,
     .state[2] = 0x3c6ef372,
