@@ -342,12 +342,17 @@ bbs_sign (
 	)
 {
 	bbs_sign_ctx ctx;
+	uint8_t *msg;
+	uint32_t msg_len;
 	va_list                ap;
 
 	va_start (ap, num_messages);
 	bbs_sign_init(&ctx, cipher_suite, sk, pk, num_messages);
-	for(int i=0; i< num_messages; i++)
-		bbs_sign_update(&ctx, va_arg (ap, uint8_t*), va_arg (ap, uint32_t));
+	for(int i=0; i< num_messages; i++) {
+		msg = va_arg (ap, uint8_t*);
+		msg_len = va_arg (ap, uint32_t);
+		bbs_sign_update(&ctx, msg, msg_len);
+	}
 	va_end(ap);
 
 	return bbs_sign_finalize(&ctx, signature, sk, header, header_len);
@@ -365,12 +370,17 @@ bbs_verify (
 	)
 {
 	bbs_acc_ctx ctx;
+	uint8_t *msg;
+	uint32_t msg_len;
 	va_list                ap;
 
 	va_start (ap, num_messages);
 	bbs_verify_init(&ctx, cipher_suite, pk, num_messages);
-	for(int i=0; i< num_messages; i++)
-		bbs_verify_update(&ctx, va_arg (ap, uint8_t*), va_arg (ap, uint32_t));
+	for(int i=0; i< num_messages; i++) {
+		msg = va_arg (ap, uint8_t*);
+		msg_len = va_arg (ap, uint32_t);
+		bbs_verify_update(&ctx, msg, msg_len);
+	}
 	va_end(ap);
 
 	return bbs_verify_finalize(&ctx, signature, pk, header, header_len);
@@ -459,10 +469,10 @@ bbs_proof_gen_update (
 
 	if(disclosed) {
 		// This message is disclosed. Update the challenge hash
-		ctx->disclosed_ctr++;
 		uint64_t be_buffer = UINT64_H2BE (ctx->disclosed_ctr + ctx->undisclosed_ctr);
 		hash_to_scalar_update(s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
 		hash_to_scalar_update(s, &ctx->ch_ctx, proof_ptr, BBS_SCALAR_LEN);
+		ctx->disclosed_ctr++;
 	}
 	else
 	{
@@ -499,10 +509,10 @@ bbs_proof_verify_update (
 		RLC_ASSERT(bn_write_bbs (scalar_buffer, ctx->acc.msg_scalar));
 
 		// Hash i and msg_scalar into the challenge
-		ctx->disclosed_ctr++;
 		uint64_t be_buffer = UINT64_H2BE (ctx->disclosed_ctr + ctx->undisclosed_ctr);
 		hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
 		hash_to_scalar_update (s, &ctx->ch_ctx, scalar_buffer, BBS_SCALAR_LEN);
+		ctx->disclosed_ctr++;
 	}
 	else
 	{
@@ -783,6 +793,8 @@ bbs_proof_gen (
 	uint8_t seed[32];
 	bbs_proof_gen_ctx ctx;
 	uint64_t di_idx = 0;
+	uint8_t *msg;
+	uint32_t msg_len;
 	bool disclosed;
 
 	// Gather randomness. The seed is used for any randomness within this
@@ -801,7 +813,9 @@ bbs_proof_gen (
 	bbs_proof_gen_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len, bbs_proof_prf, seed);
 	for(uint64_t i=0; i< num_messages; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
-		bbs_proof_gen_update(&ctx, proof, va_arg (ap, uint8_t*), va_arg (ap, uint32_t), disclosed);
+		msg = va_arg (ap, uint8_t*);
+		msg_len = va_arg (ap, uint32_t);
+		bbs_proof_gen_update(&ctx, proof, msg, msg_len, disclosed);
 		if(disclosed) di_idx++;
 	}
 	va_end(ap);
@@ -829,14 +843,20 @@ bbs_proof_verify (
 	va_list                ap;
 	bbs_proof_gen_ctx ctx;
 	uint64_t di_idx = 0;
+	uint8_t *msg;
+	uint32_t msg_len;
 	bool disclosed;
 
 	va_start (ap, num_messages);
 	bbs_proof_verify_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len);
 	for(uint64_t i=0; i< num_messages; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
-		bbs_proof_verify_update(&ctx, proof, va_arg (ap, uint8_t*), va_arg (ap, uint32_t), disclosed);
-		if(disclosed) di_idx++;
+		if(disclosed) {
+			di_idx++;
+			msg = va_arg (ap, uint8_t*);
+			msg_len = va_arg (ap, uint32_t);
+		}
+		bbs_proof_verify_update(&ctx, proof, msg, msg_len, disclosed);
 	}
 	va_end(ap);
 

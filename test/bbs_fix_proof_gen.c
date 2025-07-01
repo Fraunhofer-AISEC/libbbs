@@ -114,6 +114,9 @@ typedef struct
 } fixture_proof_gen_t;
 
 // Mocked random scalars for bbs_proof_gen_det
+// The randomness-array contains r1, r3^-1, e~, r1~, r3~, and the m~
+// We return on (input_type, input):
+// (0,x) -> rand[x+2], (1,0) -> rand[0], (2,0) -> rand[1]
 void
 mocked_prf (
 	bbs_cipher_suite_t *cipher_suite,
@@ -129,12 +132,12 @@ mocked_prf (
 	// TODO: Fix mapping
 	if (0 == input_type && 10 > input)
 	{
-		// msg_tilde
-		rand += (5 + input) * 48;
+		// commitment randomness
+		rand += (2 + input) * 48;
 	}
-	else if (0 == input && 5 >= input_type)
+	else if (0 == input && 2 >= input_type)
 	{
-		// other stuff
+		// blinding randomness
 		rand += (input_type - 1) * 48;
 	}
 	else return; // Will most likely violate the fixtures
@@ -159,9 +162,9 @@ fill_randomness (
 {
 	union bbs_hash_context ctx;
 
-	bbs_shake256_cipher_suite->expand_message_init(&ctx);
-	bbs_shake256_cipher_suite->expand_message_update(&ctx, seed, seed_len);
-	bbs_shake256_cipher_suite->expand_message_finalize(&ctx, rand, count*48, dst, dst_len);
+	cipher_suite->expand_message_init(&ctx);
+	cipher_suite->expand_message_update(&ctx, seed, seed_len);
+	cipher_suite->expand_message_finalize(&ctx, rand, count*48, dst, dst_len);
 }
 
 
@@ -186,6 +189,8 @@ mocked_proof_gen (
 	va_list ap;
 	bbs_proof_gen_ctx ctx;
 	uint64_t di_idx = 0;
+	uint8_t *msg;
+	uint32_t msg_len;
 	bool disclosed;
 
 	fill_randomness (test_case.cipher_suite,
@@ -200,7 +205,9 @@ mocked_proof_gen (
 	bbs_proof_gen_init(&ctx, test_case.cipher_suite, pk, num_messages, disclosed_indexes_len, mocked_prf, randomness);
 	for(uint64_t i=0; i< num_messages; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
-		bbs_proof_gen_update(&ctx, proof, va_arg (ap, uint8_t*), va_arg (ap, uint32_t), disclosed);
+		msg = va_arg (ap, uint8_t*);
+		msg_len = va_arg (ap, uint32_t);
+		bbs_proof_gen_update(&ctx, proof, msg, msg_len, disclosed);
 		if(disclosed) di_idx++;
 	}
 	va_end(ap);
@@ -213,7 +220,7 @@ int
 bbs_fix_proof_gen ()
 {
 	// *INDENT-OFF* - Preserve formatting
-#ifdef LIBBBS_TEST_SUITE_SHAKE256
+#ifdef LIBBBS_TEST_SUITE_SHA256
 	fixture_proof_gen_t test_case = {
 			.cipher_suite = bbs_sha256_cipher_suite,
 
@@ -285,7 +292,7 @@ bbs_fix_proof_gen ()
 			.proof3_proof = fixture_bls12_381_sha_256_proof3_proof,
 			.proof3_proof_len = sizeof(fixture_bls12_381_sha_256_proof3_proof),
   };
-#elif LIBBBS_TEST_SUITE_SHA256
+#elif LIBBBS_TEST_SUITE_SHAKE256
 	fixture_proof_gen_t test_case = {
 			.cipher_suite = bbs_shake256_cipher_suite,
 
@@ -388,7 +395,9 @@ bbs_fix_proof_gen ()
 	#define WRITE_SCALAR RLC_TRY { bn_write_bbs (scalar_buffer, scalar); \
 } \
 		RLC_CATCH_ANY { puts ("Write error"); return 1;}
-	for (int i = 0; i < 5; i++)
+
+	// Test rerandomization scalars
+	for (int i = 0; i < 2; i++)
 	{
 		mocked_prf (test_case.cipher_suite, scalar, i + 1, 0, randomness);
 		WRITE_SCALAR;
@@ -398,14 +407,15 @@ bbs_fix_proof_gen ()
 		               test_case.proof_random_scalar_len[i]);
 	}
 
-	for (int i = 0; i < 5; i++)
+	// Test commitment scalars
+	for (int i = 0; i < 8; i++)
 	{
 		mocked_prf (test_case.cipher_suite, scalar, 0, i, randomness);
 		WRITE_SCALAR;
 		ASSERT_EQ_PTR ("scalar test",
 		               scalar_buffer,
-		               test_case.proof_random_scalar[i + 5],
-		               test_case.proof_random_scalar_len[i + 5]);
+		               test_case.proof_random_scalar[i + 2],
+		               test_case.proof_random_scalar_len[i + 2]);
 	}
 
 	uint8_t proof1[BBS_PROOF_LEN (0)];
