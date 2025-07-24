@@ -210,6 +210,38 @@ int bbs_sign (
 	);
 
 /**
+ * @brief Create a signature.
+ *
+ * The @p num_messages is followed by
+ * arrays of the same length that contain
+ * the messages and their lengths.
+ *
+ * @param cipher_suite the cipher suite to use. See #bbs_cipher_suite_t.
+ * @param sk secret key.
+ * @param pk public key.
+ * @param signature where to store the signature.
+ * @param header an octet string containing context and application
+                 specific information. If not supplied, it defaults
+                 to the empty octet string ("").
+ * @param header_len the length of the message header.
+ * @param num_messages the number of messages as octet strings followed in varargs.
+ * @param messages the messages.
+ * @param messages_lens the message lengths.
+ * @return #BBS_OK on success.
+ */
+int bbs_sign_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_secret_key  sk,
+	const bbs_public_key  pk,
+	bbs_signature         signature,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
+	);
+
+/**
  * @brief Verify a signature.
  *
  * The @p num_messages is followed by
@@ -235,6 +267,38 @@ int bbs_verify (
 	uint64_t              header_len,
 	uint64_t              num_messages,
 	...
+	);
+
+
+/**
+ * @brief Verify a signature.
+ *
+ * The @p num_messages is followed by
+ * this amount of varargs that consist of
+ * a tuple of uint8_t* pointers to octet strings
+ * followed by a uint32_t length indicator.
+ *
+ * @param cipher_suite the cipher suite to use. See #bbs_cipher_suite_t.
+ * @param pk public key.
+ * @param signature the signature to verify.
+ * @param header an octet string containing context and application
+                 specific information. If not supplied, it defaults
+                 to the empty octet string ("").
+ * @param header_len the length of the message header.
+ * @param num_messages the number of messages followed by in varargs.
+ * @param messages the messages.
+ * @param messages_lens the message lengths.
+ * @return #BBS_OK on success.
+ */
+int bbs_verify_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const bbs_signature   signature,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
 	);
 
 /**
@@ -283,6 +347,56 @@ int bbs_proof_gen (
 	...
 	);
 
+
+/**
+ * @brief Create a proof over a signature.
+ *
+ * The @p num_messages is followed by
+ * this amount of varargs that consist of
+ * a tuple of uint8_t* pointers to octet strings
+ * followed by a uint32_t length indicator.
+ *
+ * @param cipher_suite the cipher suite to use. See #bbs_cipher_suite_t.
+ * @param pk public key.
+ * @param signature the signature to use.
+ * @param proof pointer to the proof.
+ *              Must be allocated by caller as octet string
+ *              with size BBS_PROOF_LEN(N) where
+ *              N = (@p num_messages - @p disclosed_indexes_len).
+ * @param header an octet string containing context and application
+                 specific information. If not supplied, it defaults
+                 to the empty octet string ("").
+ * @param header_len the length of the message header.
+ * @param presentation_header an octet string containing the presentation header.
+ *                            If not supplied, it defaults to the empty octet
+                              string ("").
+ * @param presentation_header_len the length of the proof presentation header.
+ * @param disclosed_indexes a vector of unsigned integers in ascending
+                            order. Indexes of disclosed messages. If
+                            not supplied, it defaults to the empty
+                            array ("()").
+ * @param disclosed_indexes_len the length of @p disclosed_indexes array.
+ * @param num_messages the number of messages followed by in varargs.
+ * @param messages the messages.
+ * @param messages_lens the message lengths.
+ * @return #BBS_OK on success.
+ */
+int bbs_proof_gen_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const bbs_signature   signature,
+	uint8_t              *proof,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
+	);
+
 /**
  * @brief Verify a proof over a signature.
  *
@@ -324,6 +438,52 @@ int bbs_proof_verify (
 	uint64_t              disclosed_indexes_len,
 	uint64_t              num_messages,
 	...
+	);
+
+/**
+ * @brief Verify a proof over a signature.
+ *
+ * The @p num_messages is followed by
+ * this amount of varargs that consist of
+ * a tuple of uint8_t* pointers to octet strings
+ * followed by a uint32_t length indicator.
+ *
+ * @param cipher_suite the cipher suite to use. See #bbs_cipher_suite_t.
+ * @param pk public key.
+ * @param proof an octet string of the form outputted by #bbs_proof_gen.
+ * @param proof_len length of @p proof.
+ * @param header an octet string containing context and application
+                 specific information. If not supplied, it defaults
+                 to the empty octet string ("").
+ * @param header_len the length of the message header.
+ * @param presentation_header an octet string containing the presentation header.
+ *                            If not supplied, it defaults to the empty octet
+                              string ("").
+ * @param presentation_header_len the length of the proof presentation header.
+ * @param disclosed_indexes a vector of unsigned integers in ascending
+                            order. Indexes of disclosed messages. If
+                            not supplied, it defaults to the empty
+                            array ("()").
+ * @param disclosed_indexes_len the length of @p disclosed_indexes array.
+ * @param num_messages the number of messages followed by in varargs.
+ * @param messages the messages.
+ * @param messages_lens the message lengths.
+ * @return #BBS_OK on success.
+ */
+int bbs_proof_verify_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const uint8_t        *proof,
+	uint64_t              proof_len,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
 	);
 
 /**
