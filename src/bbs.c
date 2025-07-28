@@ -200,24 +200,30 @@ bbs_acc_finalize (
 }
 
 // Checks e(A,W') * e(B,-BP2) = identity
-// Alters W'
+// This differs slightly from the spec, which checks the equivalent e(-B,BP2)
 static int bbs_check_sig_eqn(
 	ep_t A,
 	ep_t B,
-	ep2_t Wprime
+	const bbs_public_key  pk
 	)
 {
+	ep2_t                  W;
 	fp12_t                 paired1, paired2;
 
-	RLC_ASSERT(
-		pp_map_oatep_k12 (paired1, A, Wprime);
+	RLC_TRY {
+		ep2_read_bbs(W, pk);
+		pp_map_oatep_k12 (paired1, A, W);
 
-		ep2_curve_get_gen (Wprime); // Reuse Wprime
-		ep2_neg (Wprime, Wprime);
-		pp_map_oatep_k12 (paired2, B, Wprime);
+		ep2_curve_get_gen (W); // Reuse W
+		ep2_neg (W, W);
+		pp_map_oatep_k12 (paired2, B, W);
 
 		fp12_mul (paired1, paired1, paired2);
-	);
+	}
+	RLC_CATCH_ANY {
+		// This can happen if pk was corrupted
+		return BBS_ERROR;
+	}
 
 	return (RLC_EQ != fp12_cmp_dig (paired1, 1)) ? BBS_ERROR : BBS_OK;
 }
@@ -307,26 +313,21 @@ bbs_verify_finalize (
 	)
 {
 	bbs_cipher_suite_t *s = ctx->cipher_suite;
-	ep2_t                  W, Wprime;
 
 	bbs_acc_finalize(ctx, header, header_len);
 
 	RLC_TRY {
-		// Reuse ctx->Q_1 as A, ctx->msg_scalar as e
+		// Reuse ctx->Q_1 as A, ctx->msg_scalar as e, ctx->H_i as A*e
 		ep_read_bbs(ctx->Q_1, signature);
 		bn_read_bbs(ctx->msg_scalar, signature + BBS_G1_ELEM_LEN);
-		ep2_read_bbs(W, pk);
-
-		// We need to check e(A, W + BP2 * e) * e(B, -BP2)
-		// One could instead check e(A, W) = e(B-A*e, BP2)
-		ep2_mul_gen (Wprime, ctx->msg_scalar);
-		ep2_add (Wprime, W, Wprime);
+		ep_mul(ctx->H_i, ctx->Q_1, ctx->msg_scalar);
+		ep_sub(ctx->B, ctx->B, ctx->H_i);
 	}
 	RLC_CATCH_ANY {
 		return BBS_ERROR;
 	}
 
-	return bbs_check_sig_eqn(ctx->Q_1, ctx->B, Wprime);
+	return bbs_check_sig_eqn(ctx->Q_1, ctx->B, pk);
 }
 
 int
@@ -672,7 +673,6 @@ bbs_proof_verify_finalize (
 	bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
 	bn_t e, r1, r3, challenge, challenge_prime;
 	ep_t D, Abar, Bbar;
-	ep2_t W;
 	uint8_t domain_buffer[BBS_SCALAR_LEN], T_buffer[2*BBS_G1_ELEM_LEN];
 	const uint8_t *proof_ptr  = proof;
 
@@ -689,9 +689,6 @@ bbs_proof_verify_finalize (
 	RLC_TRY {
 		// Write out the domain. We reuse scalar_buffer
 		bn_write_bbs (domain_buffer, ctx->acc.msg_scalar);
-
-		// Parse pk
-		ep2_read_bbs (W, pk);
 
 		// Parse the remainder of the statement and response
 		// The parsing here is injective.
@@ -746,11 +743,7 @@ bbs_proof_verify_finalize (
 	}
 
 	// Verification Step 2: The original signature was valid
-	if(BBS_OK != bbs_check_sig_eqn(Abar, Bbar, W))
-	{
-		return BBS_ERROR;
-	}
-	return BBS_OK;
+	return bbs_check_sig_eqn(Abar, Bbar, pk);
 }
 
 static void
