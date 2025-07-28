@@ -199,7 +199,7 @@ bbs_acc_finalize (
 	);
 }
 
-// Checks e(A,W') * e(B,-BP2) = identity
+// Checks e(A,W) * e(B,-BP2) = identity
 // This differs slightly from the spec, which checks the equivalent e(-B,BP2)
 static int bbs_check_sig_eqn(
 	ep_t A,
@@ -360,6 +360,29 @@ bbs_sign (
 }
 
 int
+bbs_sign_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_secret_key  sk,
+	const bbs_public_key  pk,
+	bbs_signature         signature,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
+	)
+{
+	bbs_sign_ctx ctx;
+
+	bbs_sign_init(&ctx, cipher_suite, sk, pk, num_messages);
+	for(int i=0; i< num_messages; i++) {
+		bbs_sign_update(&ctx, messages[i], messages_lens[i]);
+	}
+
+	return bbs_sign_finalize(&ctx, signature, sk, header, header_len);
+}
+
+int
 bbs_verify (
 	bbs_cipher_suite_t   *cipher_suite,
 	const bbs_public_key  pk,
@@ -383,6 +406,28 @@ bbs_verify (
 		bbs_verify_update(&ctx, msg, msg_len);
 	}
 	va_end(ap);
+
+	return bbs_verify_finalize(&ctx, signature, pk, header, header_len);
+}
+
+int
+bbs_verify_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const bbs_signature   signature,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
+	)
+{
+	bbs_acc_ctx ctx;
+
+	bbs_verify_init(&ctx, cipher_suite, pk, num_messages);
+	for(int i=0; i< num_messages; i++) {
+		bbs_verify_update(&ctx, messages[i], messages_lens[i]);
+	}
 
 	return bbs_verify_finalize(&ctx, signature, pk, header, header_len);
 }
@@ -521,7 +566,7 @@ bbs_proof_verify_update (
 		// Read a msg_scalar_hat value from the proof and
 		// accumulate it onto T2 instead of B
 		bbs_acc_update_undisclosed (&ctx->acc);
-		
+
 		// Update T2.
 		RLC_TRY {
 			bn_read_bbs (ctx->acc.msg_scalar, proof_ptr);
@@ -577,7 +622,7 @@ bbs_proof_gen_finalize (
 		// Generate rerandomization scalars.
 		ctx->prf (s, r1, 1, 0, ctx->prf_cookie);
 		ctx->prf (s, r3, 2, 0, ctx->prf_cookie); // Temporarily r2=r3^-1
-	
+
 		// Calculate the statement (excluding messages): D, ABar, BBar.
 		// B is used as a temporary variable from now on.
 		ep_mul (D, ctx->acc.B, r3);
@@ -765,7 +810,6 @@ bbs_proof_prf (
         hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, 32, &input, 8);
 }
 
-
 int
 bbs_proof_gen (
 	bbs_cipher_suite_t   *cipher_suite,
@@ -816,6 +860,49 @@ bbs_proof_gen (
 	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
 }
 
+int
+bbs_proof_gen_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const bbs_signature   signature,
+	uint8_t              *proof,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
+	)
+{
+	uint8_t seed[32];
+	bbs_proof_gen_ctx ctx;
+	uint64_t di_idx = 0;
+	bool disclosed;
+
+	// Gather randomness. The seed is used for any randomness within this
+	// function. In particular, this implies that we do not need to store
+	// intermediate derivations. Currently, we derive new values via
+	// hash_to_scalar, but we might want to exchange that for
+	// something faster later on.
+	RLC_TRY {
+		rand_bytes (seed, 32);
+	}
+	RLC_CATCH_ANY {
+		return BBS_ERROR;
+	}
+
+	bbs_proof_gen_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len, bbs_proof_prf, seed);
+	for(uint64_t i=0; i< num_messages; i++) {
+		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
+		bbs_proof_gen_update(&ctx, proof, messages[i], messages_lens[i], disclosed);
+		if(disclosed) di_idx++;
+	}
+
+	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
+}
 
 int
 bbs_proof_verify (
@@ -852,6 +939,39 @@ bbs_proof_verify (
 		bbs_proof_verify_update(&ctx, proof, msg, msg_len, disclosed);
 	}
 	va_end(ap);
+
+	return bbs_proof_verify_finalize(&ctx, pk, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
+}
+
+int
+bbs_proof_verify_nva (
+	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_public_key  pk,
+	const uint8_t        *proof,
+	uint64_t              proof_len,
+	const uint8_t        *header,
+	uint64_t              header_len,
+	const uint8_t        *presentation_header,
+	uint64_t              presentation_header_len,
+	const uint64_t       *disclosed_indexes,
+	uint64_t              disclosed_indexes_len,
+	uint64_t              num_messages,
+	uint8_t**             messages,
+  uint32_t*             messages_lens
+	)
+{
+	bbs_proof_gen_ctx ctx;
+	uint64_t di_idx = 0;
+	bool disclosed;
+
+	bbs_proof_verify_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len);
+	for(uint64_t i=0; i< num_messages; i++) {
+		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
+		if(disclosed) {
+			di_idx++;
+		}
+		bbs_proof_verify_update(&ctx, proof, messages[i], messages_lens[i], disclosed);
+	}
 
 	return bbs_proof_verify_finalize(&ctx, pk, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
 }

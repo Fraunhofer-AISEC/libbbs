@@ -5,9 +5,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef __GLIBC__
+#if defined(__GLIBC__)
 // Dear glibc team. Please support C23. Thank you.
 #define memset_explicit(s, c, n) explicit_bzero(s,n);
+#elif defined(__APPLE__)
+// Dear Apple devs. Please support C23. Thank you.
+#define memset_explicit(s, c, n) memset_s(s, n, c, n);
 #endif
 
 /* SHA256 */

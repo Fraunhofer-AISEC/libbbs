@@ -1,12 +1,10 @@
 # libbbs
 
-Specification-compliant and performant implementation of the [BBS signature scheme](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/).
+Specification-compliant and performant C implementation of the [BBS signature scheme](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/) with little to no third party dependencies.
 
-Provides a library `libbbs` implementing the `BLS12381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
+Provides a library `libbbs` implementing the `BLS12-381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
 
-## Setup
-
-### Prerequisites
+## Prerequisites
 
 Dependencies:
 
@@ -20,7 +18,7 @@ cmake .. # Without GMP or
 cmake -DRELIC_ARITH="gmp" .. # (if you have gmp)
 ```
 
-### Installation
+## Installation
 
 Within `build`:
 
@@ -28,7 +26,7 @@ Within `build`:
 make install
 ```
 
-### Test
+## Test
 
 Within `build`:
 
@@ -37,7 +35,7 @@ make
 make test
 ```
 
-### Benchmark
+## Benchmark
 
 Within `build`:
 
@@ -60,3 +58,12 @@ Benchmark (`bbs_bench_individual`) on M1 Pro 2021 16GB with `-DRELIC_ARITH="gmp"
 | verify                   | 3,877       | 3,829         |
 | proof generation         | 3,289       | 3,220         |
 | proof verification       | 4,532       | 4,482         |
+
+
+## Documentation
+
+See https://fraunhofer-aisec.github.io/libbbs/doxy/html/
+
+## Code coverage
+
+See https://fraunhofer-aisec.github.io/libbbs/lcov
