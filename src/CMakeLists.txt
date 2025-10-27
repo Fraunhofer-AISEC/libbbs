@@ -1,9 +1,3 @@
-if(RELIC_ARITH STREQUAL "gmp")
-	find_library(GMP_LIB gmp REQUIRED)
-	find_path(GMP_PATH gmp.h REQUIRED)
-	message(STATUS "GMP_PATH: ${GMP_PATH}")
-endif()
-
 # Compile sources into an object library
 add_library(bbs_sources OBJECT
 	bbs.c
@@ -15,7 +9,6 @@ add_library(bbs_sources OBJECT
 target_include_directories(bbs_sources PUBLIC .)
 target_include_directories(bbs_sources PUBLIC ../include)
 target_include_directories(bbs_sources PUBLIC ${SOURCE_DIR}/bindings)
-target_include_directories(bbs_sources PUBLIC ${GMP_PATH})
 
 
 # Main library
