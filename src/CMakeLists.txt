@@ -14,7 +14,7 @@ add_library(bbs_sources OBJECT
 )
 target_include_directories(bbs_sources PUBLIC .)
 target_include_directories(bbs_sources PUBLIC ../include)
-target_include_directories(bbs_sources PUBLIC ${BINARY_DIR}/include)
+target_include_directories(bbs_sources PUBLIC ${SOURCE_DIR}/bindings)
 target_include_directories(bbs_sources PUBLIC ${GMP_PATH})
 
 
@@ -24,15 +24,15 @@ add_library(bbs SHARED $<TARGET_OBJECTS:bbs_sources>)
 if(NOT APPLE)
 target_link_options(bbs PUBLIC -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.map)
 endif()
-target_link_libraries(bbs PUBLIC ${GMP_LIB})
-target_link_libraries(bbs PRIVATE ${BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}relic_s${CMAKE_STATIC_LIBRARY_SUFFIX})
-add_dependencies(bbs relic)
+target_link_libraries(bbs PRIVATE
+	${SOURCE_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}blst${CMAKE_STATIC_LIBRARY_SUFFIX})
+add_dependencies(bbs blst)
 
 # Build a second version just for fixture tests, which has more symbols available
 add_library(bbs_FIXTURES_ONLY SHARED $<TARGET_OBJECTS:bbs_sources>)
-target_link_libraries(bbs_FIXTURES_ONLY PUBLIC ${GMP_LIB})
-target_link_libraries(bbs_FIXTURES_ONLY PRIVATE ${BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}relic_s${CMAKE_STATIC_LIBRARY_SUFFIX})
-add_dependencies(bbs_FIXTURES_ONLY relic)
+target_link_libraries(bbs_FIXTURES_ONLY PRIVATE
+	${SOURCE_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}blst${CMAKE_STATIC_LIBRARY_SUFFIX})
+add_dependencies(bbs_FIXTURES_ONLY blst)
 
 
 include(GNUInstallDirs)

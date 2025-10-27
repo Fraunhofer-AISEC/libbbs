@@ -1,23 +1,25 @@
 #include "bbs.h"
 #include "bbs_util.h"
-#include <relic.h>
 #include <stdbool.h>
+
+/* This function should be availale in <unistd.h> on POSIX systems. We declare
+ * it here to allow simple linking when <unistd.h> is not available. */
+int getentropy(void *buffer, size_t length);
+
+/* Helper */
+static inline void ep_mult_scalar(blst_p1 *out, const blst_p1 *p, const blst_scalar *s, size_t _ignored) {
+	blst_p1_mult(out, p, s->b, 255);
+}
 
 int
 bbs_init (void)
 {
-	if (core_init () != RLC_OK || pc_param_set_any () != RLC_OK)
-	{
-		core_clean ();
-		return BBS_ERROR;
-	}
 	return BBS_OK;
 }
 
 int
 bbs_deinit (void)
 {
-	core_clean ();
 	return BBS_OK;
 }
 
@@ -31,16 +33,10 @@ bbs_keygen_full (
 	static uint8_t seed[32];
 
 	// Gather randomness
-	RLC_TRY {
-		rand_bytes (seed, 32);
-	}
-	RLC_CATCH_ANY {
-		return BBS_ERROR;
-	}
-
+	getentropy(seed, 32);
 	// Generate the secret key (cannot fail)
 	bbs_keygen (cipher_suite, sk, seed, 32, 0, 0, 0, 0);
-	// Generate the public key (cannot fail)
+	// Generate the public key (unlikely to fail)
 	bbs_sk_to_pk (cipher_suite, sk, pk);
 
 	return BBS_OK;
@@ -59,7 +55,7 @@ bbs_keygen (
 	uint8_t             key_dst_len
 	)
 {
-	bn_t     sk_n;
+	blst_scalar     sk_n;
 	uint16_t key_info_len_be = ((key_info_len & 0x00FFu) << 8) | (key_info_len >> 8);
 
 	// Sanity check: Make sure we are at least given 16 bytes of (hopefully
@@ -73,7 +69,7 @@ bbs_keygen (
 	}
 
 	hash_to_scalar (cipher_suite,
-				      sk_n,
+				      &sk_n,
 				      key_dst,
 				      key_dst_len,
 				      3,
@@ -85,7 +81,7 @@ bbs_keygen (
 				      (uint32_t) key_info_len);
 
 	// Serialize
-	RLC_ASSERT(bn_write_bin (sk, BBS_SK_LEN, sk_n));
+	bn_write_bbs (sk, &sk_n);
 
 	return BBS_OK;
 }
@@ -97,17 +93,12 @@ bbs_sk_to_pk (
 	bbs_public_key        pk
 	)
 {
-	bn_t  sk_n;
-	ep2_t pk_p;
+	blst_scalar  sk_n;
+	blst_p2 pk_p;
 
-	RLC_TRY {
-		bn_read_bbs (sk_n, sk);
-		ep2_mul_gen (pk_p, sk_n);
-		ep2_write_bbs (pk, pk_p);
-	}
-	RLC_CATCH_ANY {
-		return BBS_ERROR;
-	}
+	if(BBS_OK != bn_read_bbs (&sk_n, sk)) return BBS_ERROR;
+	blst_sk_to_pk_in_g2 (&pk_p, &sk_n);
+	ep2_write_bbs (pk, &pk_p);
 
 	return BBS_OK;
 }
@@ -117,12 +108,12 @@ typedef struct {
 	bbs_cipher_suite_t   *cipher_suite;
 	uint8_t                generator_ctx[48 + 8];
 	union bbs_hash_context dom_ctx;
-	ep_t Q_1;
+	blst_p1 Q_1;
 	// Final output
-	ep_t B;
+	blst_p1 B;
 	// Temporary outputs
-	ep_t H_i;
-	bn_t msg_scalar; // Also used for domain
+	blst_p1 H_i;
+	blst_scalar msg_scalar; // Also used for domain
 } bbs_acc_ctx;
 
 typedef struct {
@@ -140,13 +131,13 @@ bbs_acc_init (
 {
 	ctx->cipher_suite = s;
 	// Initialize B to P1
-	RLC_ASSERT(ep_read_bbs (ctx->B, s->p1));
+	ep_read_bbs (&ctx->B, s->p1);
 
 	// Calculate Q_1 and initialize domain calculation
 	create_generator_init (s, ctx->generator_ctx);
-	create_generator_next (s, ctx->generator_ctx, ctx->Q_1);
+	create_generator_next (s, ctx->generator_ctx, &ctx->Q_1);
 	calculate_domain_init (s, &ctx->dom_ctx, pk, num_messages);
-	calculate_domain_update (s, &ctx->dom_ctx, ctx->Q_1);
+	calculate_domain_update (s, &ctx->dom_ctx, &ctx->Q_1);
 }
 
 static inline void
@@ -155,8 +146,8 @@ bbs_acc_update_undisclosed (
 	)
 {
 	// Calculate H_i
-	create_generator_next (ctx->cipher_suite, ctx->generator_ctx, ctx->H_i);
-	calculate_domain_update (ctx->cipher_suite, &ctx->dom_ctx, ctx->H_i);
+	create_generator_next (ctx->cipher_suite, ctx->generator_ctx, &ctx->H_i);
+	calculate_domain_update (ctx->cipher_suite, &ctx->dom_ctx, &ctx->H_i);
 }
 
 static void
@@ -167,17 +158,15 @@ bbs_acc_update (
 	)
 {
 	bbs_cipher_suite_t *s = ctx->cipher_suite;
-	ep_t                H_i;
+	blst_p1                H_i;
 
 	bbs_acc_update_undisclosed (ctx);
 
 	// Calculate msg_scalar (oneshot)
-	hash_to_scalar (s, ctx->msg_scalar, s->map_dst, s->map_dst_len, 1, msg, msg_len);
-	RLC_ASSERT(
-		// Update B
-		ep_mul (H_i, ctx->H_i, ctx->msg_scalar);
-		ep_add (ctx->B, ctx->B, H_i);
-	);
+	hash_to_scalar (s, &ctx->msg_scalar, s->map_dst, s->map_dst_len, 1, msg, msg_len);
+	// Update B
+	ep_mult_scalar (&H_i, &ctx->H_i, &ctx->msg_scalar, 255);
+	blst_p1_add_or_double (&ctx->B, &ctx->B, &H_i);
 }
 
 static void
@@ -192,40 +181,32 @@ bbs_acc_finalize (
 	if (! header) header_len = 0;
 
 	// Finish domain calculation (uses ctx->msg_scalar) and ctx->B
-	calculate_domain_finalize (s, &ctx->dom_ctx, ctx->msg_scalar, header, header_len);
-	RLC_ASSERT(
-		ep_mul (ctx->Q_1, ctx->Q_1, ctx->msg_scalar);
-		ep_add (ctx->B, ctx->B, ctx->Q_1);
-	);
+	calculate_domain_finalize (s, &ctx->dom_ctx, &ctx->msg_scalar, header, header_len);
+	ep_mult_scalar (&ctx->Q_1, &ctx->Q_1, &ctx->msg_scalar, 255);
+	blst_p1_add_or_double (&ctx->B, &ctx->B, &ctx->Q_1);
 }
 
 // Checks e(A,W) * e(B,-BP2) = identity
 // This differs slightly from the spec, which checks the equivalent e(-B,BP2)
 static int bbs_check_sig_eqn(
-	ep_t A,
-	ep_t B,
+	blst_p1 *A,
+	blst_p1 *B,
 	const bbs_public_key  pk
 	)
 {
-	ep2_t                  W;
-	fp12_t                 paired1, paired2;
+	blst_fp12 paired;
+	blst_p1_affine Aa, Ba;
+	blst_p2_affine pka;
+	const blst_p1_affine *lhsp[] = { &Aa,  &Ba };
+	const blst_p2_affine *rhsp[] = { &pka, &BLS12_381_NEG_G2 };
 
-	RLC_TRY {
-		ep2_read_bbs(W, pk);
-		pp_map_oatep_k12 (paired1, A, W);
+	if(BLST_SUCCESS != blst_p2_uncompress(&pka, pk)) return BBS_ERROR;
+	blst_p1_to_affine(&Aa, A);
+	blst_p1_to_affine(&Ba, B);
+	blst_miller_loop_n(&paired, rhsp, lhsp, 2);
+	blst_final_exp(&paired, &paired);
 
-		ep2_curve_get_gen (W); // Reuse W
-		ep2_neg (W, W);
-		pp_map_oatep_k12 (paired2, B, W);
-
-		fp12_mul (paired1, paired1, paired2);
-	}
-	RLC_CATCH_ANY {
-		// This can happen if pk was corrupted
-		return BBS_ERROR;
-	}
-
-	return (RLC_EQ != fp12_cmp_dig (paired1, 1)) ? BBS_ERROR : BBS_OK;
+	return blst_fp12_is_one(&paired) ? BBS_OK : BBS_ERROR;
 }
 
 static void
@@ -257,7 +238,7 @@ bbs_sign_update (
 
 	bbs_acc_update(&ctx->acc, msg, msg_len);
 	// Serialize msg_scalar for hashing into e
-	RLC_ASSERT(bn_write_bbs (buffer, ctx->acc.msg_scalar));
+	bn_write_bbs (buffer, &ctx->acc.msg_scalar);
 	hash_to_scalar_update (s, &ctx->ch_ctx, buffer, BBS_SCALAR_LEN);
 }
 
@@ -272,30 +253,24 @@ bbs_sign_finalize (
 {
 	bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
 	uint8_t             buffer[BBS_SCALAR_LEN];
-	bn_t                   e, sk_n;
+	blst_scalar                   e, sk_n;
 
 	bbs_acc_finalize(&ctx->acc, header, header_len);
 
 	// Derive e
-	RLC_ASSERT(bn_write_bbs (buffer, ctx->acc.msg_scalar));
+	bn_write_bbs (buffer, &ctx->acc.msg_scalar);
 	hash_to_scalar_update (s, &ctx->ch_ctx, buffer, BBS_SCALAR_LEN);
-	hash_to_scalar_finalize (s, &ctx->ch_ctx, e, s->signature_dst, s->signature_dst_len);
+	hash_to_scalar_finalize (s, &ctx->ch_ctx, &e, s->signature_dst, s->signature_dst_len);
 
-	RLC_TRY {
-		// Calculate A=B^(1/(sk+e))
-		bn_read_bbs (sk_n, sk);
-		bn_add (sk_n, sk_n, e); // sk_n reused
-		bn_mod_inv (sk_n, sk_n, &(core_get ()->ep_r));
-		ep_mul (ctx->acc.B, ctx->acc.B, sk_n); // ctx->acc.B reused for A
+	// Calculate A=B^(1/(sk+e))
+	if(BBS_OK != bn_read_bbs (&sk_n, sk)) return BBS_ERROR;
+	blst_sk_add_n_check (&sk_n, &sk_n, &e); // sk_n reused
+	blst_sk_inverse (&sk_n, &sk_n);
+	ep_mult_scalar (&ctx->acc.B, &ctx->acc.B, &sk_n, 255); // ctx->acc.B reused for A
 
-		// Serialize (A,e)
-		ep_write_bbs (signature, ctx->acc.B);
-		bn_write_bbs (signature + BBS_G1_ELEM_LEN, e);
-	}
-	RLC_CATCH_ANY {
-		// This can happen when A=identity (unlikely) or sk was corrupted
-		return BBS_ERROR;
-	}
+	// Serialize (A,e)
+	ep_write_bbs (signature, &ctx->acc.B);
+	bn_write_bbs (signature + BBS_G1_ELEM_LEN, &e);
 
 	return BBS_OK;
 }
@@ -316,18 +291,14 @@ bbs_verify_finalize (
 
 	bbs_acc_finalize(ctx, header, header_len);
 
-	RLC_TRY {
-		// Reuse ctx->Q_1 as A, ctx->msg_scalar as e, ctx->H_i as A*e
-		ep_read_bbs(ctx->Q_1, signature);
-		bn_read_bbs(ctx->msg_scalar, signature + BBS_G1_ELEM_LEN);
-		ep_mul(ctx->H_i, ctx->Q_1, ctx->msg_scalar);
-		ep_sub(ctx->B, ctx->B, ctx->H_i);
-	}
-	RLC_CATCH_ANY {
-		return BBS_ERROR;
-	}
+	// Reuse ctx->Q_1 as A, ctx->msg_scalar as e, ctx->H_i as A*e
+	if(BBS_OK != ep_read_bbs(&ctx->Q_1, signature)) return BBS_ERROR;
+	if(BBS_OK != bn_read_bbs(&ctx->msg_scalar, signature + BBS_G1_ELEM_LEN)) return BBS_ERROR;
+	ep_mult_scalar(&ctx->H_i, &ctx->Q_1, &ctx->msg_scalar, 255);
+	blst_p1_cneg(&ctx->H_i, 1);
+	blst_p1_add_or_double(&ctx->B, &ctx->B, &ctx->H_i);
 
-	return bbs_check_sig_eqn(ctx->Q_1, ctx->B, pk);
+	return bbs_check_sig_eqn(&ctx->Q_1, &ctx->B, pk);
 }
 
 int
@@ -448,7 +419,7 @@ bbs_verify_nva (
 // Accumulates onto B and T2 and keeps track of the challenge
 typedef struct {
 	bbs_acc_ctx acc;
-	ep_t T2;
+	blst_p1 T2;
 	union bbs_hash_context ch_ctx;
 	uint64_t disclosed_ctr;
 	uint64_t undisclosed_ctr;
@@ -470,8 +441,9 @@ bbs_proof_verify_init (
 	bbs_acc_init(&ctx->acc, cipher_suite, pk, num_messages);
 	ctx->disclosed_ctr = ctx->undisclosed_ctr = 0;
 
-	// Initialize T2 to the identity
-	RLC_ASSERT(ep_set_infty (ctx->T2));
+	// Initialize T2 to the identity. FIXME: Should there be an API for
+	// this in BLST?
+	memset(&ctx->T2.z, 0, sizeof(ctx->T2.z));
 
 	// Initialize Challenge Calculation
 	hash_to_scalar_init (cipher_suite, &ctx->ch_ctx);
@@ -511,7 +483,7 @@ bbs_proof_gen_update (
 	bbs_acc_update(&ctx->acc, msg, msg_len);
 
 	// Write msg_scalar to the proof. This is not an overflow.
-	RLC_ASSERT(bn_write_bbs (proof_ptr, ctx->acc.msg_scalar));
+	bn_write_bbs (proof_ptr, &ctx->acc.msg_scalar);
 
 	if(disclosed) {
 		// This message is disclosed. Update the challenge hash
@@ -524,13 +496,11 @@ bbs_proof_gen_update (
 	{
 		// This message is undisclosed. Derive new random scalar
 		// and accumulate it onto commitment T2
-		ctx->prf (s, ctx->acc.msg_scalar, 0, ctx->undisclosed_ctr + 3, ctx->prf_cookie);
+		ctx->prf (s, &ctx->acc.msg_scalar, 0, ctx->undisclosed_ctr + 3, ctx->prf_cookie);
 
 		// Update T2
-		RLC_ASSERT(
-			ep_mul (ctx->acc.H_i, ctx->acc.H_i, ctx->acc.msg_scalar);
-			ep_add (ctx->T2, ctx->T2, ctx->acc.H_i);
-		);
+		ep_mult_scalar (&ctx->acc.H_i, &ctx->acc.H_i, &ctx->acc.msg_scalar, 255);
+		blst_p1_add_or_double (&ctx->T2, &ctx->T2, &ctx->acc.H_i);
 		ctx->undisclosed_ctr++; // Implicitly keep msg_scalar for later
 	}
 }
@@ -552,7 +522,7 @@ bbs_proof_verify_update (
 	{
 		// This message is disclosed.
 		bbs_acc_update(&ctx->acc, msg, msg_len);
-		RLC_ASSERT(bn_write_bbs (scalar_buffer, ctx->acc.msg_scalar));
+		bn_write_bbs (scalar_buffer, &ctx->acc.msg_scalar);
 
 		// Hash i and msg_scalar into the challenge
 		uint64_t be_buffer = UINT64_H2BE (ctx->disclosed_ctr + ctx->undisclosed_ctr);
@@ -568,14 +538,9 @@ bbs_proof_verify_update (
 		bbs_acc_update_undisclosed (&ctx->acc);
 
 		// Update T2.
-		RLC_TRY {
-			bn_read_bbs (ctx->acc.msg_scalar, proof_ptr);
-			ep_mul (ctx->acc.H_i, ctx->acc.H_i, ctx->acc.msg_scalar);
-			ep_add (ctx->T2, ctx->T2, ctx->acc.H_i);
-		}
-		RLC_CATCH_ANY {
-			return BBS_ERROR;
-		}
+		if(BBS_OK != bn_read_bbs (&ctx->acc.msg_scalar, proof_ptr)) return BBS_ERROR;
+		ep_mult_scalar (&ctx->acc.H_i, &ctx->acc.H_i, &ctx->acc.msg_scalar, 255);
+		blst_p1_add_or_double (&ctx->T2, &ctx->T2, &ctx->acc.H_i);
 		ctx->undisclosed_ctr++;
 	}
 	return BBS_OK;
@@ -596,8 +561,8 @@ bbs_proof_gen_finalize (
 	)
 {
 	bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
-	bn_t e, r1, r3, challenge;
-	ep_t D, Abar, Bbar;
+	blst_scalar e, r1, r3, challenge;
+	blst_p1 D, Abar, Bbar;
 	uint8_t domain_buffer[BBS_SCALAR_LEN], T_buffer[2*BBS_G1_ELEM_LEN];
 	uint8_t *proof_ptr = proof;
 
@@ -611,62 +576,56 @@ bbs_proof_gen_finalize (
 
 	bbs_acc_finalize(&ctx->acc, header, header_len);
 
-	RLC_TRY {
-		// Write out the domain
-		bn_write_bbs (domain_buffer, ctx->acc.msg_scalar);
+	// Write out the domain
+	bn_write_bbs (domain_buffer, &ctx->acc.msg_scalar);
 
-		// Parse the signature
-		ep_read_bbs (Abar, signature); // Reuse Abar as A
-		bn_read_bbs (e, signature + BBS_G1_ELEM_LEN);
+	// Parse the signature
+	if(BBS_OK != ep_read_bbs (&Abar, signature)) return BBS_ERROR; // Reuse Abar as A
+	if(BBS_OK != bn_read_bbs (&e, signature + BBS_G1_ELEM_LEN)) return BBS_ERROR;
 
-		// Generate rerandomization scalars.
-		ctx->prf (s, r1, 1, 0, ctx->prf_cookie);
-		ctx->prf (s, r3, 2, 0, ctx->prf_cookie); // Temporarily r2=r3^-1
+	// Generate rerandomization scalars.
+	ctx->prf (s, &r1, 1, 0, ctx->prf_cookie);
+	ctx->prf (s, &r3, 2, 0, ctx->prf_cookie); // Temporarily r2=r3^-1
 
-		// Calculate the statement (excluding messages): D, ABar, BBar.
-		// B is used as a temporary variable from now on.
-		ep_mul (D, ctx->acc.B, r3);
-		ep_mul (Abar, Abar,    r1);
-		ep_mul (Abar, Abar, r3);
-		ep_mul (Bbar, D,    r1);
-		ep_mul (ctx->acc.B,    Abar, e);
-		ep_neg (ctx->acc.B, ctx->acc.B);
-		ep_add (Bbar, Bbar, ctx->acc.B);
+	// Calculate the statement (excluding messages): D, ABar, BBar.
+	// B is used as a temporary variable from now on.
+	ep_mult_scalar (&D,          &ctx->acc.B, &r3, 255);
+	ep_mult_scalar (&Abar,       &Abar,       &r1, 255);
+	ep_mult_scalar (&Abar,       &Abar,       &r3, 255);
+	ep_mult_scalar (&Bbar,       &D,          &r1, 255);
+	ep_mult_scalar (&ctx->acc.B, &Abar,       &e,  255);
+	blst_p1_cneg (&ctx->acc.B, 1);
+	blst_p1_add_or_double (&Bbar, &Bbar, &ctx->acc.B);
 
-		// Turn r2 into r3
-		bn_mod_inv (r3, r3, &(core_get ()->ep_r));
+	// Turn r2 into r3
+	blst_sk_inverse (&r3, &r3);
 
-		// Write statement and witness out (witness to be overwritten)
-		// Part of the witness has been written out already
-		ep_write_bbs (proof_ptr, Abar);
-		proof_ptr += BBS_G1_ELEM_LEN;
-		ep_write_bbs (proof_ptr, Bbar);
-		proof_ptr += BBS_G1_ELEM_LEN;
-		ep_write_bbs (proof_ptr, D);
-		proof_ptr += BBS_G1_ELEM_LEN;
-		bn_write_bbs (proof_ptr, e);
-		proof_ptr += BBS_SCALAR_LEN;
-		bn_write_bbs (proof_ptr, r1);
-		proof_ptr += BBS_SCALAR_LEN;
-		bn_write_bbs (proof_ptr, r3);
-		proof_ptr += BBS_SCALAR_LEN;
+	// Write statement and witness out (witness to be overwritten)
+	// Part of the witness has been written out already
+	ep_write_bbs (proof_ptr, &Abar);
+	proof_ptr += BBS_G1_ELEM_LEN;
+	ep_write_bbs (proof_ptr, &Bbar);
+	proof_ptr += BBS_G1_ELEM_LEN;
+	ep_write_bbs (proof_ptr, &D);
+	proof_ptr += BBS_G1_ELEM_LEN;
+	bn_write_bbs (proof_ptr, &e);
+	proof_ptr += BBS_SCALAR_LEN;
+	bn_write_bbs (proof_ptr, &r1);
+	proof_ptr += BBS_SCALAR_LEN;
+	bn_write_bbs (proof_ptr, &r3);
+	proof_ptr += BBS_SCALAR_LEN;
 
-		// Proof Message 1: Commitment (T1,T2)
-		ctx->prf (s, e,  0, 0, ctx->prf_cookie);
-		ctx->prf (s, r1, 0, 1, ctx->prf_cookie);
-		ctx->prf (s, r3, 0, 2, ctx->prf_cookie);
-		ep_mul (ctx->acc.B, D, r3);
-		ep_add (ctx->T2,ctx->T2, ctx->acc.B);
-		ep_write_bbs (T_buffer + BBS_G1_ELEM_LEN, ctx->T2);
-		ep_mul (ctx->T2, D, r1); // Reuse T2 as T1
-		ep_mul (ctx->acc.B,  Abar, e);
-		ep_add (ctx->T2, ctx->T2, ctx->acc.B);
-		ep_write_bbs (T_buffer, ctx->T2);
-	}
-	RLC_CATCH_ANY {
-		// This can happen if the signature is corrupted
-		return BBS_ERROR;
-	}
+	// Proof Message 1: Commitment (T1,T2)
+	ctx->prf (s, &e,  0, 0, ctx->prf_cookie);
+	ctx->prf (s, &r1, 0, 1, ctx->prf_cookie);
+	ctx->prf (s, &r3, 0, 2, ctx->prf_cookie);
+	ep_mult_scalar (&ctx->acc.B, &D, &r3, 255);
+	blst_p1_add_or_double (&ctx->T2, &ctx->T2, &ctx->acc.B);
+	ep_write_bbs (T_buffer + BBS_G1_ELEM_LEN, &ctx->T2);
+	ep_mult_scalar (&ctx->T2,    &D,    &r1, 255); // Reuse T2 as T1
+	ep_mult_scalar (&ctx->acc.B, &Abar, &e,  255);
+	blst_p1_add_or_double (&ctx->T2, &ctx->T2, &ctx->acc.B);
+	ep_write_bbs (T_buffer, &ctx->T2);
 
 	// Proof Message 2: Challenge
 	if (! presentation_header) presentation_header_len = 0;
@@ -676,27 +635,25 @@ bbs_proof_gen_finalize (
 	uint64_t be_buffer = UINT64_H2BE (presentation_header_len);
 	hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
         hash_to_scalar_update(s, &ctx->ch_ctx, presentation_header, presentation_header_len);
-        hash_to_scalar_finalize(s, &ctx->ch_ctx, challenge,
+        hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge,
 			(uint8_t *)s->challenge_dst, s->challenge_dst_len);
-	RLC_ASSERT(bn_write_bbs (proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN, challenge));
+	bn_write_bbs (proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN, &challenge);
 
         // Proof Message 3: Response
 	// We overwrite the witness and reuse e for the tilde values
 	proof_ptr = proof + 3 * BBS_G1_ELEM_LEN;
 	for (uint64_t witness_idx = 0; witness_idx < num_undisclosed + 3; witness_idx++)
 	{
-		ctx->prf (s, e, 0, witness_idx, ctx->prf_cookie);
+		ctx->prf (s, &e, 0, witness_idx, ctx->prf_cookie);
 
-		RLC_ASSERT(
-			bn_read_bbs (ctx->acc.msg_scalar, proof_ptr);
-			bn_mul (ctx->acc.msg_scalar, ctx->acc.msg_scalar, challenge);
-			if(1 == witness_idx || 2 == witness_idx) // r1 and r3 are subtracted
-				bn_neg (ctx->acc.msg_scalar, ctx->acc.msg_scalar);
-			bn_add (e, e, ctx->acc.msg_scalar);
-			bn_mod (e, e, &(core_get ()->ep_r));
-			bn_write_bbs (proof_ptr, e);
-			proof_ptr += BBS_SCALAR_LEN;
-		);
+		bn_read_bbs (&ctx->acc.msg_scalar, proof_ptr); // Cannot fail
+		blst_sk_mul_n_check(&ctx->acc.msg_scalar, &ctx->acc.msg_scalar, &challenge);
+		if(1 == witness_idx || 2 == witness_idx) // r1 and r3 are subtracted
+			blst_sk_sub_n_check (&e, &e, &ctx->acc.msg_scalar);
+		else
+			blst_sk_add_n_check (&e, &e, &ctx->acc.msg_scalar);
+		bn_write_bbs (proof_ptr, &e);
+		proof_ptr += BBS_SCALAR_LEN;
 	}
 
 	return BBS_OK;
@@ -716,8 +673,8 @@ bbs_proof_verify_finalize (
 	)
 {
 	bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
-	bn_t e, r1, r3, challenge, challenge_prime;
-	ep_t D, Abar, Bbar;
+	blst_scalar e, r1, r3, challenge, challenge_prime;
+	blst_p1 D, Abar, Bbar;
 	uint8_t domain_buffer[BBS_SCALAR_LEN], T_buffer[2*BBS_G1_ELEM_LEN];
 	const uint8_t *proof_ptr  = proof;
 
@@ -731,42 +688,37 @@ bbs_proof_verify_finalize (
 
 	bbs_acc_finalize(&ctx->acc, header, header_len);
 
-	RLC_TRY {
-		// Write out the domain. We reuse scalar_buffer
-		bn_write_bbs (domain_buffer, ctx->acc.msg_scalar);
+	// Write out the domain. We reuse scalar_buffer
+	bn_write_bbs (domain_buffer, &ctx->acc.msg_scalar);
 
-		// Parse the remainder of the statement and response
-		// The parsing here is injective.
-		ep_read_bbs (Abar, proof_ptr);
-		proof_ptr += BBS_G1_ELEM_LEN;
-		ep_read_bbs (Bbar, proof_ptr);
-		proof_ptr += BBS_G1_ELEM_LEN;
-		ep_read_bbs (D,    proof_ptr);
-		proof_ptr += BBS_G1_ELEM_LEN;
-		bn_read_bbs (e,     proof_ptr);
-		proof_ptr += BBS_SCALAR_LEN;
-		bn_read_bbs (r1,    proof_ptr);
-		proof_ptr += BBS_SCALAR_LEN;
-		bn_read_bbs (r3,    proof_ptr);
-		proof_ptr += BBS_SCALAR_LEN;
-		bn_read_bbs (challenge, proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN);
+	// Parse the remainder of the statement and response
+	// The parsing here is injective.
+	if(BBS_OK != ep_read_bbs (&Abar,  proof_ptr)) return BBS_ERROR;
+	proof_ptr += BBS_G1_ELEM_LEN;
+	if(BBS_OK != ep_read_bbs (&Bbar, proof_ptr)) return BBS_ERROR;
+	proof_ptr += BBS_G1_ELEM_LEN;
+	if(BBS_OK != ep_read_bbs (&D,    proof_ptr)) return BBS_ERROR;
+	proof_ptr += BBS_G1_ELEM_LEN;
+	if(BBS_OK != bn_read_bbs (&e,    proof_ptr)) return BBS_ERROR;
+	proof_ptr += BBS_SCALAR_LEN;
+	if(BBS_OK != bn_read_bbs (&r1,   proof_ptr)) return BBS_ERROR;
+	proof_ptr += BBS_SCALAR_LEN;
+	if(BBS_OK != bn_read_bbs (&r3,   proof_ptr)) return BBS_ERROR;
+	proof_ptr += BBS_SCALAR_LEN;
+	if(BBS_OK != bn_read_bbs (&challenge, proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN)) return BBS_ERROR;
 
-		// Proof Message 1: Commitment (recovered from Message 3)
-		ep_mul (ctx->acc.B, ctx->acc.B, challenge);
-		ep_add (ctx->T2, ctx->T2, ctx->acc.B);
-		ep_mul (ctx->acc.B, D, r3);
-		ep_add (ctx->T2, ctx->T2, ctx->acc.B);
-		ep_write_bbs (T_buffer + BBS_G1_ELEM_LEN, ctx->T2);
-		ep_mul (ctx->acc.B, Bbar, challenge);
-		ep_mul (ctx->T2, Abar, e);
-		ep_add (ctx->acc.B, ctx->acc.B, ctx->T2);
-		ep_mul (ctx->T2, D, r1);
-		ep_add (ctx->acc.B, ctx->acc.B, ctx->T2);
-		ep_write_bbs (T_buffer, ctx->acc.B);
-	}
-	RLC_CATCH_ANY {
-		return BBS_ERROR;
-	}
+	// Proof Message 1: Commitment (recovered from Message 3)
+	ep_mult_scalar (&ctx->acc.B, &ctx->acc.B, &challenge, 255);
+	blst_p1_add_or_double (&ctx->T2, &ctx->T2, &ctx->acc.B);
+	ep_mult_scalar (&ctx->acc.B, &D, &r3, 255);
+	blst_p1_add_or_double (&ctx->T2, &ctx->T2, &ctx->acc.B);
+	ep_write_bbs (T_buffer + BBS_G1_ELEM_LEN, &ctx->T2);
+	ep_mult_scalar (&ctx->acc.B, &Bbar, &challenge, 255);
+	ep_mult_scalar (&ctx->T2, &Abar, &e, 255);
+	blst_p1_add_or_double (&ctx->acc.B, &ctx->acc.B, &ctx->T2);
+	ep_mult_scalar (&ctx->T2, &D, &r1, 255);
+	blst_p1_add_or_double (&ctx->acc.B, &ctx->acc.B, &ctx->T2);
+	ep_write_bbs (T_buffer, &ctx->acc.B);
 
 	// Proof Message 2: Challenge
 	if (! presentation_header) presentation_header_len = 0;
@@ -777,24 +729,24 @@ bbs_proof_verify_finalize (
 	hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
         hash_to_scalar_update(s, &ctx->ch_ctx, presentation_header,
                               presentation_header_len);
-        hash_to_scalar_finalize(s, &ctx->ch_ctx, challenge_prime,
+        hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge_prime,
                                 (uint8_t *)s->challenge_dst,
                                 s->challenge_dst_len);
 
-        // Verification Step 1: The PoK was valid
-	if (RLC_EQ != bn_cmp (challenge, challenge_prime))
+        // Verification Step 1: The PoK was valid. TODO: This should be simpler
+	if (blst_sk_sub_n_check (&challenge, &challenge, &challenge_prime))
 	{
 		return BBS_ERROR;
 	}
 
 	// Verification Step 2: The original signature was valid
-	return bbs_check_sig_eqn(Abar, Bbar, pk);
+	return bbs_check_sig_eqn(&Abar, &Bbar, pk);
 }
 
 static void
 bbs_proof_prf (
 	bbs_cipher_suite_t *cipher_suite,
-	bn_t                out,
+	blst_scalar        *out,
 	uint8_t             input_type,
 	uint64_t            input,
 	void               *seed
@@ -839,12 +791,7 @@ bbs_proof_gen (
 	// intermediate derivations. Currently, we derive new values via
 	// hash_to_scalar, but we might want to exchange that for
 	// something faster later on.
-	RLC_TRY {
-		rand_bytes (seed, 32);
-	}
-	RLC_CATCH_ANY {
-		return BBS_ERROR;
-	}
+	getentropy(seed, 32);
 
 	va_start (ap, num_messages);
 	bbs_proof_gen_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len, bbs_proof_prf, seed);
@@ -887,12 +834,7 @@ bbs_proof_gen_nva (
 	// intermediate derivations. Currently, we derive new values via
 	// hash_to_scalar, but we might want to exchange that for
 	// something faster later on.
-	RLC_TRY {
-		rand_bytes (seed, 32);
-	}
-	RLC_CATCH_ANY {
-		return BBS_ERROR;
-	}
+	getentropy(seed, 32);
 
 	bbs_proof_gen_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len, bbs_proof_prf, seed);
 	for(uint64_t i=0; i< num_messages; i++) {

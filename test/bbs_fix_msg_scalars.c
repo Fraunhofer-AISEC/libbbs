@@ -62,13 +62,7 @@ bbs_fix_msg_scalars ()
 		}
 
 		uint8_t bin[BBS_SCALAR_LEN];
-		bn_t    scalar;
-		bn_null (scalar);
-		RLC_TRY {
-			bn_new (scalar); // Yes, this might leak. This is a test and thus
-			                 // short lived
-		}
-		RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
+		blst_scalar    scalar;
 
 		const uint8_t *map_dst     = (uint8_t *) fixture.cipher_suite->map_dst;
 		const uint8_t  map_dst_len = fixture.cipher_suite->map_dst_len;
@@ -76,14 +70,11 @@ bbs_fix_msg_scalars ()
 		for (int i = 0; i < 10; i++)
 		{
 
-			hash_to_scalar (fixture.cipher_suite, scalar, map_dst,
+			hash_to_scalar (fixture.cipher_suite, &scalar, map_dst,
 					map_dst_len, 1, fixture_ms[i], fixture_ms_len[i]);
 
-			RLC_TRY {
-				bn_write_bbs (bin, scalar);
-			} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
+			bn_write_bbs (bin, &scalar);
 			ASSERT_EQ_PTR ("scalar 1 generation", bin, fixture.msg[i], fixture.msg_len);
 		}
-	bn_free (scalar);
 	return 0;
 }

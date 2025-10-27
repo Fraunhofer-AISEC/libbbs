@@ -6,9 +6,9 @@
 #include <assert.h>
 #include "sha256.h"
 #include "shake256.h"
+#include <blst.h>
 
 #undef ALIGN
-#include <relic.h>
 
 // This header specifies useful functions for several utility algorithms.
 // Use these ifyou want to hack on BBS signatures and want to stay close to the
@@ -69,36 +69,34 @@ struct bbs_cipher_suite
 };
 
 // Serialization
-// These functions should be called in a RLC_TRY block
 void bn_write_bbs (
 	uint8_t     bin[BBS_SCALAR_LEN],
-	const bn_t  n
+	const blst_scalar  *n
 	);
 
 void ep_write_bbs (
 	uint8_t     bin[BBS_G1_ELEM_LEN],
-	const ep_t  p
+	const blst_p1  *p
 	);
 
 void ep2_write_bbs (
 	uint8_t      bin[BBS_G2_ELEM_LEN],
-	const ep2_t  p
+	const blst_p2  *p
 	);
 
 // Deserialization
-// These functions should be called in a RLC_TRY block
-void bn_read_bbs (
-	bn_t           n,
+int bn_read_bbs (
+	blst_scalar           *n,
 	const uint8_t  bin[BBS_SCALAR_LEN]
 	);
 
-void ep_read_bbs (
-	ep_t           p,
+int ep_read_bbs (
+	blst_p1           *p,
 	const uint8_t  bin[BBS_G1_ELEM_LEN]
 	);
 
-void ep2_read_bbs (
-	ep2_t          p,
+int ep2_read_bbs (
+	blst_p2          *p,
 	const uint8_t  bin[BBS_G2_ELEM_LEN]
 	);
 
@@ -127,14 +125,14 @@ void hash_to_scalar_update (
 void hash_to_scalar_finalize (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
-	bn_t                out,
+	blst_scalar                *out,
 	const uint8_t      *dst,
 	uint8_t             dst_len
 	);
 
 void hash_to_scalar (
 	bbs_cipher_suite_t *cipher_suite,
-	bn_t                out,
+	blst_scalar                *out,
 	const uint8_t      *dst,
 	uint8_t             dst_len,
 	uint64_t            num_messages,
@@ -152,13 +150,13 @@ void calculate_domain_init (
 void calculate_domain_update (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
-	const ep_t          generator
+	const blst_p1          *generator
 	);
 
 void calculate_domain_finalize (
 	bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
-	bn_t                out,
+	blst_scalar                *out,
 	const uint8_t      *header,
 	uint64_t            header_len
 	);
@@ -187,7 +185,7 @@ void create_generator_init (
 void create_generator_next (
 	bbs_cipher_suite_t *cipher_suite,
 	uint8_t             state[48 + 8],
-	ep_t                generator
+	blst_p1                *generator
 	);
 
 // You can control the randomness for bbs_proof_gen by supplying a prf.
@@ -201,7 +199,7 @@ void create_generator_next (
 // i-th such scalar. This is because there may be up to 2^64 messages, bringing
 // the total possible message count slightly above 2^64.
 typedef void (bbs_bn_prf)(bbs_cipher_suite_t *cipher_suite,
-			 bn_t                out,
+			 blst_scalar                *out,
 			 uint8_t             input_type,
 			 uint64_t            input,
 			 void               *cookie

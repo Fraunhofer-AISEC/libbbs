@@ -39,22 +39,12 @@ bbs_fix_hash_to_scalar ()
 	}
 
 	uint8_t bin[BBS_SCALAR_LEN];
-	bn_t scalar;
-	bn_null (scalar);
-	RLC_TRY {
-		bn_new (scalar);
-	}
-	RLC_CATCH_ANY {
-		puts ("Internal Error");
-		return 1;
-	}
+	blst_scalar scalar;
 
-	hash_to_scalar (fixture.cipher_suite, scalar, fixture.dst, fixture.dst_len,
+	hash_to_scalar (fixture.cipher_suite, &scalar, fixture.dst, fixture.dst_len,
 	                              1, fixture.msg, fixture.msg_len);
 
-	RLC_TRY {
-		bn_write_bbs (bin, scalar);
-	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
+	bn_write_bbs (bin, &scalar);
 
 	ASSERT_EQ_PTR ("hash to scalar", bin, fixture.scalar, fixture.scalar_len);
 

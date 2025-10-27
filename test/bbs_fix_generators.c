@@ -47,32 +47,21 @@ bbs_fix_generators ()
 
 	uint8_t state[48 + 8];
 	uint8_t bin[BBS_G1_ELEM_LEN];
-	ep_t generator;
-	ep_null (generator);
-	RLC_TRY {
-		ep_new (generator);         // Yes, this might leak. This is a test and thus
-		                            // short lived
-	}
-	RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
+	blst_p1 generator;
 
 	create_generator_init (cipher_suite, state);
 
 	DEBUG("TEST", state, 56);
 
-	create_generator_next (cipher_suite, state, generator);
-
-	RLC_TRY {
-		ep_write_bbs (bin, generator);
-	} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
+	create_generator_next (cipher_suite, state, &generator);
+	ep_write_bbs (bin, &generator);
 
 	ASSERT_EQ_PTR ("generator Q_1 creation", bin, fixture.q_1, BBS_G1_ELEM_LEN);
 
 	for (int j = 0; j < 10; j++) {
-		create_generator_next (cipher_suite, state, generator);
+		create_generator_next (cipher_suite, state, &generator);
+		ep_write_bbs (bin, &generator);
 
-		RLC_TRY {
-			ep_write_bbs (bin, generator);
-		} RLC_CATCH_ANY { puts ("Internal Error"); return 1; }
 		ASSERT_EQ_PTR ("generator creation", bin, fixture.hs[j], BBS_G1_ELEM_LEN);
 	}
 	return 0;

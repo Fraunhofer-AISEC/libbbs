@@ -10,64 +10,78 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CheckCCompilerFlag OPTIONAL)
 include(CTest)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}"
         DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
 set(CMAKE_BUILD_WITH_RPATH TRUE)
 
-set(RELIC_CFLAGS
-    "-O3 -fomit-frame-pointer -fPIC"
-    CACHE INTERNAL "")
+#set(RELIC_CFLAGS
+#    "-O3 -fomit-frame-pointer -fPIC"
+#    CACHE INTERNAL "")
 
-check_c_compiler_flag("-finline-small-functions" INLINE_SMALL_FUNCS_SUPPORTED)
-if(INLINE_SMALL_FUNCS_SUPPORTED)
-  set(RELIC_CFLAGS
-      "${RELIC_CFLAGS} -finline-small-functions"
-      CACHE INTERNAL "")
-else()
-  message(STATUS "-finline-small-functions not supported.")
-endif()
+#check_c_compiler_flag("-finline-small-functions" INLINE_SMALL_FUNCS_SUPPORTED)
+#if(INLINE_SMALL_FUNCS_SUPPORTED)
+#  set(RELIC_CFLAGS
+#      "${RELIC_CFLAGS} -finline-small-functions"
+#      CACHE INTERNAL "")
+#else()
+#  message(STATUS "-finline-small-functions not supported.")
+#endif()
 
-SET(RELIC_ARITH "easy" CACHE STRING "The ARITH value for RELIC build")
+#SET(RELIC_ARITH "easy" CACHE STRING "The ARITH value for RELIC build")
 
-message(STATUS "Relic CFLAGS: ${RELIC_CFLAGS}")
+#message(STATUS "Relic CFLAGS: ${RELIC_CFLAGS}")
 include(ExternalProject)
 ExternalProject_Add(
-  relic
-  GIT_REPOSITORY https://github.com/relic-toolkit/relic.git
-  GIT_TAG 7b8be9b
-  UPDATE_DISCONNECTED 1
-  STEP_TARGETS update
-  LIST_SEPARATOR ^^
-  INSTALL_COMMAND ""
-  CMAKE_ARGS -DWSIZE=64
-             -DRAND=UDEV
-	     -DALLOC=AUTO
-             -DSHLIB=OFF
-             -DSTLIB=ON
-             -DSTBIN=OFF
-             -DTIMER=
-             -DCHECK=off
-             -DVERBS=off
-	     -DARITH=${RELIC_ARITH}
-             -DFP_PRIME=381
-             "-DFP_METHD=BASIC^^COMBA^^COMBA^^MONTY^^MONTY^^JMPDS^^SLIDE"
-             "-DCFLAGS=${RELIC_CFLAGS}"
-             -DFP_PMERS=off
-             -DFP_QNRES=on
-             "-DFPX_METHD=INTEG^^INTEG^^LAZYR"
-             -DEP_PLAIN=off
-             -DEP_SUPER=off
-             "-DPP_METHD=LAZYR^^OATEP")
+	blst
+	PREFIX blst
+	GIT_REPOSITORY https://github.com/dot-asm/blst.git
+	GIT_TAG blst_fp_from_be_bytes
+	GIT_SHALLOW true
+	#URL https://github.com/supranational/blst/archive/refs/tags/v0.3.15.tar.gz
+	#DOWNLOAD_EXTRACT_TIMESTAMP false
+	CONFIGURE_COMMAND ""
+	BUILD_IN_SOURCE true
+	BUILD_COMMAND "./build.sh"
+	INSTALL_COMMAND ""
+	)
+#ExternalProject_Add(
+#  relic
+#  GIT_REPOSITORY https://github.com/relic-toolkit/relic.git
+#  GIT_TAG 7b8be9b
+#  UPDATE_DISCONNECTED 1
+#  STEP_TARGETS update
+#  LIST_SEPARATOR ^^
+#  INSTALL_COMMAND ""
+#  CMAKE_ARGS -DWSIZE=64
+#             -DRAND=UDEV
+#	     -DALLOC=AUTO
+#             -DSHLIB=OFF
+#             -DSTLIB=ON
+#             -DSTBIN=OFF
+#             -DTIMER=
+#             -DCHECK=off
+#             -DVERBS=off
+#	     -DARITH=${RELIC_ARITH}
+#             -DFP_PRIME=381
+#             "-DFP_METHD=BASIC^^COMBA^^COMBA^^MONTY^^MONTY^^JMPDS^^SLIDE"
+#             "-DCFLAGS=${RELIC_CFLAGS}"
+#             -DFP_PMERS=off
+#             -DFP_QNRES=on
+#             "-DFPX_METHD=INTEG^^INTEG^^LAZYR"
+#             -DEP_PLAIN=off
+#             -DEP_SUPER=off
+#             "-DPP_METHD=LAZYR^^OATEP")
 
-ExternalProject_Get_Property(relic BINARY_DIR)
-ExternalProject_Get_Property(relic SOURCE_DIR)
-include_directories(${SOURCE_DIR}/include)
+ExternalProject_Get_Property(blst SOURCE_DIR)
+include_directories(${SOURCE_DIR}/bindings)
 
 find_program(MAKE_EXECUTABLE NAMES gmake make mingw32-make REQUIRED)
 
-file(MAKE_DIRECTORY ${BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}) # avoid race
+#file(MAKE_DIRECTORY ${SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}) # avoid race
                                                                # condition
 
 if(DEFINED LIBBBS_DEBUG)

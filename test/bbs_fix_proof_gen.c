@@ -8,16 +8,16 @@ typedef struct {
 	bbs_cipher_suite_t   *cipher_suite;
 	uint8_t                generator_ctx[48 + 8];
 	union bbs_hash_context dom_ctx;
-	ep_t Q_1;
+	blst_p1 Q_1;
 	// Final output
-	ep_t B;
+	blst_p1 B;
 	// Temporary outputs
-	ep_t H_i;
-	bn_t msg_scalar; // Also used for domain
+	blst_p1 H_i;
+	blst_scalar msg_scalar; // Also used for domain
 } bbs_acc_ctx;
 typedef struct {
 	bbs_acc_ctx acc;
-	ep_t T2;
+	blst_p1 T2;
 	union bbs_hash_context ch_ctx;
 	uint64_t disclosed_ctr;
 	uint64_t undisclosed_ctr;
@@ -120,7 +120,7 @@ typedef struct
 void
 mocked_prf (
 	bbs_cipher_suite_t *cipher_suite,
-	bn_t out,
+	blst_scalar *out,
 	uint8_t input_type,
 	uint64_t input,
 	void     *cookie
@@ -142,10 +142,7 @@ mocked_prf (
 	}
 	else return; // Will most likely violate the fixtures
 
-	RLC_ASSERT(
-		bn_read_bin (out, rand, 48);
-		bn_mod (out, out, &(core_get ()->ep_r));
-	);
+	blst_scalar_from_be_bytes(out, rand, 48);
 }
 
 
@@ -381,26 +378,17 @@ bbs_fix_proof_gen ()
 	// Randomness generation self check, to catch any errors related to this
 	// step
 	uint8_t scalar_buffer[BBS_SCALAR_LEN];
-	bn_t scalar;
+	blst_scalar scalar;
 
-	bn_null (scalar);
-	RLC_TRY { bn_new (scalar) }
-	RLC_CATCH_ANY {
-		puts ("Internal error");
-		return 1;
-	}
 	fill_randomness (test_case.cipher_suite, randomness, 10,
 	                               test_case.proof_SEED, test_case.proof_SEED_len,
 	                               test_case.proof_DST, test_case.proof_DST_len);
-	#define WRITE_SCALAR RLC_TRY { bn_write_bbs (scalar_buffer, scalar); \
-} \
-		RLC_CATCH_ANY { puts ("Write error"); return 1;}
 
 	// Test rerandomization scalars
 	for (int i = 0; i < 2; i++)
 	{
-		mocked_prf (test_case.cipher_suite, scalar, i + 1, 0, randomness);
-		WRITE_SCALAR;
+		mocked_prf (test_case.cipher_suite, &scalar, i + 1, 0, randomness);
+		bn_write_bbs (scalar_buffer, &scalar);
 		ASSERT_EQ_PTR ("scalar test",
 		               scalar_buffer,
 		               test_case.proof_random_scalar[i],
@@ -410,8 +398,8 @@ bbs_fix_proof_gen ()
 	// Test commitment scalars
 	for (int i = 0; i < 8; i++)
 	{
-		mocked_prf (test_case.cipher_suite, scalar, 0, i, randomness);
-		WRITE_SCALAR;
+		mocked_prf (test_case.cipher_suite, &scalar, 0, i, randomness);
+		bn_write_bbs (scalar_buffer, &scalar);
 		ASSERT_EQ_PTR ("scalar test",
 		               scalar_buffer,
 		               test_case.proof_random_scalar[i + 2],
@@ -496,6 +484,5 @@ test_case.proof2_revealed_indexes,
 	               test_case.proof3_proof,
 	               test_case.proof3_proof_len);
 
-	bn_free (scalar);
 	return 0;
 }
