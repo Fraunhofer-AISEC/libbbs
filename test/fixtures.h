@@ -17,7 +17,7 @@ extern uint8_t  fixture_m_6[16];
 extern uint8_t  fixture_m_7[12];
 extern uint8_t  fixture_m_8[8];
 extern uint8_t  fixture_m_9[4];
-extern uint8_t  fixture_m_10[0];
+#define fixture_m_10 0
 
 // 
 // BLS12-381-SHAKE-256 Test Vectors

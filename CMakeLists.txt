@@ -10,7 +10,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CheckCCompilerFlag OPTIONAL)
 include(CTest)
 
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (MSVC)
+    # warning level 4
+    add_compile_options(/W4)
+else()
+    # additional warnings
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}"
         DESTINATION ${CMAKE_INSTALL_PREFIX})

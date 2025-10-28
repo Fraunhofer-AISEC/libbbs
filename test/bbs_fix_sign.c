@@ -80,7 +80,7 @@ bbs_fix_sign ()
 			.signature2_m_9 =        fixture_bls12_381_shake_256_signature2_m_9,
 			.signature2_m_9_len =    sizeof(fixture_bls12_381_shake_256_signature2_m_9),
 			.signature2_m_10 =       fixture_bls12_381_shake_256_signature2_m_10,
-			.signature2_m_10_len =   sizeof(fixture_bls12_381_shake_256_signature2_m_10),
+			.signature2_m_10_len =   0 /*m_10*/,
 			.signature2_signature =  fixture_bls12_381_shake_256_signature2_signature,
 			.signature2_signature_len =  sizeof(fixture_bls12_381_shake_256_signature2_signature),
 	};
@@ -119,7 +119,7 @@ bbs_fix_sign ()
 			.signature2_m_9 =        fixture_bls12_381_sha_256_signature2_m_9,
 			.signature2_m_9_len =    sizeof(fixture_bls12_381_sha_256_signature2_m_9),
 			.signature2_m_10 =       fixture_bls12_381_sha_256_signature2_m_10,
-			.signature2_m_10_len =   sizeof(fixture_bls12_381_sha_256_signature2_m_10),
+			.signature2_m_10_len =   0 /*m_10*/,
 			.signature2_signature =  fixture_bls12_381_sha_256_signature2_signature,
 			.signature2_signature_len =  sizeof(fixture_bls12_381_sha_256_signature2_signature),
 	};

@@ -170,7 +170,7 @@ bbs_fix_proof_verify ()
 			.proof2_m_9 = fixture_bls12_381_sha_256_proof2_m_9,
 			.proof2_m_9_len = sizeof(fixture_bls12_381_sha_256_proof2_m_9),
 			.proof2_m_10 = fixture_bls12_381_sha_256_proof2_m_10,
-			.proof2_m_10_len = sizeof(fixture_bls12_381_sha_256_proof2_m_10),
+			.proof2_m_10_len = 0 /*m_10*/,
 			.proof2_proof = fixture_bls12_381_sha_256_proof2_proof,
 			.proof2_proof_len = sizeof(fixture_bls12_381_sha_256_proof2_proof),
 
@@ -264,7 +264,7 @@ bbs_fix_proof_verify ()
 			.proof2_m_9 = fixture_bls12_381_shake_256_proof2_m_9,
 			.proof2_m_9_len = sizeof(fixture_bls12_381_shake_256_proof2_m_9),
 			.proof2_m_10 = fixture_bls12_381_shake_256_proof2_m_10,
-			.proof2_m_10_len = sizeof(fixture_bls12_381_shake_256_proof2_m_10),
+			.proof2_m_10_len = 0 /*m_10*/,
 			.proof2_proof = fixture_bls12_381_shake_256_proof2_proof,
 			.proof2_proof_len = sizeof(fixture_bls12_381_shake_256_proof2_proof),
 

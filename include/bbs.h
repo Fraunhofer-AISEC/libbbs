@@ -47,7 +47,7 @@
  * length of proof with @p num_undisclosed number of undisclosed
  * messages.
  */
-#define BBS_PROOF_LEN(num_undisclosed) (BBS_PROOF_BASE_LEN + num_undisclosed * BBS_PROOF_UD_ELEM_LEN \
+#define BBS_PROOF_LEN(num_undisclosed) (BBS_PROOF_BASE_LEN + (num_undisclosed) * BBS_PROOF_UD_ELEM_LEN \
 					)
 
 /**

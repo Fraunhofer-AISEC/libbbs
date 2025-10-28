@@ -52,7 +52,7 @@ bbs_fix_msg_scalars ()
 	uint32_t           fixture_ms_len[10] = {
 		sizeof(fixture_m_1), sizeof(fixture_m_2), sizeof(fixture_m_3), sizeof(fixture_m_4),
 		sizeof(fixture_m_5), sizeof(fixture_m_6), sizeof(fixture_m_7), sizeof(fixture_m_8),
-		sizeof(fixture_m_9), sizeof(fixture_m_10)
+		sizeof(fixture_m_9), 0 /*m_10*/
 	};
 
 		if (bbs_init ())

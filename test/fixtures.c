@@ -24,7 +24,6 @@ uint8_t  fixture_m_6[] =
 uint8_t  fixture_m_7[] = {0xd1,0x83,0xdd,0xc6,0xe2,0x66,0x5a,0xa4,0xe2,0xf0,0x88,0xaf};
 uint8_t  fixture_m_8[] = {0xac,0x55,0xfb,0x33,0xa7,0x59,0x09,0xed};
 uint8_t  fixture_m_9[] = {0x96,0x01,0x20,0x96};
-uint8_t  fixture_m_10[] = {};
 
 // 
 // BLS12-381-SHAKE-256 Test Vectors
@@ -941,7 +940,7 @@ uint8_t  fixture_bls12_381_sha_256_h2s_scalar[] =
 // Expand Message Test Vectors
 uint8_t rfc_9380_k6_expand_message_xof_dst[] = { 81, 85, 85, 88, 45, 86, 48, 49, 45, 67, 83, 48, 50, 45, 119, 105, 116, 104, 45, 101, 120, 112, 97, 110, 100, 101, 114, 45, 83, 72, 65, 75, 69, 50, 53, 54 };
 size_t rfc_9380_k6_expand_message_xof_dst_len = 36;
-uint8_t rfc_9380_k6_expand_message_xof_msg_1[] = {  };
+uint8_t rfc_9380_k6_expand_message_xof_msg_1[] = { 0 };
 size_t rfc_9380_k6_expand_message_xof_msg_1_len = 0;
 size_t rfc_9380_k6_expand_message_xof_out_len_1 = 0x20;
 uint8_t  fixture_rfc_9380_k6_expand_message_xof_dst_prime_1[] =
@@ -1036,7 +1035,7 @@ uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_5[] =
 uint8_t  fixture_rfc_9380_k6_expand_message_xof_output_5[] =
 		{0x91,0x81,0xea,0xd5,0x22,0x0b,0x19,0x63,0xf1,0xb5,0x95,0x1f,0x35,0x54,0x7a,0x5e,
 		 0xa8,0x6a,0x82,0x05,0x62,0x28,0x7d,0x6c,0xa4,0x72,0x36,0x33,0xd1,0x7c,0xcb,0xbc};
-uint8_t rfc_9380_k6_expand_message_xof_msg_6[] = {  };
+uint8_t rfc_9380_k6_expand_message_xof_msg_6[] = { 0 };
 size_t rfc_9380_k6_expand_message_xof_msg_6_len = 0;
 size_t rfc_9380_k6_expand_message_xof_out_len_6 = 0x80;
 uint8_t  fixture_rfc_9380_k6_expand_message_xof_msg_prime_6[] =

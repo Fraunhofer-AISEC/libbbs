@@ -126,8 +126,8 @@ mocked_prf (
 	void     *cookie
 	)
 {
+	(void)cipher_suite;
 	uint8_t *rand = (uint8_t*) cookie;
-	int res  = BBS_ERROR;
 
 	// TODO: Fix mapping
 	if (0 == input_type && 10 > input)
@@ -272,7 +272,7 @@ bbs_fix_proof_gen ()
 				sizeof(fixture_bls12_381_sha_256_proof2_m_1), sizeof(fixture_bls12_381_sha_256_proof2_m_2), sizeof(fixture_bls12_381_sha_256_proof2_m_3),
 				sizeof(fixture_bls12_381_sha_256_proof2_m_4), sizeof(fixture_bls12_381_sha_256_proof2_m_5), sizeof(fixture_bls12_381_sha_256_proof2_m_6),
 				sizeof(fixture_bls12_381_sha_256_proof2_m_7), sizeof(fixture_bls12_381_sha_256_proof2_m_8), sizeof(fixture_bls12_381_sha_256_proof2_m_9),
-				sizeof(fixture_bls12_381_sha_256_proof2_m_10)
+				0 /*m_10*/
 			},
 			.proof2_proof = fixture_bls12_381_sha_256_proof2_proof,
 			.proof2_proof_len = sizeof(fixture_bls12_381_sha_256_proof2_proof),
@@ -344,7 +344,7 @@ bbs_fix_proof_gen ()
 				sizeof(fixture_bls12_381_shake_256_proof2_m_1), sizeof(fixture_bls12_381_shake_256_proof2_m_2), sizeof(fixture_bls12_381_shake_256_proof2_m_3),
 				sizeof(fixture_bls12_381_shake_256_proof2_m_4), sizeof(fixture_bls12_381_shake_256_proof2_m_5), sizeof(fixture_bls12_381_shake_256_proof2_m_6),
 				sizeof(fixture_bls12_381_shake_256_proof2_m_7), sizeof(fixture_bls12_381_shake_256_proof2_m_8), sizeof(fixture_bls12_381_shake_256_proof2_m_9),
-				sizeof(fixture_bls12_381_shake_256_proof2_m_10)
+				0 /*m_10*/
 			},
 			.proof2_proof = fixture_bls12_381_shake_256_proof2_proof,
 			.proof2_proof_len = sizeof(fixture_bls12_381_shake_256_proof2_proof),

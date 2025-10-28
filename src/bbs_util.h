@@ -15,7 +15,7 @@
 // RFC draft.
 
 #define LEN(m)          (sizeof(m) / sizeof(m[0]))
-#define DEBUG(p, a, l)  do { puts (p); for (int xx = 0; xx<l; xx++) printf ("%02x ", a[xx]); \
+#define DEBUG(p, a, l)  do { puts (p); for (size_t xx = 0; xx<l; xx++) printf ("%02x ", a[xx]); \
 			     puts (""); } while (0);
 #define RLC_ASSERT(expr) RLC_TRY { expr ; } RLC_CATCH_ANY { assert(0); }
 
@@ -206,13 +206,13 @@ typedef void (bbs_bn_prf)(bbs_cipher_suite_t *cipher_suite,
 			 );
 
 // Big endian conversion
-#define UINT64_H2BE(x) (((x & (uint64_t)0xff00000000000000LL) >> 56) | \
-			((x & (uint64_t)0x00ff000000000000LL) >> 40) | \
-			((x & (uint64_t)0x0000ff0000000000LL) >> 24) | \
-			((x & (uint64_t)0x000000ff00000000LL) >>  8) | \
-			((x & (uint64_t)0x00000000ff000000LL) <<  8) | \
-			((x & (uint64_t)0x0000000000ff0000LL) << 24) | \
-			((x & (uint64_t)0x000000000000ff00LL) << 40) | \
-			((x & (uint64_t)0x00000000000000ffLL) << 56))
+#define UINT64_H2BE(x) ((((x) & (uint64_t)0xff00000000000000LL) >> 56) | \
+			(((x) & (uint64_t)0x00ff000000000000LL) >> 40) | \
+			(((x) & (uint64_t)0x0000ff0000000000LL) >> 24) | \
+			(((x) & (uint64_t)0x000000ff00000000LL) >>  8) | \
+			(((x) & (uint64_t)0x00000000ff000000LL) <<  8) | \
+			(((x) & (uint64_t)0x0000000000ff0000LL) << 24) | \
+			(((x) & (uint64_t)0x000000000000ff00LL) << 40) | \
+			(((x) & (uint64_t)0x00000000000000ffLL) << 56))
 
 #endif /*BBS_UTIL_H*/

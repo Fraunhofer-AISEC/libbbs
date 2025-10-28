@@ -50,6 +50,10 @@ def hex_string(name, s)
   if $hex_to_name[s]
     #puts "unsigned char #{prefix}#{name}[] = #{prefix}#{$hex_to_name[s]};"
     puts "#define #{prefix}#{name} #{prefix}#{$hex_to_name[s]}" if $gen_header
+  elsif s.empty?
+    # C does not allow zero-sized arrays
+    $hex_to_name[s] = name
+    puts "#define #{prefix}#{name} 0" if $gen_header
   else
     arr = s.scan(/.{1,2}/).map{|x| "0x#{x}"}
     $hex_to_name[s] = name
@@ -83,6 +87,8 @@ def ascii_string_to_c_array(name, ascii_string)
   prefix = " "
   ascii_values = ascii_string.bytes.map { |byte| byte.to_s }
   array_content = ascii_values.join(', ')
+  # Prevent zero-length array
+  array_content = "0" if ascii_string.empty?
   puts "uint8_t #{name}[] = { #{array_content} };"
   puts "size_t #{name}_len = #{ascii_values.length};"
 end

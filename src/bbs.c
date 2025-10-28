@@ -8,6 +8,7 @@ int getentropy(void *buffer, size_t length);
 
 /* Helper */
 static inline void ep_mult_scalar(blst_p1 *out, const blst_p1 *p, const blst_scalar *s, size_t _ignored) {
+	(void)_ignored;
 	blst_p1_mult(out, p, s->b, 255);
 }
 
@@ -93,6 +94,7 @@ bbs_sk_to_pk (
 	bbs_public_key        pk
 	)
 {
+	(void)cipher_suite; // Might be used in the future. Keep API compat...
 	blst_scalar  sk_n;
 	blst_p2 pk_p;
 
@@ -867,6 +869,9 @@ bbs_proof_verify (
 	uint32_t msg_len;
 	bool disclosed;
 
+	// Sanity check
+	if(proof_len != BBS_PROOF_LEN(num_messages - disclosed_indexes_len)) return BBS_ERROR;
+
 	va_start (ap, num_messages);
 	bbs_proof_verify_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len);
 	for(uint64_t i=0; i< num_messages; i++) {
@@ -903,6 +908,9 @@ bbs_proof_verify_nva (
 	bbs_proof_gen_ctx ctx;
 	uint64_t di_idx = 0;
 	bool disclosed;
+
+	// Sanity check
+	if(proof_len != BBS_PROOF_LEN(num_messages - disclosed_indexes_len)) return BBS_ERROR;
 
 	bbs_proof_verify_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len);
 	for(uint64_t i=0; i< num_messages; i++) {
