@@ -287,8 +287,6 @@ bbs_verify_finalize (
 	uint64_t              header_len
 	)
 {
-	bbs_cipher_suite_t *s = ctx->cipher_suite;
-
 	bbs_acc_finalize(ctx, header, header_len);
 
 	// Reuse ctx->Q_1 as A, ctx->msg_scalar as e, ctx->H_i as A*e
@@ -320,7 +318,7 @@ bbs_sign (
 
 	va_start (ap, num_messages);
 	bbs_sign_init(&ctx, cipher_suite, sk, pk, num_messages);
-	for(int i=0; i< num_messages; i++) {
+	for(uint64_t i=0; i< num_messages; i++) {
 		msg = va_arg (ap, uint8_t*);
 		msg_len = va_arg (ap, uint32_t);
 		bbs_sign_update(&ctx, msg, msg_len);
@@ -346,7 +344,7 @@ bbs_sign_nva (
 	bbs_sign_ctx ctx;
 
 	bbs_sign_init(&ctx, cipher_suite, sk, pk, num_messages);
-	for(int i=0; i< num_messages; i++) {
+	for(uint64_t i=0; i< num_messages; i++) {
 		bbs_sign_update(&ctx, messages[i], messages_lens[i]);
 	}
 
@@ -371,7 +369,7 @@ bbs_verify (
 
 	va_start (ap, num_messages);
 	bbs_verify_init(&ctx, cipher_suite, pk, num_messages);
-	for(int i=0; i< num_messages; i++) {
+	for(uint64_t i=0; i< num_messages; i++) {
 		msg = va_arg (ap, uint8_t*);
 		msg_len = va_arg (ap, uint32_t);
 		bbs_verify_update(&ctx, msg, msg_len);
@@ -396,7 +394,7 @@ bbs_verify_nva (
 	bbs_acc_ctx ctx;
 
 	bbs_verify_init(&ctx, cipher_suite, pk, num_messages);
-	for(int i=0; i< num_messages; i++) {
+	for(uint64_t i=0; i< num_messages; i++) {
 		bbs_verify_update(&ctx, messages[i], messages_lens[i]);
 	}
 
@@ -443,7 +441,7 @@ bbs_proof_verify_init (
 
 	// Initialize T2 to the identity. FIXME: Should there be an API for
 	// this in BLST?
-	memset(&ctx->T2.z, 0, sizeof(ctx->T2.z));
+	(void)memset(&ctx->T2.z, 0, sizeof(ctx->T2.z));
 
 	// Initialize Challenge Calculation
 	hash_to_scalar_init (cipher_suite, &ctx->ch_ctx);

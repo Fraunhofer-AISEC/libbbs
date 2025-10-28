@@ -50,14 +50,8 @@ static const SHA_WORD k[SHA_ROUNDS] = {
 };
 
 static const SHA_TYPE sha256_initial_state = {
-    .state[0] = 0x6a09e667,
-    .state[1] = 0xbb67ae85,
-    .state[2] = 0x3c6ef372,
-    .state[3] = 0xa54ff53a,
-    .state[4] = 0x510e527f,
-    .state[5] = 0x9b05688c,
-    .state[6] = 0x1f83d9ab,
-    .state[7] = 0x5be0cd19,
+    .state = { 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+               0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 },
     .buffer = {0,},
     .n_bits = 0,
     .buffer_counter = 0,
@@ -85,8 +79,8 @@ static void sha_block(SHA_TYPE *sha) {
     SHA_WORD g = sha->state[6];
     SHA_WORD h = sha->state[7];
 
-    SHA_WORD w[16] = {0,};
-    int i, j;
+    SHA_WORD w[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    size_t i, j;
     size_t ws = sizeof(SHA_WORD);
     for (j = 0; j < 16; j++){
 	for(i=0; i<ws; i++){
@@ -173,15 +167,15 @@ void SHA_UPDATE(SHA_TYPE *sha, const void *src, size_t n_bytes){
 
 void SHA_FINALIZE(SHA_TYPE *sha, void *dst){
     uint8_t *ptr = (uint8_t*)dst;
-    int i, j;
+    ssize_t i, j;
 
     sha->buffer[sha->buffer_counter++] = 0x80;
     if(sha->buffer_counter > SHA_N/4 * 7/8) {
-	    memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4 - sha->buffer_counter);
+	    (void)memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4 - sha->buffer_counter);
     	    sha_block(sha);
 	    sha->buffer_counter = 0;
     }
-    memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4-8 - sha->buffer_counter);
+    (void)memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4-8 - sha->buffer_counter);
     sha->buffer_counter = SHA_N/4-8;
     for (i = 7; i >= 0; i--){
         uint8_t byte = (sha->n_bits >> 8 * i) & 0xff;
@@ -190,7 +184,7 @@ void SHA_FINALIZE(SHA_TYPE *sha, void *dst){
     sha_block(sha);
 
     for (i = 0; i < 8; i++){
-        for (j = sizeof(SHA_WORD)-1; j >= 0; j--){
+        for (j = (ssize_t)(sizeof(SHA_WORD)-1); j >= 0; j--){
             *ptr++ = (sha->state[i] >> j * 8) & 0xff;
         }
     }
@@ -229,9 +223,9 @@ void XMD_FINALIZE(SHA_TYPE *sha, void *out, uint16_t outlen, const void *dst, si
 	SHA_UPDATE(sha, &dst_len1, 1);
 	SHA_FINALIZE(sha, b_0);
 
-	memset(b_i, 0, sizeof(b_i));
+	(void)memset(b_i, 0, sizeof(b_i));
 	for(ctr = 1; outlen && ctr; ctr++) {
-		for(int i=0; i < sizeof(b_i); i++) b_i[i] ^= b_0[i];
+		for(size_t i=0; i < sizeof(b_i); i++) b_i[i] ^= b_0[i];
 		SHA_INIT(sha);
 		SHA_UPDATE(sha, b_i, sizeof(b_i));
 		SHA_UPDATE(sha, &ctr, 1);
