@@ -31,8 +31,8 @@ include(ExternalProject)
 ExternalProject_Add(
 	blst
 	PREFIX blst
-	GIT_REPOSITORY https://github.com/dot-asm/blst.git
-	GIT_TAG blst_fp_from_be_bytes
+	GIT_REPOSITORY https://github.com/supranational/blst.git
+	GIT_TAG b79e2bc
 	GIT_SHALLOW true
 	#URL https://github.com/supranational/blst/archive/refs/tags/v0.3.15.tar.gz
 	#DOWNLOAD_EXTRACT_TIMESTAMP false
