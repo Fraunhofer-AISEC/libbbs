@@ -1,8 +1,9 @@
 #include "sha256.h"
-#include <arpa/inet.h>
+#include "compat-endian.h"
 
 #define SHA_N 256
 #define SHA_WORD uint32_t
+#define SHA_WORD_BE htobe32
 #define SHA_ROUNDS 64
 #define SHA_ROT1 6
 #define SHA_ROT2 11
@@ -126,68 +127,61 @@ static void sha_block(SHA_TYPE *sha) {
     sha->state[6] += g;
     sha->state[7] += h;
 
-    memset_explicit(&a, 0, sizeof(SHA_WORD));
-    memset_explicit(&b, 0, sizeof(SHA_WORD));
-    memset_explicit(&c, 0, sizeof(SHA_WORD));
-    memset_explicit(&d, 0, sizeof(SHA_WORD));
-    memset_explicit(&e, 0, sizeof(SHA_WORD));
-    memset_explicit(&f, 0, sizeof(SHA_WORD));
-    memset_explicit(&g, 0, sizeof(SHA_WORD));
-    memset_explicit(&h, 0, sizeof(SHA_WORD));
-    memset_explicit(w, 0, sizeof(w));
+    bbs_memset(&a, 0, sizeof(SHA_WORD));
+    bbs_memset(&b, 0, sizeof(SHA_WORD));
+    bbs_memset(&c, 0, sizeof(SHA_WORD));
+    bbs_memset(&d, 0, sizeof(SHA_WORD));
+    bbs_memset(&e, 0, sizeof(SHA_WORD));
+    bbs_memset(&f, 0, sizeof(SHA_WORD));
+    bbs_memset(&g, 0, sizeof(SHA_WORD));
+    bbs_memset(&h, 0, sizeof(SHA_WORD));
+    bbs_memset(w, 0, sizeof(w));
 }
 
 void SHA_INIT(SHA_TYPE *sha){
-	memcpy(sha, &SHA_INITIAL, sizeof(SHA_TYPE));
+	bbs_memcpy(sha, &SHA_INITIAL, sizeof(SHA_TYPE));
 }
 void SHA_UPDATE(SHA_TYPE *sha, const void *src, size_t n_bytes){
     uint8_t *srcb = (uint8_t*)src;
     sha->n_bits += 8 * n_bytes;
 
     if(n_bytes + sha->buffer_counter < SHA_N/4) {
-    	memcpy(sha->buffer + sha->buffer_counter, srcb, n_bytes);
+    	bbs_memcpy(sha->buffer + sha->buffer_counter, srcb, n_bytes);
 	sha->buffer_counter += n_bytes;
 	return;
     }
 
-    memcpy(sha->buffer + sha->buffer_counter, srcb, SHA_N/4 - sha->buffer_counter);
+    bbs_memcpy(sha->buffer + sha->buffer_counter, srcb, SHA_N/4 - sha->buffer_counter);
     sha_block(sha);
     n_bytes -= SHA_N/4 - sha->buffer_counter;
     srcb += SHA_N/4 - sha->buffer_counter;
 
     while(n_bytes >= SHA_N/4) {
-    	memcpy(sha->buffer, srcb, SHA_N/4);
+    	bbs_memcpy(sha->buffer, srcb, SHA_N/4);
         sha_block(sha);
 	n_bytes -= SHA_N/4;
 	srcb += SHA_N/4;
     }
-    memcpy(sha->buffer, srcb, n_bytes);
+    bbs_memcpy(sha->buffer, srcb, n_bytes);
     sha->buffer_counter = n_bytes;
 }
 
 void SHA_FINALIZE(SHA_TYPE *sha, void *dst){
-    uint8_t *ptr = (uint8_t*)dst;
-    ssize_t i, j;
+    uint64_t n_bits_be = htobe64(sha->n_bits);
+    int i;
 
     sha->buffer[sha->buffer_counter++] = 0x80;
     if(sha->buffer_counter > SHA_N/4 * 7/8) {
-	    (void)memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4 - sha->buffer_counter);
+	    (void)bbs_memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4 - sha->buffer_counter);
     	    sha_block(sha);
 	    sha->buffer_counter = 0;
     }
-    (void)memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4-8 - sha->buffer_counter);
-    sha->buffer_counter = SHA_N/4-8;
-    for (i = 7; i >= 0; i--){
-        uint8_t byte = (sha->n_bits >> 8 * i) & 0xff;
-    	sha->buffer[sha->buffer_counter++] = byte;
-    }
+    (void)bbs_memset(sha->buffer + sha->buffer_counter, 0, SHA_N/4-8 - sha->buffer_counter);
+    bbs_memcpy(sha->buffer + SHA_N/4 - 8, &n_bits_be, 8);
     sha_block(sha);
 
-    for (i = 0; i < 8; i++){
-        for (j = (ssize_t)(sizeof(SHA_WORD)-1); j >= 0; j--){
-            *ptr++ = (sha->state[i] >> j * 8) & 0xff;
-        }
-    }
+    for (i = 0; i < 8; i++) sha->state[i] = SHA_WORD_BE(sha->state[i]);
+    bbs_memcpy(dst, sha->state, sizeof(sha->state));
 }
 
 void XMD_INIT(SHA_TYPE *sha) {
@@ -198,8 +192,8 @@ void XMD_INIT(SHA_TYPE *sha) {
 
 void XMD_FINALIZE(SHA_TYPE *sha, void *out, uint16_t outlen, const void *dst, size_t dst_len) {
 	uint8_t b_0[SHA_N/8], b_i[SHA_N/8], ctr = 0, dst2[SHA_N/8], dst_len1;
-	uint16_t outlen_be = htons(outlen);
 	uint8_t *outb = (uint8_t*)out;
+	uint16_t outlen_be = htobe16(outlen);
 
 	/* I intentionally do not return an error when outlen > 255 * SHA_N/8
 	 * This is still an error for any application to do, but will not occur
@@ -223,7 +217,7 @@ void XMD_FINALIZE(SHA_TYPE *sha, void *out, uint16_t outlen, const void *dst, si
 	SHA_UPDATE(sha, &dst_len1, 1);
 	SHA_FINALIZE(sha, b_0);
 
-	(void)memset(b_i, 0, sizeof(b_i));
+	(void)bbs_memset(b_i, 0, sizeof(b_i));
 	for(ctr = 1; outlen && ctr; ctr++) {
 		for(size_t i=0; i < sizeof(b_i); i++) b_i[i] ^= b_0[i];
 		SHA_INIT(sha);
@@ -233,11 +227,11 @@ void XMD_FINALIZE(SHA_TYPE *sha, void *out, uint16_t outlen, const void *dst, si
 		SHA_UPDATE(sha, &dst_len1, 1);
 		SHA_FINALIZE(sha, b_i);
 		size_t to_move = (outlen < SHA_N/8) ? outlen : SHA_N/8;
-		memcpy(outb, b_i, to_move);
+		bbs_memcpy(outb, b_i, to_move);
 		outb += to_move;
 		outlen -= to_move;
 	}
 
-	memset_explicit(b_0, 0, sizeof(b_0));
-	memset_explicit(b_i, 0, sizeof(b_i));
+	bbs_memset(b_0, 0, sizeof(b_0));
+	bbs_memset(b_i, 0, sizeof(b_i));
 }

@@ -3,15 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
-
-#if defined(__GLIBC__)
-// Dear glibc team. Please support C23. Thank you.
-#define memset_explicit(s, c, n) explicit_bzero(s,n);
-#elif defined(__APPLE__)
-// Dear Apple devs. Please support C23. Thank you.
-#define memset_explicit(s, c, n) memset_s(s, n, c, n);
-#endif
+#include "compat-string.h"
 
 /* SHA256 */
 typedef struct sha256 {

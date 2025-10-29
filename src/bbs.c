@@ -443,11 +443,11 @@ bbs_proof_verify_init (
 
 	// Initialize T2 to the identity. FIXME: Should there be an API for
 	// this in BLST?
-	(void)memset(&ctx->T2.z, 0, sizeof(ctx->T2.z));
+	(void)bbs_memset(&ctx->T2.z, 0, sizeof(ctx->T2.z));
 
 	// Initialize Challenge Calculation
 	hash_to_scalar_init (cipher_suite, &ctx->ch_ctx);
-	uint64_t be_buffer = UINT64_H2BE (num_disclosed);
+	uint64_t be_buffer = htobe64 (num_disclosed);
 	hash_to_scalar_update (cipher_suite, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
 }
 
@@ -487,7 +487,7 @@ bbs_proof_gen_update (
 
 	if(disclosed) {
 		// This message is disclosed. Update the challenge hash
-		uint64_t be_buffer = UINT64_H2BE (ctx->disclosed_ctr + ctx->undisclosed_ctr);
+		uint64_t be_buffer = htobe64 (ctx->disclosed_ctr + ctx->undisclosed_ctr);
 		hash_to_scalar_update(s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
 		hash_to_scalar_update(s, &ctx->ch_ctx, proof_ptr, BBS_SCALAR_LEN);
 		ctx->disclosed_ctr++;
@@ -525,7 +525,7 @@ bbs_proof_verify_update (
 		bn_write_bbs (scalar_buffer, &ctx->acc.msg_scalar);
 
 		// Hash i and msg_scalar into the challenge
-		uint64_t be_buffer = UINT64_H2BE (ctx->disclosed_ctr + ctx->undisclosed_ctr);
+		uint64_t be_buffer = htobe64 (ctx->disclosed_ctr + ctx->undisclosed_ctr);
 		hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
 		hash_to_scalar_update (s, &ctx->ch_ctx, scalar_buffer, BBS_SCALAR_LEN);
 		ctx->disclosed_ctr++;
@@ -632,7 +632,7 @@ bbs_proof_gen_finalize (
 	hash_to_scalar_update (s, &ctx->ch_ctx, proof, 3 * BBS_G1_ELEM_LEN);
 	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN);
 	hash_to_scalar_update (s, &ctx->ch_ctx, domain_buffer, BBS_SCALAR_LEN);
-	uint64_t be_buffer = UINT64_H2BE (presentation_header_len);
+	uint64_t be_buffer = htobe64 (presentation_header_len);
 	hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
         hash_to_scalar_update(s, &ctx->ch_ctx, presentation_header, presentation_header_len);
         hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge,
@@ -725,7 +725,7 @@ bbs_proof_verify_finalize (
 	hash_to_scalar_update (s, &ctx->ch_ctx, proof, 3 * BBS_G1_ELEM_LEN);
 	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN);
 	hash_to_scalar_update (s, &ctx->ch_ctx, domain_buffer, BBS_SCALAR_LEN);
-	uint64_t be_buffer = UINT64_H2BE (presentation_header_len);
+	uint64_t be_buffer = htobe64 (presentation_header_len);
 	hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
         hash_to_scalar_update(s, &ctx->ch_ctx, presentation_header,
                               presentation_header_len);
@@ -865,8 +865,8 @@ bbs_proof_verify (
 	va_list                ap;
 	bbs_proof_gen_ctx ctx;
 	uint64_t di_idx = 0;
-	uint8_t *msg;
-	uint32_t msg_len;
+	uint8_t *msg = NULL;
+	uint32_t msg_len = 0;
 	bool disclosed;
 
 	// Sanity check

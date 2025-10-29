@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 project(
   libbbs
@@ -18,7 +18,7 @@ if (MSVC)
     add_compile_options(/W4)
 else()
     # additional warnings
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic -Wabi)
 endif()
 
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}"
@@ -32,7 +32,7 @@ ExternalProject_Add(
 	blst
 	PREFIX blst
 	GIT_REPOSITORY https://github.com/supranational/blst.git
-	GIT_TAG b79e2bc
+	GIT_TAG master
 	GIT_SHALLOW true
 	#URL https://github.com/supranational/blst/archive/refs/tags/v0.3.15.tar.gz
 	#DOWNLOAD_EXTRACT_TIMESTAMP false

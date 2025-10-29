@@ -5,6 +5,7 @@ add_library(bbs_sources OBJECT
 	bbs_util.c
 	sha256.c
 	shake256.c
+	compat-string.c
 )
 target_include_directories(bbs_sources PUBLIC .)
 target_include_directories(bbs_sources PUBLIC ../include)

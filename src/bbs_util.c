@@ -151,7 +151,7 @@ calculate_domain_init (
 	uint64_t            num_messages
 	)
 {
-	uint64_t num_messages_be = UINT64_H2BE (num_messages);
+	uint64_t num_messages_be = htobe64 (num_messages);
 
 	hash_to_scalar_init (cipher_suite, ctx);
 	hash_to_scalar_update (cipher_suite, ctx, pk, BBS_PK_LEN);
@@ -185,7 +185,7 @@ calculate_domain_finalize (
 	const uint8_t      *api_id = (uint8_t*) cipher_suite->api_id;
 	uint8_t             api_id_len = cipher_suite->api_id_len;
 	uint8_t  domain_dst[api_id_len + 4];
-	uint64_t header_len_be = UINT64_H2BE (header_len);
+	uint64_t header_len_be = htobe64 (header_len);
 
 	for (uint8_t i = 0; i < api_id_len; i++)
 		domain_dst[i] = api_id[i];
@@ -233,7 +233,7 @@ create_generator_next (
 	uint32_t            api_id_len = cipher_suite->api_id_len;
 	uint8_t  dst_buf[api_id_len + 19];
 	uint8_t  rand_buf[128];
-	uint64_t i_be = UINT64_H2BE (*((uint64_t*) (state + 48)));
+	uint64_t i_be = htobe64 (*((uint64_t*) (state + 48)));
 	union bbs_hash_context hash_ctx;
 	blst_fp u,v;
 

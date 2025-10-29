@@ -6,6 +6,7 @@
 #include <assert.h>
 #include "sha256.h"
 #include "shake256.h"
+#include "compat-endian.h"
 #include <blst.h>
 
 #undef ALIGN
@@ -204,15 +205,5 @@ typedef void (bbs_bn_prf)(bbs_cipher_suite_t *cipher_suite,
 			 uint64_t            input,
 			 void               *cookie
 			 );
-
-// Big endian conversion
-#define UINT64_H2BE(x) ((((x) & (uint64_t)0xff00000000000000LL) >> 56) | \
-			(((x) & (uint64_t)0x00ff000000000000LL) >> 40) | \
-			(((x) & (uint64_t)0x0000ff0000000000LL) >> 24) | \
-			(((x) & (uint64_t)0x000000ff00000000LL) >>  8) | \
-			(((x) & (uint64_t)0x00000000ff000000LL) <<  8) | \
-			(((x) & (uint64_t)0x0000000000ff0000LL) << 24) | \
-			(((x) & (uint64_t)0x000000000000ff00LL) << 40) | \
-			(((x) & (uint64_t)0x00000000000000ffLL) << 56))
 
 #endif /*BBS_UTIL_H*/
