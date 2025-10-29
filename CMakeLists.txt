@@ -5,14 +5,15 @@ project(
   libbbs
   VERSION 0.1
   LANGUAGES C)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-include(CheckCCompilerFlag OPTIONAL)
 include(CTest)
+include(GNUInstallDirs)
+include(ExternalProject)
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (MSVC)
     # warning level 4
     add_compile_options(/W4)
@@ -21,13 +22,6 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -Wabi)
 endif()
 
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}"
-        DESTINATION ${CMAKE_INSTALL_PREFIX})
-
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
-set(CMAKE_BUILD_WITH_RPATH TRUE)
-
-include(ExternalProject)
 ExternalProject_Add(
 	blst
 	PREFIX blst
@@ -44,27 +38,10 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(blst SOURCE_DIR)
 include_directories(${SOURCE_DIR}/bindings)
-
-find_program(MAKE_EXECUTABLE NAMES gmake make mingw32-make REQUIRED)
-
-if(DEFINED LIBBBS_DEBUG)
-  add_compile_definitions(LIBBBS_DEBUG)
-endif()
-
-# Code Coverage
-if (NOT DEFINED ENABLE_CODE_COVERAGE)
-  set(ENABLE_CODE_COVERAGE OFF CACHE STRING "Enable or disable code coverage" FORCE)
-endif()
-
-if (ENABLE_CODE_COVERAGE)
-  message(STATUS "Code coverage enabled")
-
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
-
-else()
-  message(STATUS "No code coverage")
-endif()
-
+include_directories(include)
 add_subdirectory(src)
 add_subdirectory(test)
+
+install(TARGETS bbs)
+install(FILES include/bbs.h TYPE INCLUDE)
+

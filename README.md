@@ -4,48 +4,33 @@ Specification-compliant and performant C implementation of the [BBS signature sc
 
 Provides a library `libbbs` implementing the `BLS12-381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
 
-## Prerequisites
+The API is documented in `include/bbs.h`.
+
+## Build / Install from source
 
 Dependencies:
 
 - `cmake` (build only)
-- `gmp` (optional, faster than the default)
+- blst (will be downloaded during build)
+- libc providing the `getentropy` function.
 
-```zsh
-mkdir build
-cd build
-cmake .. # Without GMP or
-cmake -DRELIC_ARITH="gmp" .. # (if you have gmp)
-```
-
-## Installation
-
-Within `build`:
-
-```zsh
-make install
-```
-
-## Test
-
-Within `build`:
-
-```zsh
-make
-make test
+```sh
+$ mkdir build && cd build
+$ cmake ..
+$ make
+$ make test         (recommended)
+$ sudo make install
 ```
 
 ## Benchmark
 
 Within `build`:
 
-```zsh
-./test/bbs-test-bench
+```sh
+make bench
 ```
 
- 
-
-Benchmark (`bbs_bench_individual`) on M1 Pro 2021 16GB with `-DRELIC_ARITH="gmp"`:
+Benchmark (`bbs_bench_individual`) on Lenovo ThinkPad T14s Gen1 using clang:
 
 - 2 messages each of size 64 bytes
 - Disclosing first message only
@@ -53,16 +38,12 @@ Benchmark (`bbs_bench_individual`) on M1 Pro 2021 16GB with `-DRELIC_ARITH="gmp"
 
 | Function                 | SHA256 (ms) | SHAKE256 (ms) |
 | ------------------------ | ----------- | ------------- |
-| key generation (SK & PK) | 0,174       | 0,172         |
-| sign                     | 1,995       | 1,888         |
-| verify                   | 3,877       | 3,829         |
-| proof generation         | 3,289       | 3,220         |
-| proof verification       | 4,532       | 4,482         |
+| key generation (SK & PK) | 0.174       | 0.172         |
+| sign                     | 0.522       | 0.514         |
+| verify                   | 1.299       | 1.288         |
+| proof generation         | 1.190       | 1.178         |
+| proof verification       | 1.643       | 1.631         |
 
-
-## Documentation
-
-See https://fraunhofer-aisec.github.io/libbbs/doxy/html/
 
 ## Code coverage
 

@@ -71,7 +71,3 @@ foreach(test ${BBS_E2E_TESTS})
   add_test(NAME ${TName}-suite-bls12-381-sha-256 COMMAND bbs-test-e2e-suite-bls12-381-sha-256 ${TName})
 endforeach()
 
-#foreach(test ${BBS_BENCH_TESTS})
-#  get_filename_component(TName ${test} NAME_WE)
-#  add_executable(NAME ${TName} COMMAND bbs-test-bench ${TName})
-#endforeach()
