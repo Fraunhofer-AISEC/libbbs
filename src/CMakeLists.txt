@@ -3,6 +3,7 @@ add_library(bbs_sources OBJECT
 	bbs.c
 	bbs_ciphersuites.c
 	bbs_util.c
+	bbs_compressed.c
 	sha256.c
 	shake256.c
 	compat-string.c
