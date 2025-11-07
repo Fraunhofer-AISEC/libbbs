@@ -915,10 +915,10 @@ bbs_proof_verify_nva (
 	bbs_proof_verify_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len);
 	for(uint64_t i=0; i< num_messages; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
+		bbs_proof_verify_update(&ctx, proof, disclosed ? messages[di_idx] : NULL, disclosed ? messages_lens[di_idx] : 0, disclosed);
 		if(disclosed) {
 			di_idx++;
 		}
-		bbs_proof_verify_update(&ctx, proof, messages[i], messages_lens[i], disclosed);
 	}
 
 	return bbs_proof_verify_finalize(&ctx, pk, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);

@@ -16,7 +16,8 @@ create_test_sourcelist(fixture-tests bbs-test-fixtures.c ${BBS_FIX_TESTS})
 create_test_sourcelist(e2e-tests bbs-test-e2e.c ${BBS_E2E_TESTS})
 create_test_sourcelist(bench-tests bbs-test-bench.c ${BBS_BENCH_TESTS})
 create_test_sourcelist(experimental bbs-test-experimental.c
-	bbs_experimental_compressed_proofs.c)
+	bbs_experimental_compressed_proofs.c
+	bbs_experimental_compressed_proofs_250.c)
 
 add_executable(bbs-test-fixtures-suite-bls12-381-shake-256 ${fixture-tests} fixtures.c)
 target_compile_definitions(bbs-test-fixtures-suite-bls12-381-shake-256 PUBLIC LIBBBS_TEST_SUITE_SHAKE256)
@@ -76,6 +77,10 @@ add_test(NAME experimental-compressed-proofs-shake-256 COMMAND
 	bbs-test-experimental-shake-256 bbs_experimental_compressed_proofs)
 add_test(NAME experimental-compressed-proofs-sha-256   COMMAND
 	bbs-test-experimental-sha-256 bbs_experimental_compressed_proofs)
+add_test(NAME experimental-compressed-proofs-250-shake-256 COMMAND
+	bbs-test-experimental-shake-256 bbs_experimental_compressed_proofs_250)
+add_test(NAME experimental-compressed-proofs-250-sha-256   COMMAND
+	bbs-test-experimental-sha-256 bbs_experimental_compressed_proofs_250)
 
 
 foreach(test ${BBS_E2E_TESTS})
