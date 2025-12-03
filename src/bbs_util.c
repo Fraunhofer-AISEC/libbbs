@@ -44,9 +44,9 @@ ep_read_bbs (
 	)
 {
 	blst_p1_affine pa;
-	// Group checks already perfomred by lib
 	if(BLST_SUCCESS != blst_p1_uncompress(&pa, bin)) return BBS_ERROR;
 	blst_p1_from_affine(p, &pa);
+	if(!blst_p1_in_g1(p)) return BBS_ERROR;
 	// Reject the neutral element here, so we never have to deal with it
 	return blst_p1_is_inf(p) ? BBS_ERROR : BBS_OK;
 }
@@ -70,9 +70,9 @@ ep2_read_bbs (
 	)
 {
 	blst_p2_affine pa;
-	// Group checks already perfomred by lib
 	if(BLST_SUCCESS != blst_p2_uncompress(&pa, bin)) return BBS_ERROR;
 	blst_p2_from_affine(p, &pa);
+	if(!blst_p2_in_g2(p)) return BBS_ERROR;
 	// Reject the neutral element here, so we never have to deal with it
 	return blst_p2_is_inf(p) ? BBS_ERROR : BBS_OK;
 }
