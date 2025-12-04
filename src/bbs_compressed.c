@@ -215,6 +215,7 @@ void debug_check_Q(const blst_p1 *Q, blst_p1 *gens, blst_scalar *wits, uint64_t 
 }
 
 // Not static, to allow Fixture tests
+// Assumes num_undisclosed >= 4
 int
 bbs_compressed_proof_gen_finalize (
 	bbs_compressed_proof_gen_ctx *ctx,
@@ -327,66 +328,70 @@ bbs_compressed_proof_gen_finalize (
 
 	//debug_check_Q(&Q, ctx->comp_gens, ctx->witness_buf, num_undisclosed+1);
 	
-	if(num_undisclosed + 1 > 4) {
-		//
-		// PROOF PART 2: Proof Compression for PART 1
-		//
+	//
+	// PROOF PART 2: Proof Compression for PART 1
+	//
 
-		// Round (num_undisclosed+1) to the next power of two
-		// https://graphics.stanford.edu/%7Eseander/bithacks.html#RoundUpPowerOf2
-		uint64_t num_gens = round_up_to_power_of_2(num_undisclosed+1);
+	// Round (num_undisclosed+1) to the next power of two
+	// https://graphics.stanford.edu/%7Eseander/bithacks.html#RoundUpPowerOf2
+	uint64_t num_gens = round_up_to_power_of_2(num_undisclosed+1);
 
-		// Fill up ctx->comp_gens
-		for(uint64_t i = num_undisclosed+1; i < num_gens; i++) {
-			create_generator_next (ctx->cipher_suite, ctx->generator_ctx, &ctx->comp_gens[i]);
-			//ctx->witness_buf[i] = zero; // DEBUG TODO: Remove
+	// Fill up ctx->comp_gens
+	for(uint64_t i = num_undisclosed+1; i < num_gens; i++) {
+		create_generator_next (ctx->cipher_suite, ctx->generator_ctx, &ctx->comp_gens[i]);
+		//ctx->witness_buf[i] = zero; // DEBUG TODO: Remove
+	}
+
+	//debug_check_Q(&Q, ctx->comp_gens, ctx->witness_buf, num_gens);
+	while(1) {
+		num_gens >>= 1; // Number we are reducing TO
+
+		// Proof Message: P -> V: A, B
+		(void)bbs_memset(&A.z, 0, sizeof(A.z)); // A <- identity
+		(void)bbs_memset(&B.z, 0, sizeof(B.z)); // B <- identity
+		for(uint64_t i=0; i < num_gens; i++) {
+			blst_p1_mult (&tmp_p1, &ctx->comp_gens[num_gens+i], ctx->witness_buf[i].b, 255);
+			blst_p1_add_or_double (&A, &A, &tmp_p1);
+			if(num_gens+i > num_undisclosed) continue;
+			blst_p1_mult (&tmp_p1, &ctx->comp_gens[i], ctx->witness_buf[num_gens+i].b, 255);
+			blst_p1_add_or_double (&B, &B, &tmp_p1);
 		}
+
+		// On the final round, also include PART 3
+		if(num_gens <= 4) break;
+		ep_write_bbs (proof_ptr, &A);
+		proof_ptr += BBS_G1_ELEM_LEN;
+		ep_write_bbs (proof_ptr, &B);
+		proof_ptr += BBS_G1_ELEM_LEN;
+
+		// Proof Message: V -> P: challenge
+		hash_to_scalar_init (s, &ctx->ch_ctx);
+		bn_write_bbs (challenge_buf, &challenge); // reuse for previous challenge
+		//DEBUG("Challenge", challenge_buf, sizeof(challenge_buf));
+		hash_to_scalar_update (s, &ctx->ch_ctx, challenge_buf, BBS_SCALAR_LEN);
+		hash_to_scalar_update (s, &ctx->ch_ctx, proof_ptr - 2 * BBS_G1_ELEM_LEN, 2 * BBS_G1_ELEM_LEN);
+		hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge, (uint8_t *)s->challenge_dst, s->challenge_dst_len);
+
+		// Update generators, witnesses, and Q <- A + ch*Q + ch^2*B
+		for(uint64_t i=0; i < num_gens; i++) {
+			blst_p1_mult (&ctx->comp_gens[i], &ctx->comp_gens[i], challenge.b, 255);
+			blst_p1_add_or_double (&ctx->comp_gens[i], &ctx->comp_gens[i], &ctx->comp_gens[num_gens+i]);
+			if(num_gens+i > num_undisclosed) continue;
+			blst_sk_mul_n_check(&ctx->witness_buf[num_gens+i], &ctx->witness_buf[num_gens+i], &challenge);
+			blst_sk_add_n_check (&ctx->witness_buf[i], &ctx->witness_buf[i], &ctx->witness_buf[num_gens+i]);
+		}
+		blst_p1_mult (&tmp_p1, &B, challenge.b, 255);
+		blst_p1_add_or_double (&tmp_p1, &tmp_p1, &Q);
+		blst_p1_mult (&tmp_p1, &tmp_p1, challenge.b, 255);
+		blst_p1_add_or_double (&Q, &tmp_p1, &A);
 
 		//debug_check_Q(&Q, ctx->comp_gens, ctx->witness_buf, num_gens);
-		while(num_gens > 4) {
-			num_gens >>= 1; // Number we are reducing TO
-
-			// Proof Message: P -> V: A, B
-			(void)bbs_memset(&A.z, 0, sizeof(A.z)); // A <- identity
-			(void)bbs_memset(&B.z, 0, sizeof(B.z)); // B <- identity
-			for(uint64_t i=0; i < num_gens; i++) {
-				blst_p1_mult (&tmp_p1, &ctx->comp_gens[num_gens+i], ctx->witness_buf[i].b, 255);
-				blst_p1_add_or_double (&A, &A, &tmp_p1);
-				if(num_gens+i > num_undisclosed) continue;
-				blst_p1_mult (&tmp_p1, &ctx->comp_gens[i], ctx->witness_buf[num_gens+i].b, 255);
-				blst_p1_add_or_double (&B, &B, &tmp_p1);
-			}
-			ep_write_bbs (proof_ptr, &A);
-			proof_ptr += BBS_G1_ELEM_LEN;
-			ep_write_bbs (proof_ptr, &B);
-			proof_ptr += BBS_G1_ELEM_LEN;
-
-			// Proof Message: V -> P: challenge
-			hash_to_scalar_init (s, &ctx->ch_ctx);
-			bn_write_bbs (challenge_buf, &challenge); // reuse for previous challenge
-			//DEBUG("Challenge", challenge_buf, sizeof(challenge_buf));
-			hash_to_scalar_update (s, &ctx->ch_ctx, challenge_buf, BBS_SCALAR_LEN);
-			hash_to_scalar_update (s, &ctx->ch_ctx, proof_ptr - 2 * BBS_G1_ELEM_LEN, 2 * BBS_G1_ELEM_LEN);
-        		hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge, (uint8_t *)s->challenge_dst, s->challenge_dst_len);
-
-			// Update generators, witnesses, and Q <- A + ch*Q + ch^2*B
-			for(uint64_t i=0; i < num_gens; i++) {
-				blst_p1_mult (&ctx->comp_gens[i], &ctx->comp_gens[i], challenge.b, 255);
-				blst_p1_add_or_double (&ctx->comp_gens[i], &ctx->comp_gens[i], &ctx->comp_gens[num_gens+i]);
-				if(num_gens+i > num_undisclosed) continue;
-				blst_sk_mul_n_check(&ctx->witness_buf[num_gens+i], &ctx->witness_buf[num_gens+i], &challenge);
-				blst_sk_add_n_check (&ctx->witness_buf[i], &ctx->witness_buf[i], &ctx->witness_buf[num_gens+i]);
-			}
-			blst_p1_mult (&tmp_p1, &B, challenge.b, 255);
-			blst_p1_add_or_double (&tmp_p1, &tmp_p1, &Q);
-			blst_p1_mult (&tmp_p1, &tmp_p1, challenge.b, 255);
-			blst_p1_add_or_double (&Q, &tmp_p1, &A);
-
-			//debug_check_Q(&Q, ctx->comp_gens, ctx->witness_buf, num_gens);
-		}
-
-		num_undisclosed = 3; // Compression done!
 	}
+
+	ep_write_bbs (proof_ptr, &B);
+	proof_ptr += BBS_G1_ELEM_LEN;
+	ep_write_bbs (T_buffer, &A); // Not written to proof
+
 	//ep_write_bbs(debug_buf, &Q);
 	//DEBUG("Final Q", debug_buf, BBS_G1_ELEM_LEN);
 	//debug_check_Q(&Q, ctx->comp_gens, ctx->witness_buf, num_undisclosed+1);
@@ -401,14 +406,16 @@ bbs_compressed_proof_gen_finalize (
 	blst_p1_mult (&ctx->T2, &D,    r1_tilde.b, 255); // Reuse T2 as T1
 	blst_p1_mult (&tmp_p1,  &Abar, e_tilde.b,  255);
 	blst_p1_add_or_double (&ctx->T2, &ctx->T2, &tmp_p1);
-	ep_write_bbs (T_buffer, &ctx->T2);
 
 	// Proof Message: V -> P: challenge
 	hash_to_scalar_init (s, &ctx->ch_ctx);
 	bn_write_bbs (challenge_buf, &challenge); // reuse for previous challenge
 	//DEBUG("Final comp challenge", challenge_buf, sizeof(challenge_buf));
 	hash_to_scalar_update (s, &ctx->ch_ctx, challenge_buf, BBS_SCALAR_LEN);
-	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, BBS_G1_ELEM_LEN);
+	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, BBS_G1_ELEM_LEN); // A
+	hash_to_scalar_update (s, &ctx->ch_ctx, proof_ptr - BBS_G1_ELEM_LEN, BBS_G1_ELEM_LEN); // B
+	ep_write_bbs (T_buffer, &ctx->T2);
+	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, BBS_G1_ELEM_LEN); // T2
 	hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge, (uint8_t *)s->challenge_dst, s->challenge_dst_len);
 
 	// initialize e_hat and r1_hat
@@ -416,6 +423,12 @@ bbs_compressed_proof_gen_finalize (
 	blst_sk_add_n_check (&e_tilde, &e_tilde, &e);
 	blst_sk_mul_n_check(&r1, &r1, &challenge);
 	blst_sk_sub_n_check (&r1_tilde, &r1_tilde, &r1);
+
+	// Update witnesses
+	for(uint64_t i=0; i < 4 && 4+i <= num_disclosed; i++) {
+		blst_sk_mul_n_check(&ctx->witness_buf[4+i], &ctx->witness_buf[4+i], &challenge);
+		blst_sk_add_n_check (&ctx->witness_buf[i], &ctx->witness_buf[i], &ctx->witness_buf[4+i]);
+	}
 
 	//
 	// PROOF PART 4: Final reveal
@@ -430,7 +443,7 @@ bbs_compressed_proof_gen_finalize (
 	proof_ptr += BBS_SCALAR_LEN;
 	bn_write_bbs (proof_ptr, &r1_tilde);
 	proof_ptr += BBS_SCALAR_LEN;
-	for(uint64_t i=0; i < num_undisclosed + 1; i++) {
+	for(uint64_t i=0; i < 4; i++) {
 		//ep_write_bbs(debug_buf, &ctx->comp_gens[i]);
 		//DEBUG("Generator", debug_buf, BBS_G1_ELEM_LEN);
 
@@ -443,6 +456,7 @@ bbs_compressed_proof_gen_finalize (
 	return BBS_OK;
 }
 
+// Assumes num_undisclosed >= 4
 static int
 bbs_compressed_proof_verify_finalize (
 	bbs_compressed_proof_gen_ctx *ctx,
@@ -515,59 +529,62 @@ bbs_compressed_proof_verify_finalize (
 	blst_p1_mult (&ctx->Bv, &ctx->Bv, challenge.b, 255);
 	blst_p1_add_or_double (&Q, &ctx->T2, &ctx->Bv);
 	
-	if(num_undisclosed + 1 > 4) {
-		//
-		// PROOF PART 2: Proof Compression for PART 1
-		//
+	//
+	// PROOF PART 2: Proof Compression for PART 1
+	//
 
-		// Round (num_undisclosed+1) to the next power of two
-		// https://graphics.stanford.edu/%7Eseander/bithacks.html#RoundUpPowerOf2
-		uint64_t num_gens = round_up_to_power_of_2(num_undisclosed+1);
+	// Round (num_undisclosed+1) to the next power of two
+	// https://graphics.stanford.edu/%7Eseander/bithacks.html#RoundUpPowerOf2
+	uint64_t num_gens = round_up_to_power_of_2(num_undisclosed+1);
 
-		// Fill up ctx->comp_gens
-		for(uint64_t i = num_undisclosed+1; i < num_gens; i++) {
-			create_generator_next (ctx->cipher_suite, ctx->generator_ctx, &ctx->comp_gens[i]);
+	// Fill up ctx->comp_gens
+	// TODO: Can we use identities here? This would make the following code
+	// faster
+	for(uint64_t i = num_undisclosed+1; i < num_gens; i++) {
+		create_generator_next (ctx->cipher_suite, ctx->generator_ctx, &ctx->comp_gens[i]);
+	}
+
+	while(num_gens > 2*4) {
+		num_gens >>= 1; // Number we are reducing TO
+
+		// Proof Message: P -> V: A, B
+		if(BBS_OK != ep_read_bbs (&A, proof_ptr)) return BBS_ERROR;
+		proof_ptr += BBS_G1_ELEM_LEN;
+		if(BBS_OK != ep_read_bbs (&B, proof_ptr)) return BBS_ERROR;
+		proof_ptr += BBS_G1_ELEM_LEN;
+
+		// Proof Message: V -> P: challenge
+		hash_to_scalar_init (s, &ctx->ch_ctx);
+		bn_write_bbs (challenge_buf, &challenge); // reuse for previous challenge
+		//DEBUG("Challenge", challenge_buf, sizeof(challenge_buf));
+		hash_to_scalar_update (s, &ctx->ch_ctx, challenge_buf, BBS_SCALAR_LEN);
+		hash_to_scalar_update (s, &ctx->ch_ctx, proof_ptr - 2 * BBS_G1_ELEM_LEN, 2 * BBS_G1_ELEM_LEN);
+		hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge, (uint8_t *)s->challenge_dst, s->challenge_dst_len);
+
+		// Update generators, and Q <- A + ch*Q + ch^2*B
+		for(uint64_t i=0; i < num_gens; i++) {
+			blst_p1_mult (&ctx->comp_gens[i], &ctx->comp_gens[i], challenge.b, 255);
+			blst_p1_add_or_double (&ctx->comp_gens[i], &ctx->comp_gens[i], &ctx->comp_gens[num_gens+i]);
 		}
-
-		while(num_gens > 4) {
-			num_gens >>= 1; // Number we are reducing TO
-
-			// Proof Message: P -> V: A, B
-			if(BBS_OK != ep_read_bbs (&A, proof_ptr)) return BBS_ERROR;
-			proof_ptr += BBS_G1_ELEM_LEN;
-			if(BBS_OK != ep_read_bbs (&B, proof_ptr)) return BBS_ERROR;
-			proof_ptr += BBS_G1_ELEM_LEN;
-
-			// Proof Message: V -> P: challenge
-			hash_to_scalar_init (s, &ctx->ch_ctx);
-			bn_write_bbs (challenge_buf, &challenge); // reuse for previous challenge
-			//DEBUG("Challenge", challenge_buf, sizeof(challenge_buf));
-			hash_to_scalar_update (s, &ctx->ch_ctx, challenge_buf, BBS_SCALAR_LEN);
-			hash_to_scalar_update (s, &ctx->ch_ctx, proof_ptr - 2 * BBS_G1_ELEM_LEN, 2 * BBS_G1_ELEM_LEN);
-        		hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge, (uint8_t *)s->challenge_dst, s->challenge_dst_len);
-
-			// Update generators, and Q <- A + ch*Q + ch^2*B
-			for(uint64_t i=0; i < num_gens; i++) {
-				blst_p1_mult (&ctx->comp_gens[i], &ctx->comp_gens[i], challenge.b, 255);
-				blst_p1_add_or_double (&ctx->comp_gens[i], &ctx->comp_gens[i], &ctx->comp_gens[num_gens+i]);
-			}
-			blst_p1_mult (&tmp_p1, &B, challenge.b, 255);
-			blst_p1_add_or_double (&tmp_p1, &tmp_p1, &Q);
-			blst_p1_mult (&tmp_p1, &tmp_p1, challenge.b, 255);
-			blst_p1_add_or_double (&Q, &tmp_p1, &A);
-		}
-
-		num_undisclosed = 3; // Compression done!
+		blst_p1_mult (&tmp_p1, &B, challenge.b, 255);
+		blst_p1_add_or_double (&tmp_p1, &tmp_p1, &Q);
+		blst_p1_mult (&tmp_p1, &tmp_p1, challenge.b, 255);
+		blst_p1_add_or_double (&Q, &tmp_p1, &A);
 	}
 
 	//
 	// PROOF PART 3: ZKPoK for the relation between ABar, BBar and D
 	//
 
-	// Proof message: P -> V: Commitment T1 (recovered from challenge and PART 4)
+	// Proof message: P -> V: A, B, Commitment T1 (partially recovered from challenge and PART 4)
+	if(BBS_OK != ep_read_bbs (&B, proof_ptr)) return BBS_ERROR;
+	uint8_t *B_ptr = proof_ptr;
+	proof_ptr += BBS_G1_ELEM_LEN;
 	if(BBS_OK != bn_read_bbs (&challenge_prime, proof_ptr)) return BBS_ERROR;
-	//DEBUG("Final challenge", proof_ptr, sizeof(challenge_buf));
 	proof_ptr += BBS_SCALAR_LEN;
+
+	//DEBUG("Final challenge", proof_ptr, sizeof(challenge_buf));
+	// Recover T1 (in ctx->T2)
 	if(BBS_OK != bn_read_bbs (&e,         proof_ptr)) return BBS_ERROR;
 	proof_ptr += BBS_SCALAR_LEN;
 	if(BBS_OK != bn_read_bbs (&r1,        proof_ptr)) return BBS_ERROR;
@@ -578,40 +595,39 @@ bbs_compressed_proof_verify_finalize (
 	blst_p1_mult (&tmp_p1, &D, r1.b, 255);
 	blst_p1_add_or_double (&ctx->T2, &ctx->T2, &tmp_p1);
 
+	// Recover A (in Q)
+	blst_p1_mult(&tmp_p1, &B, challenge_prime.b, 255);
+	blst_p1_add_or_double(&tmp_p1, &tmp_p1, &Q);
+	blst_p1_mult(&Q, &tmp_p1, challenge_prime.b, 255);
+	blst_p1_cneg(&Q, 1);
+	for(size_t i=0; i < 4; i++) {
+		if(BBS_OK != bn_read_bbs (&comp_exp, proof_ptr)) return BBS_ERROR;
+		proof_ptr += BBS_SCALAR_LEN;
+		blst_p1_mult (&ctx->comp_gens[i], &ctx->comp_gens[i], challenge_prime.b, 255);
+		blst_p1_add_or_double (&ctx->comp_gens[i], &ctx->comp_gens[i], &ctx->comp_gens[num_gens+i]);
+		blst_p1_mult (&tmp_p1, &ctx->comp_gens[i], comp_exp.b, 255);
+		blst_p1_add_or_double (&Q, &Q, &tmp_p1);
+	}
+
 	// Proof Message: V -> P: challenge
 	hash_to_scalar_init (s, &ctx->ch_ctx);
 	bn_write_bbs (challenge_buf, &challenge); // reuse for previous challenge
 	//DEBUG("Final comp challenge", challenge_buf, sizeof(challenge_buf));
 	hash_to_scalar_update (s, &ctx->ch_ctx, challenge_buf, BBS_SCALAR_LEN);
+	ep_write_bbs (T_buffer, &Q);
+	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, BBS_G1_ELEM_LEN); // A
+	hash_to_scalar_update (s, &ctx->ch_ctx, B_ptr, BBS_G1_ELEM_LEN); // B
 	ep_write_bbs (T_buffer, &ctx->T2);
-	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, BBS_G1_ELEM_LEN);
+	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, BBS_G1_ELEM_LEN); // T1
 	hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge, (uint8_t *)s->challenge_dst, s->challenge_dst_len);
 
 	//
 	// PROOF PART 4: Final reveal
 	//
-	// Note: Some of these checks can be moved further up. They are here for clarity.
-
-	//puts("DEBUG1");
-	//ep_write_bbs(debug_buf, &Q);
-	//DEBUG("Final Q", debug_buf, BBS_G1_ELEM_LEN);
-        // Proof Message: P -> V: e_hat, r1_hat, compressed witnesses
-	blst_p1_cneg(&Q, 1);
-	for(size_t i=0; i < num_undisclosed + 1; i++) {
-		//puts("DEBUG1.5");
-		//ep_write_bbs(debug_buf, &ctx->comp_gens[i]);
-		//DEBUG("Generator", debug_buf, BBS_G1_ELEM_LEN);
-		if(BBS_OK != bn_read_bbs (&comp_exp, proof_ptr)) return BBS_ERROR;
-		proof_ptr += BBS_SCALAR_LEN;
-		blst_p1_mult (&tmp_p1, &ctx->comp_gens[i], comp_exp.b, 255);
-		blst_p1_add_or_double (&Q, &Q, &tmp_p1);
-	}
-	//puts("DEBUG2");
-
-        // Verification Step 1: The PoK was valid.
+	// Note: The sig_eqn check could be moved further up. It is here for clarity.
 
 	//puts("DEBUG2.5");
-	if(!blst_p1_is_inf(&Q) || blst_sk_sub_n_check (&challenge, &challenge, &challenge_prime))
+	if(blst_sk_sub_n_check (&challenge, &challenge, &challenge_prime))
 	{
 		return BBS_ERROR;
 	}
@@ -662,6 +678,15 @@ bbs_compressed_proof_gen_nva (
 	uint64_t di_idx = 0;
 	bool disclosed;
 
+
+	if(num_messages - disclosed_indexes_len < 4)
+		return bbs_proof_gen_nva(cipher_suite, pk,
+				signature, proof,
+				header, header_len,
+				presentation_herader, presentation_header_len,
+				disclosed_indexed, disclosed_indexes_len,
+				num_messages, messages, message_lens);
+
 	uint64_t num_gens = round_up_to_power_of_2(num_messages - disclosed_indexes_len);
 	// FIXME: This requires quite some stack space...
 	blst_scalar witness_buf[num_gens];
@@ -704,7 +729,14 @@ bbs_compressed_proof_verify_nva (
 	bbs_compressed_proof_gen_ctx ctx;
 	uint64_t di_idx = 0;
 	bool disclosed;
-	(void)proof_len; // TODO: Check
+
+	if(num_messages - disclosed_indexes_len < 4)
+		return bbs_proof_verify_nva(cipher_suite, pk,
+				proof, proof_len,
+				header, header_len,
+				presentation_herader, presentation_header_len,
+				disclosed_indexed, disclosed_indexes_len,
+				num_messages, messages, message_lens);
 
 	uint64_t num_gens = round_up_to_power_of_2(num_messages - disclosed_indexes_len);
 	// FIXME: This requires quite some stack space...
