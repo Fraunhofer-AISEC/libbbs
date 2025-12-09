@@ -327,6 +327,7 @@ bbs_compressed_proof_gen_finalize (
 	hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
         hash_to_scalar_update(s, &ctx->ch_ctx, presentation_header, presentation_header_len);
 	hash_to_scalar_update (s, &ctx->ch_ctx, proof_ptr - BBS_G1_ELEM_LEN, BBS_G1_ELEM_LEN); // T2
+	DEBUG("HASH", ((unsigned char*)&ctx->ch_ctx), sizeof(ctx->ch_ctx));
 	if(num_undisclosed < COMPRESSION_THRESHOLD) {
 		hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, BBS_G1_ELEM_LEN); // T1
 	}
@@ -603,11 +604,11 @@ bbs_compressed_proof_verify_finalize (
 	// Recover A <- c * (-c * B - Q) + sum(witness_i * g_i) (in T2)
 	blst_p1_mult(&ctx->T2, &B, challenge_prime.b, 255);
 	blst_p1_add_or_double(&ctx->T2, &ctx->T2, &Q);
-	blst_p1_cneg(&ctx->T2, 1);
 
 final_challenge:
 	// Depending on how we got here, this recovers either T2 or A
 	blst_p1_mult(&ctx->T2, &ctx->T2, challenge_prime.b, 255);
+	blst_p1_cneg(&ctx->T2, 1);
 	for(size_t i=0; i <= num_undisclosed; i++) {
 		if(BBS_OK != bn_read_bbs (&comp_exp, proof_ptr)) return BBS_ERROR;
 		proof_ptr += BBS_SCALAR_LEN;
@@ -698,7 +699,7 @@ bbs_compressed_proof_gen_nva (
 	uint64_t di_idx = 0;
 	bool disclosed;
 
-	uint64_t num_gens = round_up_to_power_of_2(num_messages - disclosed_indexes_len);
+	uint64_t num_gens = round_up_to_power_of_2(num_messages - disclosed_indexes_len + 1);
 	// FIXME: This requires quite some stack space...
 	blst_scalar witness_buf[num_gens];
 	blst_p1 comp_gens[num_gens];
@@ -750,7 +751,7 @@ bbs_compressed_proof_verify_nva (
 	if(proof_len != bbs_compressed_proof_len(num_messages - disclosed_indexes_len))
 		return BBS_ERROR;
 
-	uint64_t num_gens = round_up_to_power_of_2(num_messages - disclosed_indexes_len);
+	uint64_t num_gens = round_up_to_power_of_2(num_messages - disclosed_indexes_len + 1);
 	// FIXME: This requires quite some stack space...
 	blst_p1 comp_gens[num_gens];
 

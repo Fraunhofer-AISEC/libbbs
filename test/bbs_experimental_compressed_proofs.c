@@ -59,6 +59,7 @@ typedef struct
 int
 bbs_experimental_compressed_proofs ()
 {
+	//const uint64_t disclosed[] = { 0,1,2,3,4,5,6,7 };
 	// *INDENT-OFF* - Preserve formatting
 #ifdef LIBBBS_TEST_SUITE_SHA256
 	uint8_t *msgs[] = {
@@ -95,6 +96,8 @@ bbs_experimental_compressed_proofs ()
 			.presentation_header_len = sizeof(fixture_bls12_381_sha_256_proof3_presentation_header),
 			.disclosed_indexes = fixture_bls12_381_sha_256_proof3_revealed_indexes,
 			.disclosed_indexes_len = LEN (fixture_bls12_381_sha_256_proof3_revealed_indexes),
+			//.disclosed_indexes = disclosed,
+			//.disclosed_indexes_len = LEN(disclosed),
 			.num_messages = 10,
 			.messages = msgs,
 			.message_lens = msg_lens
@@ -134,6 +137,8 @@ bbs_experimental_compressed_proofs ()
 			.presentation_header_len = sizeof(fixture_bls12_381_shake_256_proof3_presentation_header),
 			.disclosed_indexes = fixture_bls12_381_shake_256_proof3_revealed_indexes,
 			.disclosed_indexes_len = LEN (fixture_bls12_381_shake_256_proof3_revealed_indexes),
+			//.disclosed_indexes = disclosed,
+			//.disclosed_indexes_len = LEN(disclosed),
 			.num_messages = 10,
 			.messages = msgs,
 			.message_lens = msg_lens
