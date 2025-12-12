@@ -19,7 +19,7 @@ add_library(bbs_FIXTURES_ONLY SHARED $<TARGET_OBJECTS:bbs_sources>)
 target_link_libraries(bbs               PRIVATE ${SOURCE_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}blst${CMAKE_STATIC_LIBRARY_SUFFIX})
 target_link_libraries(bbs_FIXTURES_ONLY PRIVATE ${SOURCE_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}blst${CMAKE_STATIC_LIBRARY_SUFFIX})
 if(NOT APPLE)
-target_link_options(bbs PUBLIC -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.map)
+	target_link_options(bbs PRIVATE -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.map)
 endif()
 
 

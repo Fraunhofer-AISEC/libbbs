@@ -209,9 +209,9 @@ int main(int argc, char **argv) {
 	fprintf(out, ";\nstatic const uint8_t keygen_dst[] = ");
 	print_hex_str(json_object_get(j, "keyDst"), out);
 	fprintf(out, ";\nstatic const struct fixture_keygen _vectors_keygen[] = {\n");
-	fprintf(out, "\t{ .key_material = keygen_material, .key_material_len = %zu, ", json_object_get(j, "keyMaterial")->len);
-	fprintf(out, ".key_info = keygen_info, .key_info_len = %zu, ", json_object_get(j, "keyInfo")->len);
-	fprintf(out, ".key_dst = keygen_dst, .key_dst_len = %zu, ", json_object_get(j, "keyDst")->len);
+	fprintf(out, "\t{ .key_material = keygen_material, .key_material_len = %zu, ", json_object_get(j, "keyMaterial")->len/2);
+	fprintf(out, ".key_info = keygen_info, .key_info_len = %zu, ", json_object_get(j, "keyInfo")->len/2);
+	fprintf(out, ".key_dst = keygen_dst, .key_dst_len = %zu, ", json_object_get(j, "keyDst")->len/2);
 	tmp = json_object_get(j, "keyPair");
 	fprintf(out, ".result_sk = ");
 	print_hex_str(json_object_get(tmp, "secretKey"), out);
