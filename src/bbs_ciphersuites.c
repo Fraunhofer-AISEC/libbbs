@@ -38,7 +38,7 @@
 #define EXP_FINALIZE void (*) (union bbs_hash_context *, uint8_t*, uint16_t, const uint8_t *, size_t)
 
 // *INDENT-OFF* - Preserve formatting
-bbs_cipher_suite_t bbs_sha256_cipher_suite_s = {
+static const bbs_cipher_suite_t bbs_sha256_cipher_suite_s = {
 	.p1 = {
 		0xa8, 0xce, 0x25, 0x61, 0x02, 0x84, 0x08, 0x21, 0xa3, 0xe9, 0x4e, 0xa9, 0x02, 0x5e, 0x46,
 		0x62, 0xb2, 0x05, 0x76, 0x2f, 0x97, 0x76, 0xb3, 0xa7, 0x66, 0xc8, 0x72, 0xb9, 0x48, 0xf1,
@@ -61,9 +61,9 @@ bbs_cipher_suite_t bbs_sha256_cipher_suite_s = {
 	.map_dst = (uint8_t*) BBS_SHA256_MAP_DST,
 	.map_dst_len = BBS_SHA256_MAP_DST_LENGTH,
 };
-bbs_cipher_suite_t *bbs_sha256_cipher_suite = &bbs_sha256_cipher_suite_s;
+const bbs_cipher_suite_t *const bbs_sha256_cipher_suite = &bbs_sha256_cipher_suite_s;
 
-bbs_cipher_suite_t bbs_shake256_cipher_suite_s = {
+static const bbs_cipher_suite_t bbs_shake256_cipher_suite_s = {
 	.p1 = {
 		0x89, 0x29, 0xdf, 0xbc, 0x7e, 0x66, 0x42, 0xc4, 0xed, 0x9c, 0xba, 0x08, 0x56, 0xe4, 0x93,
 		0xf8, 0xb9, 0xd7, 0xd5, 0xfc, 0xb0, 0xc3, 0x1e, 0xf8, 0xfd, 0xcd, 0x34, 0xd5, 0x06, 0x48,
@@ -86,6 +86,6 @@ bbs_cipher_suite_t bbs_shake256_cipher_suite_s = {
 	.map_dst = (uint8_t*) BBS_SHAKE256_MAP_DST,
 	.map_dst_len = BBS_SHAKE256_MAP_DST_LENGTH,
 };
-bbs_cipher_suite_t *bbs_shake256_cipher_suite = &bbs_shake256_cipher_suite_s;
+const bbs_cipher_suite_t *const bbs_shake256_cipher_suite = &bbs_shake256_cipher_suite_s;
 // *INDENT-ON* - Restore formatting
 

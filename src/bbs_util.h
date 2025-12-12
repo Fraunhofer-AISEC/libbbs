@@ -55,18 +55,18 @@ struct bbs_cipher_suite
 		);
 
 	/// DST
-	uint8_t *cipher_suite_id;
-	uint8_t  cipher_suite_id_len;
-	uint8_t *default_key_dst;
-	uint8_t  default_key_dst_len;
-	uint8_t *api_id;
-	uint8_t  api_id_len;
-	uint8_t *signature_dst;
-	uint8_t  signature_dst_len;
-	uint8_t *challenge_dst;
-	uint8_t  challenge_dst_len;
-	uint8_t *map_dst;
-	uint8_t  map_dst_len;
+	const uint8_t *cipher_suite_id;
+	size_t  cipher_suite_id_len;
+	const uint8_t *default_key_dst;
+	size_t  default_key_dst_len;
+	const uint8_t *api_id;
+	size_t  api_id_len;
+	const uint8_t *signature_dst;
+	size_t  signature_dst_len;
+	const uint8_t *challenge_dst;
+	size_t  challenge_dst_len;
+	const uint8_t *map_dst;
+	size_t  map_dst_len;
 };
 
 // Serialization
@@ -112,54 +112,54 @@ int ep2_read_bbs (
 
 // Hash to Scalar
 void hash_to_scalar_init (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx
 	);
 
 void hash_to_scalar_update (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	const uint8_t      *msg,
-	uint32_t            msg_len
+	size_t              msg_len
 	);
 
 void hash_to_scalar_finalize (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	blst_scalar                *out,
 	const uint8_t      *dst,
-	uint8_t             dst_len
+	size_t              dst_len
 	);
 
 void hash_to_scalar (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	blst_scalar                *out,
 	const uint8_t      *dst,
-	uint8_t             dst_len,
+	size_t               dst_len,
 	uint64_t            num_messages,
 	...
 	);
 
 // you need to call update exactly num_messages + 1 times.
 void calculate_domain_init (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	const uint8_t       pk[BBS_PK_LEN],
 	uint64_t            num_messages
 	);
 
 void calculate_domain_update (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	const blst_p1          *generator
 	);
 
 void calculate_domain_finalize (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	union bbs_hash_context *ctx,
 	blst_scalar                *out,
 	const uint8_t      *header,
-	uint64_t            header_len
+	size_t            header_len
 	);
 
 
@@ -171,7 +171,7 @@ void calculate_domain_finalize (
  * @note Always supply the same api_id to next as you did to init
 */
 void create_generator_init (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	uint8_t             state[48 + 8]
 	);
 
@@ -184,7 +184,7 @@ void create_generator_init (
  * @note Always supply the same api_id to next as you did to init
  */
 void create_generator_next (
-	bbs_cipher_suite_t *cipher_suite,
+	const bbs_cipher_suite_t *cipher_suite,
 	uint8_t             state[48 + 8],
 	blst_p1                *generator
 	);
@@ -199,7 +199,7 @@ void create_generator_next (
 // message scalar, other scalars have input 0 and input_type i indicates the
 // i-th such scalar. This is because there may be up to 2^64 messages, bringing
 // the total possible message count slightly above 2^64.
-typedef void (bbs_bn_prf)(bbs_cipher_suite_t *cipher_suite,
+typedef void (bbs_bn_prf)(const bbs_cipher_suite_t *cipher_suite,
 			 blst_scalar                *out,
 			 uint8_t             input_type,
 			 uint64_t            input,
