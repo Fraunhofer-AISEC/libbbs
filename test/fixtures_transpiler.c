@@ -1,0 +1,341 @@
+// Parses the JSON fixtures in fixture_data/ to generate C source files from
+// which the tests may read the fixtures. We generate one source file per
+// ciphersuite.
+//
+// The fixture data is taken verbatim from
+// https://github.com/decentralized-identity/bbs-signature/tree/main/tooling/fixtures/fixture_data
+// For the most part, these are the vectors from the BBS draft.
+//
+// Included below is a *very* minimalistic JSON parser to avoid additional build
+// dependencies. It is only useful for guaranteed correct JSON, such as the test
+// vectors.
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+
+// gljp - The Good Luck JSON Parser (pronounced "gilschp" and just as good).
+// Crashes on invalid inputs. NEVER use on unknown or even untrusted data!
+enum json_type { JSON_NULL, JSON_TRUE, JSON_FALSE, JSON_STRING, JSON_NUMBER, JSON_OBJECT, JSON_ARRAY };
+struct json { enum json_type type; size_t len; const char *string; struct json *value; struct json *next; };
+void _json_parse_internal(const char **input, struct json **out, int chain_mode) {
+	*input += strspn(*input, " \t\n\r,"); // Comma for tail calls
+	if(!**input || **input == ']' || **input == '}')
+		{ *input += 1; *out = NULL; return; } // For recursive calls
+	*out = calloc(1,sizeof(struct json));
+	switch(*(*input)++) {
+	case 't': (*out)->type = JSON_TRUE;  *input += 3; break;
+	case 'f': (*out)->type = JSON_FALSE; *input += 4; break;
+	case 'n': (*out)->type = JSON_NULL;  *input += 3; break;
+	case '-': case '0': case '1': case '2': case '3': case '4':
+	case '5': case '6': case '7': case '8': case '9':
+		(*out)->type = JSON_NUMBER;
+		(*out)->string = *input - 1; // Undecoded number of length len
+		*input += strspn(*input, "+-.eE0123456789");
+		(*out)->len = *input - (*out)->string;
+		break;
+	case '"':
+		(*out)->type = JSON_STRING;
+		(*out)->string = *input; // Undecoded string of length len
+		do { *input = strchr(*input, '"') + 1; } while(*(*input-2) == '\\');
+		(*out)->len = *input - (*out)->string - 1;
+		if(chain_mode != 2) break; // Chain Mode 2 for "key : value"
+		*input += strspn(*input, " \t\n\r") + 1;
+		_json_parse_internal(input, &(*out)->value, 0);
+		break;
+	case '[':
+		(*out)->type = JSON_ARRAY;
+		_json_parse_internal(input, &(*out)->value, 1); // Chain Mode 1 for "value"
+		break;
+	case '{':
+		(*out)->type = JSON_OBJECT;
+		_json_parse_internal(input, &(*out)->value, 2); // Chain Mode 2 for "key:value"
+		break;
+	}
+	if(chain_mode) _json_parse_internal(input, &(*out)->next, chain_mode); // Tail recursion
+}
+void json_parse(const char *input, struct json **out) { _json_parse_internal(&input, out, 0); }
+void json_free(struct json *j) { if(j) { json_free(j->next); json_free(j->value); free(j); } }
+
+[[noreturn]] void fail(const char *loc) { perror(loc); exit(1); }
+
+struct json *json_object_get(struct json *j, const char *key) {
+	for(struct json *k = j->value; k; k = k->next)
+		if(strlen(key) == k->len && !strncmp(key, k->string, k->len)) return k->value;
+	fail(key);
+}
+size_t json_array_len(struct json *j) {
+	size_t res = 0;
+	for(struct json *k = j->value; k; k = k->next) res++;
+	return res;
+}
+
+void print_hex_str(struct json *string, FILE *out) {
+	if(!string->len) fprintf(out, "{0"); // Beware: sizeof will be off!!!
+	for(size_t i=0; i<string->len; i+=2) fprintf(out, "%c0x%.2s", i?',':'{', string->string + i);
+	fprintf(out, "}");
+}
+
+int existsat(int dirfd, const char *path) {
+	int fd = openat(dirfd, path, O_RDONLY);
+	if(-1 != fd) { if(-1 == close(fd)) fail("close"); return 1; }
+	if(errno != ENOENT) fail("openat");
+	return 0;
+}
+
+char *read_file(int dirfd, const char *path) {
+	FILE *f;
+	int fd;
+	char *res = NULL;
+
+	if(-1 == (fd = openat(dirfd, path, O_RDONLY))) fail("openat");
+	if(!(f = fdopen(fd, "r"))) fail("fdopen");
+	for(int i=0; !i || !feof(f); i++) {
+		if(!(res = realloc(res, 1 + (i+1) * 1000))) fail("realloc");
+		res[i*1000 + fread(res + i*1000, 1, 1000, f)] = 0;
+		if(ferror(f)) fail("fread");
+	}
+	if(fclose(f)) fail("fclose");
+	return res;
+}
+
+int main(int argc, char **argv) {
+	FILE *out;
+	char filename[100];
+	char *cipher_suite;
+	char *f, *f2;
+	struct json *j, *j2, *tmp;
+	int dirfd, i, filenum;
+
+	// Argument parsing
+	if(argc != 3) { printf("Usage: %s <ciphersuite> <source_dir>\n", argv[0]); exit(0); }
+	if     (!strcmp(argv[1], "bls12-381-sha-256"))
+		cipher_suite = "bbs_sha256_cipher_suite";
+	else if(!strcmp(argv[1], "bls12-381-shake-256"))
+		cipher_suite = "bbs_shake256_cipher_suite";
+	else fail("Invalid Cipher Suite");
+
+	// Open directory and outfile
+	sprintf(filename, "fixtures_%s.c", argv[1]);
+	if(!(out = fopen(filename, "w"))) fail("fopen");
+	//if(!(out = fopen("/dev/stdout", "w"))) fail("fopen");
+	if(-1 == chdir(argv[2])) fail("chdir");
+	sprintf(filename, "fixtures_data/%s", argv[1]);
+	if(-1 == (dirfd = open(filename, O_RDONLY | O_DIRECTORY))) fail("open");
+
+	// Header
+	fprintf(out, "// Generated by %s. DO NOT EDIT!\n\n", argv[0]);
+	fprintf(out, "#include \"fixtures.h\"\n\n");
+
+	// Ciphersuite
+	fprintf(out, "const bbs_cipher_suite_t *const *const fixture_cipher_suite = &%s; \n\n", cipher_suite);
+
+	// Hash to Scalar
+	f = read_file(dirfd, "MapMessageToScalarAsHash.json");
+	json_parse(f, &j);
+	f2 = read_file(dirfd, "h2s.json");
+	json_parse(f2, &j2);
+	fprintf(out, "static const uint8_t h2s_message%d[] = ", i = 0);
+	tmp = json_object_get(j2, "message");
+	print_hex_str(tmp, out);
+	fprintf(out, ";\nstatic const uint8_t h2s_dst%d[] = ", i++);
+	tmp = json_object_get(j2, "dst");
+	print_hex_str(tmp, out);
+	fprintf(out, ";\n");
+	for(struct json *k=json_object_get(j, "cases")->value; k; k = k->next) {
+		fprintf(out, "static const uint8_t h2s_message%d[] = ", i);
+		tmp = json_object_get(k, "message");
+		print_hex_str(tmp, out);
+		fprintf(out, ";\nstatic const uint8_t h2s_dst%d[] = ", i++);
+		tmp = json_object_get(j, "dst");
+		print_hex_str(tmp, out);
+		fprintf(out, ";\n");
+	}
+	fprintf(out, "static const struct fixture_hash_to_scalar _vectors_hash_to_scalar[] = {\n");
+	tmp = json_object_get(j2, "message");
+	fprintf(out, "\t{ .msg = h2s_message%d, .msg_len = %zu, ", i = 0, tmp->len / 2);
+	tmp = json_object_get(j2, "dst");
+	fprintf(out, ".dst = h2s_dst%d, .dst_len = %zu, .result = ", i++, tmp->len / 2);
+	tmp = json_object_get(j2, "scalar");
+	print_hex_str(tmp, out);
+	fprintf(out, "},\n");
+	for(struct json *k=json_object_get(j, "cases")->value; k; k = k->next) {
+		tmp = json_object_get(k, "message");
+		fprintf(out, "\t{ .msg = h2s_message%d, .msg_len = %zu, ", i, tmp->len / 2);
+		tmp = json_object_get(j, "dst");
+		fprintf(out, ".dst = h2s_dst%d, .dst_len = %zu, .result = ", i++, tmp->len / 2);
+		tmp = json_object_get(k, "scalar");
+		print_hex_str(tmp, out);
+		fprintf(out, "},\n");
+	}
+	fprintf(out, "};\n");
+	fprintf(out, "const struct fixture_hash_to_scalar *const vectors_hash_to_scalar = _vectors_hash_to_scalar;\n");
+	fprintf(out, "const size_t vectors_hash_to_scalar_len = %d;\n\n", i);
+	json_free(j2);
+	free(f2);
+	json_free(j);
+	free(f);
+
+	// Generators
+	f = read_file(dirfd, "generators.json");
+	json_parse(f, &j);
+	fprintf(out, "static const uint8_t generators[][48] = {\n\t");
+	print_hex_str(json_object_get(j, "Q1"), out);
+	i=1;
+	for(struct json *k=json_object_get(j, "MsgGenerators")->value; k; k = k->next) {
+		fprintf(out, ",\n\t");
+		print_hex_str(k, out);
+		i++;
+	}
+	fprintf(out, "\n};\n");
+	fprintf(out, "static const struct fixture_generators _vectors_generators[] = {\n");
+	fprintf(out, "\t{ .result = generators, .result_len = %d }\n", i);
+	fprintf(out, "};\n");
+	fprintf(out, "const struct fixture_generators *const vectors_generators = _vectors_generators;\n");
+	fprintf(out, "const size_t vectors_generators_len = %d;\n\n", 1);
+	json_free(j);
+	free(f);
+
+	// Keygen
+	f = read_file(dirfd, "keypair.json");
+	json_parse(f, &j);
+	fprintf(out, "static const uint8_t keygen_material[] = ");
+	print_hex_str(json_object_get(j, "keyMaterial"), out);
+	fprintf(out, ";\nstatic const uint8_t keygen_info[] = ");
+	print_hex_str(json_object_get(j, "keyInfo"), out);
+	fprintf(out, ";\nstatic const uint8_t keygen_dst[] = ");
+	print_hex_str(json_object_get(j, "keyDst"), out);
+	fprintf(out, ";\nstatic const struct fixture_keygen _vectors_keygen[] = {\n");
+	fprintf(out, "\t{ .key_material = keygen_material, .key_material_len = %zu, ", json_object_get(j, "keyMaterial")->len);
+	fprintf(out, ".key_info = keygen_info, .key_info_len = %zu, ", json_object_get(j, "keyInfo")->len);
+	fprintf(out, ".key_dst = keygen_dst, .key_dst_len = %zu, ", json_object_get(j, "keyDst")->len);
+	tmp = json_object_get(j, "keyPair");
+	fprintf(out, ".result_sk = ");
+	print_hex_str(json_object_get(tmp, "secretKey"), out);
+	fprintf(out, ", .result_pk = ");
+	print_hex_str(json_object_get(tmp, "publicKey"), out);
+	fprintf(out, "}\n};\n");
+	fprintf(out, "const struct fixture_keygen *const vectors_keygen = _vectors_keygen;\n");
+	fprintf(out, "const size_t vectors_keygen_len = %d;\n\n", 1);
+	json_free(j);
+	free(f);
+
+	// Signatures
+	for(filenum = 1; 1; filenum++) {
+		sprintf(filename, "signature/signature%03d.json", filenum);
+		if(!existsat(dirfd, filename)) break;
+
+		f = read_file(dirfd, filename);
+		json_parse(f, &j);
+		fprintf(out, "static const uint8_t signature%d_header[] = ", filenum);
+		print_hex_str(json_object_get(j, "header"), out);
+		i = 0;
+		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
+			fprintf(out, ";\nstatic const uint8_t signature%d_msg%d[] = ", filenum, i++);
+			print_hex_str(k, out);
+		}
+		fprintf(out, ";\nstatic const uint8_t *const signature%d_msgs[] = {", filenum);
+		for(int ii=0; ii<i; ii++) fprintf(out, "signature%d_msg%d, ", filenum, ii);
+		fprintf(out, "};\nstatic const size_t signature%d_msg_lens[] = {", filenum);
+		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
+			fprintf(out, "%zu, ", k->len/2);
+		}
+		fprintf(out, "};\n");
+		json_free(j);
+		free(f);
+	}
+	fprintf(out, "static const struct fixture_signature _vectors_signature[] = {\n");
+	for(filenum = 1; 1; filenum++) {
+		sprintf(filename, "signature/signature%03d.json", filenum);
+		if(!existsat(dirfd, filename)) break;
+
+		f = read_file(dirfd, filename);
+		json_parse(f, &j);
+		fprintf(out, "\t{ .sk = ");
+		tmp = json_object_get(j, "signerKeyPair");
+		print_hex_str(json_object_get(tmp, "secretKey"), out);
+		fprintf(out, ", .pk = ");
+		print_hex_str(json_object_get(tmp, "publicKey"), out);
+		tmp = json_object_get(j, "header");
+		fprintf(out, ", .header = signature%d_header, .header_len = %zu", filenum, tmp->len/2);
+		fprintf(out, ", .num_messages = %zu", json_array_len(json_object_get(j, "messages")));
+		fprintf(out, ", .msgs = signature%d_msgs, .msg_lens = signature%d_msg_lens", filenum, filenum);
+		fprintf(out, ", .result = ");
+		print_hex_str(json_object_get(j, "signature"), out);
+		tmp = json_object_get(j, "result");
+		fprintf(out, ", .result_valid = %d },\n", JSON_TRUE == json_object_get(tmp, "valid")->type);
+		json_free(j);
+		free(f);
+	}
+	fprintf(out, "};\n");
+	fprintf(out, "const struct fixture_signature *const vectors_signature = _vectors_signature;\n");
+	fprintf(out, "const size_t vectors_signature_len = %d;\n\n", --filenum);
+
+	// Proofs
+	for(filenum = 1; 1; filenum++) {
+		sprintf(filename, "proof/proof%03d.json", filenum);
+		if(!existsat(dirfd, filename)) break;
+
+		f = read_file(dirfd, filename);
+		json_parse(f, &j);
+		fprintf(out, "static const uint8_t proof%d_header[] = ", filenum);
+		print_hex_str(json_object_get(j, "header"), out);
+		fprintf(out, ";\nstatic const uint8_t proof%d_presentation_header[] = ", filenum);
+		print_hex_str(json_object_get(j, "presentationHeader"), out);
+		i = 0;
+		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
+			fprintf(out, ";\nstatic const uint8_t proof%d_msg%d[] = ", filenum, i++);
+			print_hex_str(k, out);
+		}
+		fprintf(out, ";\nstatic const uint8_t *const proof%d_msgs[] = {", filenum);
+		for(int ii=0; ii<i; ii++) fprintf(out, "proof%d_msg%d, ", filenum, ii);
+		fprintf(out, "};\nstatic const size_t proof%d_msg_lens[] = {", filenum);
+		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
+			fprintf(out, "%zu, ", k->len/2);
+		}
+		fprintf(out, "};\nstatic const uint64_t proof%d_disclosed_indexes[] = {", filenum);
+		for(struct json *k=json_object_get(j, "disclosedIndexes")->value; k; k = k->next) {
+			fprintf(out, "%.*s, ", (int)k->len, k->string);
+		}
+		fprintf(out, "};\nstatic const uint8_t proof%d_proof[] = ", filenum);
+		print_hex_str(json_object_get(j, "proof"), out);
+		fprintf(out, ";\n");
+		json_free(j);
+		free(f);
+	}
+	fprintf(out, "static const struct fixture_proof _vectors_proof[] = {\n");
+	for(filenum = 1; 1; filenum++) {
+		sprintf(filename, "proof/proof%03d.json", filenum);
+		if(!existsat(dirfd, filename)) break;
+
+		f = read_file(dirfd, filename);
+		json_parse(f, &j);
+		fprintf(out, "\t{ .pk = ");
+		print_hex_str(json_object_get(j, "signerPublicKey"), out);
+		fprintf(out, ", .signature = ");
+		print_hex_str(json_object_get(j, "signature"), out);
+		tmp = json_object_get(j, "header");
+		fprintf(out, ", .header = proof%d_header, .header_len = %zu", filenum, tmp->len/2);
+		tmp = json_object_get(j, "presentationHeader");
+		fprintf(out, ", .presentation_header = proof%d_presentation_header, .presentation_header_len = %zu", filenum, tmp->len/2);
+		fprintf(out, ", .num_messages = %zu", json_array_len(json_object_get(j, "messages")));
+		fprintf(out, ", .msgs = proof%d_msgs, .msg_lens = proof%d_msg_lens", filenum, filenum);
+		fprintf(out, ", .disclosed_indexes = proof%d_disclosed_indexes", filenum);
+		fprintf(out, ", .disclosed_indexes_len = %zu", json_array_len(json_object_get(j, "disclosedIndexes")));
+		tmp = json_object_get(j, "proof");
+		fprintf(out, ", .result = proof%d_proof, .result_len = %zu", filenum, tmp->len/2);
+		tmp = json_object_get(j, "result");
+		fprintf(out, ", .result_valid = %d },\n", JSON_TRUE == json_object_get(tmp, "valid")->type);
+		json_free(j);
+		free(f);
+	}
+	fprintf(out, "};\n");
+	fprintf(out, "const struct fixture_proof *const vectors_proof = _vectors_proof;\n");
+	fprintf(out, "const size_t vectors_proof_len = %d;\n\n", --filenum);
+
+	if(fclose(out)) fail("fclose");
+	return 0;
+}
