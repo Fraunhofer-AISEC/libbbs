@@ -6,17 +6,7 @@
 int
 bbs_e2e_sign_n_proof ()
 {
-#ifdef LIBBBS_TEST_SUITE_SHAKE256
-	bbs_cipher_suite_t *suite = bbs_shake256_cipher_suite;
-#elif LIBBS_TEST_SUITE_SHA256
-	bbs_cipher_suite_t *suite = bbs_sha256_cipher_suite;
-#endif
-
-	if (bbs_init ())
-	{
-		bbs_deinit ();
-		return 1;
-	}
+	const bbs_cipher_suite_t *suite = *fixture_cipher_suite;
 
 	bbs_secret_key sk;
 	bbs_public_key pk;
@@ -35,7 +25,7 @@ bbs_e2e_sign_n_proof ()
 	static char header[] = "But I am a header!";
 
 	BBS_BENCH_START (sign)
-	if (BBS_OK != bbs_sign (suite, sk, pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
+	if (BBS_OK != bbs_sign_v (suite, sk, pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
 	                        strlen (msg1), msg2, strlen (msg2)))
 	{
 		puts ("Error during signing");
@@ -44,7 +34,7 @@ bbs_e2e_sign_n_proof ()
 	BBS_BENCH_END (sign, "bbs_sign (2 messages, 1 header)")
 
 	BBS_BENCH_START (verify)
-	if (BBS_OK != bbs_verify (suite, pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
+	if (BBS_OK != bbs_verify_v (suite, pk, sig, (uint8_t*) header, strlen (header), 2, msg1,
 	                          strlen (msg1), msg2, strlen (msg2)))
 	{
 		puts ("Error during signature verification");
@@ -57,7 +47,7 @@ bbs_e2e_sign_n_proof ()
 	static char ph[]                = "I am a challenge nonce!";
 
 	BBS_BENCH_START (proof_gen)
-	if (BBS_OK != bbs_proof_gen(suite, pk, sig, proof, (uint8_t*) header, strlen (header),
+	if (BBS_OK != bbs_proof_gen_v(suite, pk, sig, proof, (uint8_t*) header, strlen (header),
 	                            (uint8_t*) ph, strlen (ph), disclosed_indexes, 1, 2,
 	                            msg1, strlen (msg1), msg2, strlen (msg2)))
 	{
@@ -67,7 +57,7 @@ bbs_e2e_sign_n_proof ()
 	BBS_BENCH_END (proof_gen, "bbs_proof_gen (2 messages, 1 header, 1 disclosed index)")
 
 	BBS_BENCH_START (proof_verify)
-	if (BBS_OK != bbs_proof_verify(suite, pk, proof, BBS_PROOF_LEN (1), (uint8_t*) header,
+	if (BBS_OK != bbs_proof_verify_v(suite, pk, proof, BBS_PROOF_LEN (1), (uint8_t*) header,
 	                               strlen (header), (uint8_t*) ph, strlen (ph),
 	                               disclosed_indexes, 1, 2, msg1, strlen (msg1)))
 	{

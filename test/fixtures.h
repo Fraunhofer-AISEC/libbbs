@@ -7,7 +7,7 @@
 // This header file defines several extern constants, which are generated per
 // ciphersuite by genfixtures. 
 
-extern bbs_cipher_suite_t **const fixture_cipher_suite;
+extern const bbs_cipher_suite_t *const *const fixture_cipher_suite;
 
 extern const struct fixture_hash_to_scalar {
 	const uint8_t *msg;

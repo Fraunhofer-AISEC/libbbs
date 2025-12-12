@@ -10,16 +10,7 @@
 int
 bbs_bench_individual ()
 {
-#ifdef LIBBBS_TEST_SUITE_SHA256
-#define CIPHERSUITE                         sha256
-	printf ("Benchmarking %s \n",    "BLS12-381-SHA-256");
-#elif LIBBBS_TEST_SUITE_SHAKE256
-#define CIPHERSUITE                         shake256
-	printf ("Benchmarking %s \n",    "BLS12-381-SHAKE-256");
-#endif
-	// Use an additional macro to ensure full expansion before concatenation
-	#define CONCAT_INTERNAL(a, b, c)            a ## _ ## b ## _ ## c
-	#define BBS_EXECUTE(cipher_suite, function) CONCAT_INTERNAL (bbs, cipher_suite, function)
+	const bbs_cipher_suite_t *cipher_suite = *fixture_cipher_suite;
 
 	#define USE_HEADER                          0
 
@@ -27,22 +18,16 @@ bbs_bench_individual ()
 
 	#define ITERATIONS 1000
 
-	if (bbs_init ())
-	{
-		bbs_deinit ();
-		return 1;
-	}
-
 	// - MARK: Key generation
 	bbs_secret_key sk[ITERATIONS];
 	bbs_public_key pk[ITERATIONS];
 
-	printf ("%s key generation %d iterations.\n", TOSTRING (CIPHERSUITE), ITERATIONS);
+	printf ("key generation %d iterations.\n", ITERATIONS);
 
 	BBS_BENCH_START (key_gen)
 	for (int i = 0; i < ITERATIONS; i++)
 	{
-		if (BBS_OK != BBS_EXECUTE (CIPHERSUITE, keygen_full) (sk[i], pk[i]))
+		if (BBS_OK != bbs_keygen_full (cipher_suite, sk[i], pk[i]))
 		{
 			puts ("Error during key generation");
 			return 1;
@@ -72,13 +57,13 @@ bbs_bench_individual ()
 	static char header[] = "";
 	#endif
 
-	printf ("%s signing %d iterations of %d messages each of size %d bytes.\n",
-		TOSTRING (CIPHERSUITE), ITERATIONS, 2, MSG_LEN);
+	printf ("signing %d iterations of %d messages each of size %d bytes.\n",
+		ITERATIONS, 2, MSG_LEN);
 
 	BBS_BENCH_START (sign)
 	for (int i = 0; i < ITERATIONS; i++)
 	{
-		if (BBS_OK != BBS_EXECUTE (CIPHERSUITE, sign) (sk[i], pk[i], sig[i],
+		if (BBS_OK != bbs_sign_v (cipher_suite, sk[i], pk[i], sig[i],
 							       (uint8_t*) header, strlen (header),
 							       2, msg1[i], MSG_LEN, msg2[i],
 							       MSG_LEN))
@@ -90,12 +75,12 @@ bbs_bench_individual ()
 	BBS_BENCH_END (sign, "Signing")
 
 	// - MARK: Verification
-	printf ("%s verification %d iterations of %d messages each of size %d bytes.\n",
-		TOSTRING (CIPHERSUITE), ITERATIONS, 2, MSG_LEN);
+	printf ("verification %d iterations of %d messages each of size %d bytes.\n",
+		ITERATIONS, 2, MSG_LEN);
 	BBS_BENCH_START (verify)
 	for (int i = 0; i < ITERATIONS; i++)
 	{
-		if (BBS_OK != BBS_EXECUTE (CIPHERSUITE, verify) (pk[i], sig[i], (uint8_t*) header, strlen (header),
+		if (BBS_OK != bbs_verify_v (cipher_suite, pk[i], sig[i], (uint8_t*) header, strlen (header),
 						 2, msg1[i], MSG_LEN, msg2[i], MSG_LEN))
 		{
 			puts ("Error during signature verification");
@@ -118,15 +103,14 @@ bbs_bench_individual ()
 	}
 
 	printf (
-		"%s proof generation %d iterations of %d messages each of size %d bytes disclosing first message only.\n",
-		TOSTRING (CIPHERSUITE),
+		"proof generation %d iterations of %d messages each of size %d bytes disclosing first message only.\n",
 		ITERATIONS,
 		2,
 		MSG_LEN);
 	BBS_BENCH_START (proof_gen)
 	for (int i = 0; i < ITERATIONS; i++)
 	{
-		if (BBS_OK != BBS_EXECUTE (CIPHERSUITE, proof_gen) (pk[i], sig[i], proof[i],
+		if (BBS_OK != bbs_proof_gen_v (cipher_suite, pk[i], sig[i], proof[i],
 								    (uint8_t*) header,
 								    strlen (header),
 								    (uint8_t*) random_nonces[i],
@@ -143,15 +127,14 @@ bbs_bench_individual ()
 
 	// - MARK: Proof verification
 	printf (
-		"%s proof verification %d iterations of %d messages each of size %d bytes disclosing first message only.\n",
-		TOSTRING (CIPHERSUITE),
+		"proof verification %d iterations of %d messages each of size %d bytes disclosing first message only.\n",
 		ITERATIONS,
 		2,
 		MSG_LEN);
 	BBS_BENCH_START (proof_verify)
 	for (int i = 0; i < ITERATIONS; i++)
 	{
-		if (BBS_OK != BBS_EXECUTE(CIPHERSUITE, proof_verify) (pk[i], proof[i], BBS_PROOF_LEN (1),
+		if (BBS_OK != bbs_proof_verify_v (cipher_suite, pk[i], proof[i], BBS_PROOF_LEN (1),
 						       (uint8_t*) header, strlen (header),
 						       (uint8_t*) random_nonces[i],
 						       RANDOM_NONCE_SIZE, disclosed_indexes, 1, 2,

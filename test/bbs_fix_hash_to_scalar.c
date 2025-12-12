@@ -1,52 +1,26 @@
 #include "fixtures.h"
 #include "test_util.h"
 
-
-typedef struct
-{
-	bbs_cipher_suite_t *cipher_suite;
-	uint8_t            *msg;
-	uint16_t msg_len;
-	uint8_t            *dst;
-	uint16_t dst_len;
-	uint8_t            *scalar;
-	uint16_t scalar_len;
-} bbs_fix_hash_to_scalar_fixture_t;
-
 int
 bbs_fix_hash_to_scalar ()
 {
-#ifdef LIBBBS_TEST_SUITE_SHAKE256
-	bbs_fix_hash_to_scalar_fixture_t fixture = {
-		.cipher_suite = bbs_sha256_cipher_suite,
-		.msg          = fixture_bls12_381_sha_256_h2s_msg, .msg_len     = 32,
-		.dst          = fixture_bls12_381_sha_256_h2s_dst, .dst_len     = 48,
-		.scalar       = fixture_bls12_381_sha_256_h2s_scalar, .scalar_len  = 32,
-	};
-#elif LIBBBS_TEST_SUITE_SHA256
-	bbs_fix_hash_to_scalar_fixture_t fixture = {
-		.cipher_suite = bbs_shake256_cipher_suite,
-		.msg          = fixture_bls12_381_shake_256_h2s_msg, .msg_len     = 32,
-		.dst          = fixture_bls12_381_shake_256_h2s_dst, .dst_len     = 50,
-		.scalar       = fixture_bls12_381_shake_256_h2s_scalar, .scalar_len  = 32,
-	};
-#endif
+	blst_scalar s;
+	uint8_t s_buffer[BBS_SCALAR_LEN];
 
-	if (bbs_init ())
-	{
-		bbs_deinit ();
-		return 1;
+	for(size_t i=0; i < vectors_hash_to_scalar_len; i++) {
+		hash_to_scalar (*fixture_cipher_suite,
+				&s,
+				vectors_hash_to_scalar[i].dst,
+				vectors_hash_to_scalar[i].dst_len,
+	                        1,
+				vectors_hash_to_scalar[i].msg,
+				vectors_hash_to_scalar[i].msg_len);
+		bn_write_bbs (s_buffer, &s);
+		ASSERT_EQ_PTR ("hash to scalar",
+				s_buffer,
+				vectors_hash_to_scalar[i].result,
+				sizeof(vectors_hash_to_scalar[i].result));
 	}
-
-	uint8_t bin[BBS_SCALAR_LEN];
-	blst_scalar scalar;
-
-	hash_to_scalar (fixture.cipher_suite, &scalar, fixture.dst, fixture.dst_len,
-	                              1, fixture.msg, fixture.msg_len);
-
-	bn_write_bbs (bin, &scalar);
-
-	ASSERT_EQ_PTR ("hash to scalar", bin, fixture.scalar, fixture.scalar_len);
 
 	return 0;
 }
