@@ -79,7 +79,7 @@ ep2_read_bbs (
 
 inline void
 hash_to_scalar_init (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx
 	)
 {
@@ -89,9 +89,9 @@ hash_to_scalar_init (
 
 inline void
 hash_to_scalar_update (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx,
-	const uint8_t      *msg,
+	const void      *msg,
 	size_t            msg_len
 	)
 {
@@ -101,10 +101,10 @@ hash_to_scalar_update (
 
 inline void
 hash_to_scalar_finalize (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx,
 	blst_scalar                *out,
-	const uint8_t      *dst,
+	const void      *dst,
 	size_t             dst_len
 	)
 {
@@ -117,16 +117,16 @@ hash_to_scalar_finalize (
 
 void
 hash_to_scalar (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	blst_scalar        *out,
-	const uint8_t      *dst,
+	const void      *dst,
 	size_t              dst_len,
 	uint64_t            num_messages,
 	...
 	)
 {
 	va_list  ap;
-	uint8_t *msg     = 0;
+	const void *msg     = 0;
 	size_t msg_len = 0;
 	union bbs_hash_context hash_ctx;
 
@@ -134,7 +134,7 @@ hash_to_scalar (
 	hash_to_scalar_init (cipher_suite, &hash_ctx);
 	for(uint64_t i=0; i< num_messages; i++)
 	{
-		msg = va_arg (ap, uint8_t*);
+		msg = va_arg (ap, const void*);
 		msg_len = va_arg (ap, size_t);
 		hash_to_scalar_update (cipher_suite, &hash_ctx, msg, msg_len);
 	}
@@ -145,7 +145,7 @@ hash_to_scalar (
 
 void
 calculate_domain_init (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx,
 	const uint8_t       pk[BBS_PK_LEN],
 	uint64_t            num_messages
@@ -155,13 +155,13 @@ calculate_domain_init (
 
 	hash_to_scalar_init (cipher_suite, ctx);
 	hash_to_scalar_update (cipher_suite, ctx, pk, BBS_PK_LEN);
-	hash_to_scalar_update (cipher_suite, ctx, (uint8_t*) &num_messages_be, 8);
+	hash_to_scalar_update (cipher_suite, ctx, &num_messages_be, 8);
 }
 
 
 void
 calculate_domain_update (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx,
 	const blst_p1          *generator
 	)
@@ -175,10 +175,10 @@ calculate_domain_update (
 
 void
 calculate_domain_finalize (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx,
 	blst_scalar               *out,
-	const uint8_t      *header,
+	const void      *header,
 	uint64_t            header_len
 	)
 {
@@ -189,20 +189,16 @@ calculate_domain_finalize (
 
 	bbs_memcpy(domain_dst, api_id, api_id_len);
 	bbs_memcpy(domain_dst + api_id_len, "H2S_", 4);
-	//for (uint8_t i = 0; i < api_id_len; i++)
-	//	domain_dst[i] = api_id[i];
-	//for (uint8_t i = 0; i < 4; i++)
-	//	domain_dst[i + api_id_len] = (uint8_t)"H2S_"[i];
 
 	hash_to_scalar_update (cipher_suite, ctx, api_id, api_id_len);
-	hash_to_scalar_update (cipher_suite, ctx, (uint8_t*) &header_len_be, 8);
+	hash_to_scalar_update (cipher_suite, ctx, &header_len_be, 8);
 	hash_to_scalar_update (cipher_suite, ctx, header, header_len);
 	hash_to_scalar_finalize (cipher_suite, ctx, out, domain_dst, api_id_len + 4);
 }
 
 void
 create_generator_init (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	uint8_t             state[48 + 8]
 	)
 {
@@ -216,7 +212,7 @@ create_generator_init (
 
 	cipher_suite->expand_message_init (&hash_ctx);
 	cipher_suite->expand_message_update (&hash_ctx, api_id, api_id_len);
-	cipher_suite->expand_message_update (&hash_ctx, (const uint8_t*) "MESSAGE_GENERATOR_SEED", 22);
+	cipher_suite->expand_message_update (&hash_ctx, "MESSAGE_GENERATOR_SEED", 22);
 	cipher_suite->expand_message_finalize(&hash_ctx, state, 48, buffer, api_id_len + 19);
 	*((uint64_t*) (state + 48)) = (uint64_t)1;
 }
@@ -224,7 +220,7 @@ create_generator_init (
 
 void
 create_generator_next (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	uint8_t             state[48 + 8],
 	blst_p1               *generator
 	)

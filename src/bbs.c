@@ -3,7 +3,8 @@
 #include <stdbool.h>
 
 /* This function should be availale in <unistd.h> on POSIX systems. We declare
- * it here to allow simple linking when <unistd.h> is not available. */
+ * it here to allow simple linking when <unistd.h> is not available, or for when
+ * _some_ vendor decides to place it in another header. */
 int getentropy(void *buffer, size_t length);
 
 /* Helper */
@@ -14,7 +15,7 @@ static inline void ep_mult_scalar(blst_p1 *out, const blst_p1 *p, const blst_sca
 
 int
 bbs_keygen_full (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	bbs_secret_key      sk,
 	bbs_public_key      pk
 	)
@@ -22,7 +23,7 @@ bbs_keygen_full (
 	static uint8_t seed[32];
 
 	// Gather randomness
-	getentropy(seed, 32);
+	if(getentropy(seed, 32)) return BBS_ERROR;
 	// Generate the secret key (cannot fail)
 	bbs_keygen (cipher_suite, sk, seed, 32, 0, 0, 0, 0);
 	// Generate the public key (unlikely to fail)
@@ -34,13 +35,13 @@ bbs_keygen_full (
 
 int
 bbs_keygen (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	bbs_secret_key  sk,
-	const uint8_t  *key_material,
+	const void  *key_material,
 	size_t          key_material_len,
-	const uint8_t  *key_info,
+	const void  *key_info,
 	size_t          key_info_len,
-	const uint8_t  *key_dst,
+	const void  *key_dst,
 	size_t          key_dst_len
 	)
 {
@@ -54,7 +55,7 @@ bbs_keygen (
 	if (! key_info) key_info_len = 0;
 	if (! key_dst)
 	{
-		key_dst     = (uint8_t*) cipher_suite->default_key_dst;
+		key_dst     = cipher_suite->default_key_dst;
 		key_dst_len = cipher_suite->default_key_dst_len;
 	}
 
@@ -78,7 +79,7 @@ bbs_keygen (
 
 int
 bbs_sk_to_pk (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	const bbs_secret_key      sk,
 	bbs_public_key            pk
 	)
@@ -96,7 +97,7 @@ bbs_sk_to_pk (
 
 // Accumulates onto B
 typedef struct {
-	const bbs_cipher_suite_t   *cipher_suite;
+	const bbs_ciphersuite   *cipher_suite;
 	uint8_t                generator_ctx[48 + 8];
 	union bbs_hash_context dom_ctx;
 	blst_p1 Q_1;
@@ -115,9 +116,9 @@ typedef struct {
 static void
 bbs_acc_init (
 	bbs_acc_ctx *ctx,
-	const bbs_cipher_suite_t   *s,
+	const bbs_ciphersuite   *s,
 	const bbs_public_key  pk,
-	uint64_t              num_messages
+	size_t              n
 	)
 {
 	ctx->cipher_suite = s;
@@ -127,7 +128,7 @@ bbs_acc_init (
 	// Calculate Q_1 and initialize domain calculation
 	create_generator_init (s, ctx->generator_ctx);
 	create_generator_next (s, ctx->generator_ctx, &ctx->Q_1);
-	calculate_domain_init (s, &ctx->dom_ctx, pk, num_messages);
+	calculate_domain_init (s, &ctx->dom_ctx, pk, n);
 	calculate_domain_update (s, &ctx->dom_ctx, &ctx->Q_1);
 }
 
@@ -144,11 +145,11 @@ bbs_acc_update_undisclosed (
 static void
 bbs_acc_update (
 	bbs_acc_ctx   *ctx,
-	const uint8_t *msg,
+	const void *msg,
 	size_t         msg_len
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->cipher_suite;
+	const bbs_ciphersuite *s = ctx->cipher_suite;
 	blst_p1                H_i;
 
 	bbs_acc_update_undisclosed (ctx);
@@ -163,11 +164,11 @@ bbs_acc_update (
 static void
 bbs_acc_finalize (
 	bbs_acc_ctx *ctx,
-	const uint8_t        *header,
+	const void        *header,
 	size_t              header_len
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->cipher_suite;
+	const bbs_ciphersuite *s = ctx->cipher_suite;
 
 	if (! header) header_len = 0;
 
@@ -203,10 +204,10 @@ static int bbs_check_sig_eqn(
 static void
 bbs_sign_init (
 	bbs_sign_ctx *ctx,
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	const bbs_secret_key  sk,
 	const bbs_public_key  pk,
-	uint64_t              num_messages
+	size_t              n
 	)
 {
 	hash_to_scalar_init (cipher_suite, &ctx->ch_ctx);
@@ -214,17 +215,17 @@ bbs_sign_init (
 	// testvectors but not interop, and is heuristically more secure against
 	// fault injection.
 	hash_to_scalar_update (cipher_suite, &ctx->ch_ctx, sk, BBS_SK_LEN);
-	bbs_acc_init(&ctx->acc, cipher_suite, pk, num_messages);
+	bbs_acc_init(&ctx->acc, cipher_suite, pk, n);
 }
 
 static void
 bbs_sign_update (
 	bbs_sign_ctx *ctx,
-	const uint8_t *msg,
+	const void *msg,
 	size_t msg_len
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
+	const bbs_ciphersuite *s = ctx->acc.cipher_suite;
 	uint8_t             buffer[BBS_SCALAR_LEN];
 
 	bbs_acc_update(&ctx->acc, msg, msg_len);
@@ -238,11 +239,11 @@ bbs_sign_finalize (
 	bbs_sign_ctx *ctx,
 	bbs_signature         signature,
 	const bbs_secret_key  sk,
-	const uint8_t        *header,
+	const void        *header,
 	size_t              header_len
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
+	const bbs_ciphersuite *s = ctx->acc.cipher_suite;
 	uint8_t             buffer[BBS_SCALAR_LEN];
 	blst_scalar                   e, sk_n;
 
@@ -274,7 +275,7 @@ bbs_verify_finalize (
 	bbs_acc_ctx *ctx,
 	const bbs_signature         signature,
 	const bbs_public_key  pk,
-	const uint8_t        *header,
+	const void        *header,
 	size_t              header_len
 	)
 {
@@ -292,25 +293,25 @@ bbs_verify_finalize (
 
 int
 bbs_sign_v (
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_secret_key  sk,
 	const bbs_public_key  pk,
 	bbs_signature         signature,
-	const uint8_t        *header,
+	const void        *header,
 	size_t              header_len,
-	uint64_t              num_messages,
+	size_t              n,
 	...
 	)
 {
 	bbs_sign_ctx ctx;
-	uint8_t *msg;
+	const void *msg;
 	size_t msg_len;
 	va_list                ap;
 
-	va_start (ap, num_messages);
-	bbs_sign_init(&ctx, cipher_suite, sk, pk, num_messages);
-	for(uint64_t i=0; i< num_messages; i++) {
-		msg = va_arg (ap, uint8_t*);
+	va_start (ap, n);
+	bbs_sign_init(&ctx, cipher_suite, sk, pk, n);
+	for(size_t i=0; i< n; i++) {
+		msg = va_arg (ap, const void*);
 		msg_len = va_arg (ap, size_t);
 		bbs_sign_update(&ctx, msg, msg_len);
 	}
@@ -321,21 +322,21 @@ bbs_sign_v (
 
 int
 bbs_sign (
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_secret_key  sk,
 	const bbs_public_key  pk,
 	bbs_signature         signature,
-	const uint8_t        *header,
+	const void        *header,
 	size_t                header_len,
-	uint64_t              num_messages,
-	const uint8_t *const *messages,
+	size_t                n,
+	const void *const *messages,
 	const size_t         *messages_lens
 	)
 {
 	bbs_sign_ctx ctx;
 
-	bbs_sign_init(&ctx, cipher_suite, sk, pk, num_messages);
-	for(uint64_t i=0; i< num_messages; i++) {
+	bbs_sign_init(&ctx, cipher_suite, sk, pk, n);
+	for(size_t i=0; i< n; i++) {
 		bbs_sign_update(&ctx, messages[i], messages_lens[i]);
 	}
 
@@ -344,24 +345,24 @@ bbs_sign (
 
 int
 bbs_verify_v (
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
-	const uint8_t        *header,
+	const void        *header,
 	size_t              header_len,
-	uint64_t              num_messages,
+	size_t              n,
 	...
 	)
 {
 	bbs_acc_ctx ctx;
-	uint8_t *msg;
+	const void *msg;
 	size_t msg_len;
 	va_list                ap;
 
-	va_start (ap, num_messages);
-	bbs_verify_init(&ctx, cipher_suite, pk, num_messages);
-	for(uint64_t i=0; i< num_messages; i++) {
-		msg = va_arg (ap, uint8_t*);
+	va_start (ap, n);
+	bbs_verify_init(&ctx, cipher_suite, pk, n);
+	for(size_t i=0; i< n; i++) {
+		msg = va_arg (ap, const void*);
 		msg_len = va_arg (ap, size_t);
 		bbs_verify_update(&ctx, msg, msg_len);
 	}
@@ -372,20 +373,20 @@ bbs_verify_v (
 
 int
 bbs_verify (
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
-	const uint8_t        *header,
+	const void        *header,
 	size_t                header_len,
-	uint64_t              num_messages,
-	const uint8_t *const *messages,
+	size_t              n,
+	const void *const *messages,
 	const size_t         *messages_lens
 	)
 {
 	bbs_acc_ctx ctx;
 
-	bbs_verify_init(&ctx, cipher_suite, pk, num_messages);
-	for(uint64_t i=0; i< num_messages; i++) {
+	bbs_verify_init(&ctx, cipher_suite, pk, n);
+	for(size_t i=0; i< n; i++) {
 		bbs_verify_update(&ctx, messages[i], messages_lens[i]);
 	}
 
@@ -421,13 +422,13 @@ typedef struct {
 static void
 bbs_proof_verify_init (
 	bbs_proof_gen_ctx *ctx,
-	const bbs_cipher_suite_t   *cipher_suite,
-	const bbs_public_key  pk,
-	uint64_t              num_messages,
-	uint64_t              num_disclosed
+	const bbs_ciphersuite   *cipher_suite,
+	const bbs_public_key     pk,
+	size_t                   n,
+	size_t                   num_disclosed
 	)
 {
-	bbs_acc_init(&ctx->acc, cipher_suite, pk, num_messages);
+	bbs_acc_init(&ctx->acc, cipher_suite, pk, n);
 	ctx->disclosed_ctr = ctx->undisclosed_ctr = 0;
 
 	// Initialize T2 to the identity. FIXME: Should there be an API for
@@ -437,22 +438,22 @@ bbs_proof_verify_init (
 	// Initialize Challenge Calculation
 	hash_to_scalar_init (cipher_suite, &ctx->ch_ctx);
 	uint64_t be_buffer = htobe64 (num_disclosed);
-	hash_to_scalar_update (cipher_suite, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
+	hash_to_scalar_update (cipher_suite, &ctx->ch_ctx, &be_buffer, 8);
 }
 
 // Not static, to allow Fixture tests
 void
 bbs_proof_gen_init (
 	bbs_proof_gen_ctx *ctx,
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_public_key  pk,
-	uint64_t              num_messages,
-	uint64_t              num_disclosed,
+	size_t                n,
+	size_t                num_disclosed,
 	bbs_bn_prf            prf,
 	void                 *prf_cookie
 	)
 {
-	bbs_proof_verify_init(ctx, cipher_suite, pk, num_messages, num_disclosed);
+	bbs_proof_verify_init(ctx, cipher_suite, pk, n, num_disclosed);
 	ctx->prf = prf;
 	ctx->prf_cookie = prf_cookie;
 }
@@ -461,14 +462,14 @@ bbs_proof_gen_init (
 void
 bbs_proof_gen_update (
 	bbs_proof_gen_ctx *ctx,
-	uint8_t *proof,
-	const uint8_t *msg,
+	void *proof,
+	const void *msg,
 	size_t msg_len,
 	bool disclosed
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
-	uint8_t *proof_ptr = proof + 3 * BBS_G1_ELEM_LEN + (3 + ctx->undisclosed_ctr) * BBS_SCALAR_LEN;
+	const bbs_ciphersuite *s = ctx->acc.cipher_suite;
+	uint8_t *proof_ptr = (uint8_t*)proof + 3 * BBS_G1_ELEM_LEN + (3 + ctx->undisclosed_ctr) * BBS_SCALAR_LEN;
 	bbs_acc_update(&ctx->acc, msg, msg_len);
 
 	// Write msg_scalar to the proof. This is not an overflow.
@@ -477,7 +478,7 @@ bbs_proof_gen_update (
 	if(disclosed) {
 		// This message is disclosed. Update the challenge hash
 		uint64_t be_buffer = htobe64 (ctx->disclosed_ctr + ctx->undisclosed_ctr);
-		hash_to_scalar_update(s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
+		hash_to_scalar_update(s, &ctx->ch_ctx, &be_buffer, 8);
 		hash_to_scalar_update(s, &ctx->ch_ctx, proof_ptr, BBS_SCALAR_LEN);
 		ctx->disclosed_ctr++;
 	}
@@ -497,14 +498,14 @@ bbs_proof_gen_update (
 static int
 bbs_proof_verify_update (
 	bbs_proof_gen_ctx *ctx,
-	const uint8_t *proof,
-	const uint8_t *msg,
+	const void *proof,
+	const void *msg,
 	size_t msg_len,
 	bool disclosed
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
-	const uint8_t *proof_ptr = proof + 3 * BBS_G1_ELEM_LEN + (3 + ctx->undisclosed_ctr) * BBS_SCALAR_LEN;
+	const bbs_ciphersuite *s = ctx->acc.cipher_suite;
+	const uint8_t *proof_ptr = (uint8_t*)proof + 3 * BBS_G1_ELEM_LEN + (3 + ctx->undisclosed_ctr) * BBS_SCALAR_LEN;
 	uint8_t scalar_buffer[BBS_SCALAR_LEN];
 
 	if (disclosed)
@@ -514,8 +515,8 @@ bbs_proof_verify_update (
 		bn_write_bbs (scalar_buffer, &ctx->acc.msg_scalar);
 
 		// Hash i and msg_scalar into the challenge
-		uint64_t be_buffer = htobe64 (ctx->disclosed_ctr + ctx->undisclosed_ctr);
-		hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
+		size_t be_buffer = htobe64 (ctx->disclosed_ctr + ctx->undisclosed_ctr);
+		hash_to_scalar_update (s, &ctx->ch_ctx, &be_buffer, 8);
 		hash_to_scalar_update (s, &ctx->ch_ctx, scalar_buffer, BBS_SCALAR_LEN);
 		ctx->disclosed_ctr++;
 	}
@@ -540,24 +541,24 @@ int
 bbs_proof_gen_finalize (
 	bbs_proof_gen_ctx *ctx,
 	const bbs_signature   signature,
-	uint8_t              *proof,
-	const uint8_t        *header,
+	void              *proof,
+	const void        *header,
 	size_t                header_len,
-	const uint8_t        *presentation_header,
+	const void        *presentation_header,
 	size_t                presentation_header_len,
-	uint64_t              num_messages,
+	size_t                n,
 	size_t                num_disclosed
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
+	const bbs_ciphersuite *s = ctx->acc.cipher_suite;
 	blst_scalar e, r1, r3, challenge;
 	blst_p1 D, Abar, Bbar;
 	uint8_t domain_buffer[BBS_SCALAR_LEN], T_buffer[2*BBS_G1_ELEM_LEN];
-	uint8_t *proof_ptr = proof;
+	uint8_t *proof_ptr = (uint8_t*)proof;
 
 	// Sanity check. If any indices for disclosed messages were out of order
 	// or invalid, we fail here.
-	uint64_t num_undisclosed = num_messages - num_disclosed;
+	uint64_t num_undisclosed = n - num_disclosed;
 	if (ctx->disclosed_ctr != num_disclosed || ctx->undisclosed_ctr != num_undisclosed)
 	{
 		return BBS_ERROR;
@@ -622,15 +623,14 @@ bbs_proof_gen_finalize (
 	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN);
 	hash_to_scalar_update (s, &ctx->ch_ctx, domain_buffer, BBS_SCALAR_LEN);
 	uint64_t be_buffer = htobe64 (presentation_header_len);
-	hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
+	hash_to_scalar_update (s, &ctx->ch_ctx, &be_buffer, 8);
         hash_to_scalar_update(s, &ctx->ch_ctx, presentation_header, presentation_header_len);
-        hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge,
-			(uint8_t *)s->challenge_dst, s->challenge_dst_len);
-	bn_write_bbs (proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN, &challenge);
+        hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge, s->challenge_dst, s->challenge_dst_len);
+	bn_write_bbs ((uint8_t*)proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN, &challenge);
 
         // Proof Message 3: Response
 	// We overwrite the witness and reuse e for the tilde values
-	proof_ptr = proof + 3 * BBS_G1_ELEM_LEN;
+	proof_ptr = (uint8_t*)proof + 3 * BBS_G1_ELEM_LEN;
 	for (uint64_t witness_idx = 0; witness_idx < num_undisclosed + 3; witness_idx++)
 	{
 		ctx->prf (s, &e, 0, witness_idx, ctx->prf_cookie);
@@ -652,24 +652,24 @@ static int
 bbs_proof_verify_finalize (
 	bbs_proof_gen_ctx *ctx,
 	const bbs_public_key  pk,
-	const uint8_t        *proof,
-	const uint8_t        *header,
+	const void        *proof,
+	const void        *header,
 	size_t                header_len,
-	const uint8_t        *presentation_header,
+	const void        *presentation_header,
 	size_t                presentation_header_len,
-	uint64_t              num_messages,
+	size_t                n,
 	size_t                num_disclosed
 	)
 {
-	const bbs_cipher_suite_t *s = ctx->acc.cipher_suite;
+	const bbs_ciphersuite *s = ctx->acc.cipher_suite;
 	blst_scalar e, r1, r3, challenge, challenge_prime;
 	blst_p1 D, Abar, Bbar;
 	uint8_t domain_buffer[BBS_SCALAR_LEN], T_buffer[2*BBS_G1_ELEM_LEN];
-	const uint8_t *proof_ptr  = proof;
+	const uint8_t *proof_ptr  = (const uint8_t*)proof;
 
 	// Sanity check. If any indices for disclosed messages were out of order
 	// or invalid, we fail here.
-	uint64_t num_undisclosed = num_messages - num_disclosed;
+	uint64_t num_undisclosed = n - num_disclosed;
 	if (ctx->disclosed_ctr != num_disclosed || ctx->undisclosed_ctr != num_undisclosed)
 	{
 		return BBS_ERROR;
@@ -694,7 +694,7 @@ bbs_proof_verify_finalize (
 	proof_ptr += BBS_SCALAR_LEN;
 	if(BBS_OK != bn_read_bbs (&r3,   proof_ptr)) return BBS_ERROR;
 	proof_ptr += BBS_SCALAR_LEN;
-	if(BBS_OK != bn_read_bbs (&challenge, proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN)) return BBS_ERROR;
+	if(BBS_OK != bn_read_bbs (&challenge, (const uint8_t*)proof + BBS_PROOF_LEN (num_undisclosed) - BBS_SCALAR_LEN)) return BBS_ERROR;
 
 	// Proof Message 1: Commitment (recovered from Message 3)
 	ep_mult_scalar (&ctx->acc.B, &ctx->acc.B, &challenge, 255);
@@ -715,12 +715,10 @@ bbs_proof_verify_finalize (
 	hash_to_scalar_update (s, &ctx->ch_ctx, T_buffer, 2 * BBS_G1_ELEM_LEN);
 	hash_to_scalar_update (s, &ctx->ch_ctx, domain_buffer, BBS_SCALAR_LEN);
 	uint64_t be_buffer = htobe64 (presentation_header_len);
-	hash_to_scalar_update (s, &ctx->ch_ctx, (uint8_t*) &be_buffer, 8);
+	hash_to_scalar_update (s, &ctx->ch_ctx, &be_buffer, 8);
         hash_to_scalar_update(s, &ctx->ch_ctx, presentation_header,
                               presentation_header_len);
-        hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge_prime,
-                                (uint8_t *)s->challenge_dst,
-                                s->challenge_dst_len);
+        hash_to_scalar_finalize(s, &ctx->ch_ctx, &challenge_prime, s->challenge_dst, s->challenge_dst_len);
 
         // Verification Step 1: The PoK was valid. TODO: This should be simpler
 	if (blst_sk_sub_n_check (&challenge, &challenge, &challenge_prime))
@@ -734,7 +732,7 @@ bbs_proof_verify_finalize (
 
 static void
 bbs_proof_prf (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	blst_scalar              *out,
 	uint8_t             input_type,
 	uint64_t            input,
@@ -742,10 +740,10 @@ bbs_proof_prf (
 	)
 {
 	// All these have length 17
-	static uint8_t *prf_dsts[] = {
-		(uint8_t*) "random proof sclr",
-		(uint8_t*) "random r_1 scalar",
-		(uint8_t*) "random r_3 scalar",
+	static char *prf_dsts[] = {
+		"random proof sclr",
+		"random r_1 scalar",
+		"random r_3 scalar",
 	};
 
         hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, 32, &input, 8);
@@ -753,25 +751,25 @@ bbs_proof_prf (
 
 int
 bbs_proof_gen_v (
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
-	uint8_t              *proof,
-	const uint8_t        *header,
+	void              *proof,
+	const void        *header,
 	size_t                header_len,
-	const uint8_t        *presentation_header,
+	const void        *presentation_header,
 	size_t                presentation_header_len,
-	const uint64_t       *disclosed_indexes,
+	const size_t         *disclosed_indexes,
 	size_t                disclosed_indexes_len,
-	uint64_t              num_messages,
+	size_t                n,
 	...
 	)
 {
 	va_list ap;
 	uint8_t seed[32];
 	bbs_proof_gen_ctx ctx;
-	uint64_t di_idx = 0;
-	uint8_t *msg;
+	size_t di_idx = 0;
+	const void *msg;
 	size_t msg_len;
 	bool disclosed;
 
@@ -780,42 +778,42 @@ bbs_proof_gen_v (
 	// intermediate derivations. Currently, we derive new values via
 	// hash_to_scalar, but we might want to exchange that for
 	// something faster later on.
-	getentropy(seed, 32);
+	if(getentropy(seed, 32)) return BBS_ERROR;
 
-	va_start (ap, num_messages);
-	bbs_proof_gen_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len, bbs_proof_prf, seed);
-	for(uint64_t i=0; i< num_messages; i++) {
+	va_start (ap, n);
+	bbs_proof_gen_init(&ctx, cipher_suite, pk, n, disclosed_indexes_len, bbs_proof_prf, seed);
+	for(size_t i=0; i< n; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
-		msg = va_arg (ap, uint8_t*);
+		msg = va_arg (ap, const void*);
 		msg_len = va_arg (ap, size_t);
 		bbs_proof_gen_update(&ctx, proof, msg, msg_len, disclosed);
 		if(disclosed) di_idx++;
 	}
 	va_end(ap);
 
-	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
+	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, n, disclosed_indexes_len);
 }
 
 int
 bbs_proof_gen (
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_public_key  pk,
 	const bbs_signature   signature,
-	uint8_t              *proof,
-	const uint8_t        *header,
+	void              *proof,
+	const void        *header,
 	size_t                header_len,
-	const uint8_t        *presentation_header,
+	const void        *presentation_header,
 	size_t                presentation_header_len,
-	const uint64_t       *disclosed_indexes,
+	const size_t       *disclosed_indexes,
 	size_t                disclosed_indexes_len,
-	uint64_t              num_messages,
-	const uint8_t *const *messages,
+	size_t                n,
+	const void *const *messages,
 	const size_t         *messages_lens
 	)
 {
 	uint8_t seed[32];
 	bbs_proof_gen_ctx ctx;
-	uint64_t di_idx = 0;
+	size_t di_idx = 0;
 	bool disclosed;
 
 	// Gather randomness. The seed is used for any randomness within this
@@ -823,90 +821,90 @@ bbs_proof_gen (
 	// intermediate derivations. Currently, we derive new values via
 	// hash_to_scalar, but we might want to exchange that for
 	// something faster later on.
-	getentropy(seed, 32);
+	if(getentropy(seed, 32)) return BBS_ERROR;
 
-	bbs_proof_gen_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len, bbs_proof_prf, seed);
-	for(uint64_t i=0; i< num_messages; i++) {
+	bbs_proof_gen_init(&ctx, cipher_suite, pk, n, disclosed_indexes_len, bbs_proof_prf, seed);
+	for(size_t i=0; i< n; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
 		bbs_proof_gen_update(&ctx, proof, messages[i], messages_lens[i], disclosed);
 		if(disclosed) di_idx++;
 	}
 
-	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
+	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, n, disclosed_indexes_len);
 }
 
 int
 bbs_proof_verify_v (
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_public_key        pk,
-	const uint8_t              *proof,
+	const void              *proof,
 	size_t                      proof_len,
-	const uint8_t              *header,
+	const void              *header,
 	size_t                      header_len,
-	const uint8_t              *presentation_header,
+	const void              *presentation_header,
 	size_t                      presentation_header_len,
-	const uint64_t             *disclosed_indexes,
+	const size_t               *disclosed_indexes,
 	size_t                      disclosed_indexes_len,
-	uint64_t                    num_messages,
+	size_t                      n,
 	...
 	)
 {
 	va_list                ap;
 	bbs_proof_gen_ctx ctx;
-	uint64_t di_idx = 0;
-	uint8_t *msg = NULL;
+	size_t di_idx = 0;
+	const void *msg = NULL;
 	size_t msg_len = 0;
 	bool disclosed;
 
 	// Sanity check
-	if(proof_len != BBS_PROOF_LEN(num_messages - disclosed_indexes_len)) return BBS_ERROR;
+	if(proof_len != BBS_PROOF_LEN(n - disclosed_indexes_len)) return BBS_ERROR;
 
-	va_start (ap, num_messages);
-	bbs_proof_verify_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len);
-	for(uint64_t i=0; i< num_messages; i++) {
+	va_start (ap, n);
+	bbs_proof_verify_init(&ctx, cipher_suite, pk, n, disclosed_indexes_len);
+	for(size_t i=0; i< n; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
 		if(disclosed) {
 			di_idx++;
-			msg = va_arg (ap, uint8_t*);
+			msg = va_arg (ap, const void*);
 			msg_len = va_arg (ap, size_t);
 		}
 		bbs_proof_verify_update(&ctx, proof, msg, msg_len, disclosed);
 	}
 	va_end(ap);
 
-	return bbs_proof_verify_finalize(&ctx, pk, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
+	return bbs_proof_verify_finalize(&ctx, pk, proof, header, header_len, presentation_header, presentation_header_len, n, disclosed_indexes_len);
 }
 
 int
 bbs_proof_verify (
-	const bbs_cipher_suite_t *cipher_suite,
-	const bbs_public_key      pk,
-	const uint8_t            *proof,
-	size_t                    proof_len,
-	const uint8_t            *header,
-	size_t                    header_len,
-	const uint8_t            *presentation_header,
-	size_t                    presentation_header_len,
-	const uint64_t           *disclosed_indexes,
-	size_t                    disclosed_indexes_len,
-	uint64_t                  num_messages,
-	const uint8_t *const     *messages,
-	const size_t             *messages_lens
+	const bbs_ciphersuite *cipher_suite,
+	const bbs_public_key   pk,
+	const void            *proof,
+	size_t                 proof_len,
+	const void            *header,
+	size_t                 header_len,
+	const void            *presentation_header,
+	size_t                 presentation_header_len,
+	const size_t          *disclosed_indexes,
+	size_t                 disclosed_indexes_len,
+	size_t                 n,
+	const void *const     *messages,
+	const size_t          *messages_lens
 	)
 {
 	bbs_proof_gen_ctx ctx;
-	uint64_t di_idx = 0;
+	size_t di_idx = 0;
 	bool disclosed;
 
 	// Sanity check
-	if(proof_len != BBS_PROOF_LEN(num_messages - disclosed_indexes_len)) return BBS_ERROR;
+	if(proof_len != BBS_PROOF_LEN(n - disclosed_indexes_len)) return BBS_ERROR;
 
-	bbs_proof_verify_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len);
-	for(uint64_t i=0; i< num_messages; i++) {
+	bbs_proof_verify_init(&ctx, cipher_suite, pk, n, disclosed_indexes_len);
+	for(size_t i=0; i< n; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
 		bbs_proof_verify_update(&ctx, proof, messages[di_idx], messages_lens[di_idx], disclosed);
 		if(disclosed) di_idx++;
 	}
 
-	return bbs_proof_verify_finalize(&ctx, pk, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
+	return bbs_proof_verify_finalize(&ctx, pk, proof, header, header_len, presentation_header, presentation_header_len, n, disclosed_indexes_len);
 }

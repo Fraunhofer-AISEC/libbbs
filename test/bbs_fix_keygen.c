@@ -8,7 +8,7 @@ bbs_fix_keygen ()
 	bbs_public_key pk;
 
 	for(size_t i=0; i < vectors_keygen_len; i++) {
-		if (BBS_OK != bbs_keygen(*fixture_cipher_suite,
+		if (BBS_OK != bbs_keygen(*fixture_ciphersuite,
 					sk,
 					vectors_keygen[i].key_material,
 					vectors_keygen[i].key_material_len,
@@ -25,7 +25,7 @@ bbs_fix_keygen ()
 				vectors_keygen[i].result_sk,
 				sizeof(vectors_keygen[i].result_sk));
 
-		if (BBS_OK != bbs_sk_to_pk (*fixture_cipher_suite,
+		if (BBS_OK != bbs_sk_to_pk (*fixture_ciphersuite,
 					vectors_keygen[i].result_sk,
 					pk))
 		{

@@ -114,9 +114,9 @@ int main(int argc, char **argv) {
 	// Argument parsing
 	if(argc != 3) { printf("Usage: %s <ciphersuite> <source_dir>\n", argv[0]); exit(0); }
 	if     (!strcmp(argv[1], "bls12-381-sha-256"))
-		cipher_suite = "bbs_sha256_cipher_suite";
+		cipher_suite = "bbs_sha256_ciphersuite";
 	else if(!strcmp(argv[1], "bls12-381-shake-256"))
-		cipher_suite = "bbs_shake256_cipher_suite";
+		cipher_suite = "bbs_shake256_ciphersuite";
 	else fail("Invalid Cipher Suite");
 
 	// Open directory and outfile
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 	fprintf(out, "#include \"fixtures.h\"\n\n");
 
 	// Ciphersuite
-	fprintf(out, "const bbs_cipher_suite_t *const *const fixture_cipher_suite = &%s; \n\n", cipher_suite);
+	fprintf(out, "const bbs_ciphersuite *const *const fixture_ciphersuite = &%s; \n\n", cipher_suite);
 
 	// Hash to Scalar
 	f = read_file(dirfd, "MapMessageToScalarAsHash.json");
@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
 			fprintf(out, ";\nstatic const uint8_t signature%d_msg%d[] = ", filenum, i++);
 			print_hex_str(k, out);
 		}
-		fprintf(out, ";\nstatic const uint8_t *const signature%d_msgs[] = {", filenum);
+		fprintf(out, ";\nstatic const void *const signature%d_msgs[] = {", filenum);
 		for(int ii=0; ii<i; ii++) fprintf(out, "signature%d_msg%d, ", filenum, ii);
 		fprintf(out, "};\nstatic const size_t signature%d_msg_lens[] = {", filenum);
 		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
 			fprintf(out, ";\nstatic const uint8_t proof%d_msg%d[] = ", filenum, i++);
 			print_hex_str(k, out);
 		}
-		fprintf(out, ";\nstatic const uint8_t *const proof%d_msgs[] = {", filenum);
+		fprintf(out, ";\nstatic const void *const proof%d_msgs[] = {", filenum);
 		for(int ii=0; ii<i; ii++) fprintf(out, "proof%d_msg%d, ", filenum, ii);
 		fprintf(out, "};\nstatic const size_t proof%d_msg_lens[] = {", filenum);
 		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {

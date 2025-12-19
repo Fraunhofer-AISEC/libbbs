@@ -1,9 +1,9 @@
 BBS_0.1 {
 	global:
-		bbs_init; bbs_deinit; bbs_keygen_full; bbs_keygen; bbs_sk_to_pk;
-		bbs_sign; bbs_verify; bbs_proof_gen; bbs_proof_verify;
-		bbs_sign_v; bbs_verify_v; bbs_proof_gen_v; bbs_proof_verify_v;
-		bbs_sha256_cipher_suite; bbs_shake256_cipher_suite;
+		bbs_keygen_full; bbs_keygen; bbs_sk_to_pk; bbs_sign; bbs_verify;
+		bbs_proof_gen; bbs_proof_verify; bbs_sign_v; bbs_verify_v;
+		bbs_proof_gen_v; bbs_proof_verify_v; bbs_sha256_ciphersuite;
+		bbs_shake256_ciphersuite;
 	local:
 		*;
 };

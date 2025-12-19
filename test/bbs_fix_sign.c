@@ -10,7 +10,7 @@ bbs_fix_sign ()
 		// Do not try to recreate invalid signatures
 		if(!vectors_signature[i].result_valid) continue;
 
-		if (BBS_OK != bbs_sign(*fixture_cipher_suite,
+		if (BBS_OK != bbs_sign(*fixture_ciphersuite,
 					vectors_signature[i].sk,
 					vectors_signature[i].pk,
 					sig,

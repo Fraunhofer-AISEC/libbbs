@@ -13,7 +13,7 @@
 // BEGIN declarations of bbs.c
 // These are usually static, but made global in a modified library
 typedef struct {
-	const bbs_cipher_suite_t   *cipher_suite;
+	const bbs_ciphersuite   *cipher_suite;
 	uint8_t                generator_ctx[48 + 8];
 	union bbs_hash_context dom_ctx;
 	blst_p1 Q_1;
@@ -35,7 +35,7 @@ typedef struct {
 void
 bbs_proof_gen_init (
 	bbs_proof_gen_ctx *ctx,
-	const bbs_cipher_suite_t   *cipher_suite,
+	const bbs_ciphersuite   *cipher_suite,
 	const bbs_public_key  pk,
 	uint64_t              num_messages,
 	uint64_t              num_disclosed,
@@ -45,8 +45,8 @@ bbs_proof_gen_init (
 void
 bbs_proof_gen_update (
 	bbs_proof_gen_ctx *ctx,
-	uint8_t *proof,
-	const uint8_t *msg,
+	void *proof,
+	const void *msg,
 	size_t msg_len,
 	bool disclosed
 	);
@@ -54,10 +54,10 @@ int
 bbs_proof_gen_finalize (
 	bbs_proof_gen_ctx *ctx,
 	const bbs_signature   signature,
-	uint8_t              *proof,
-	const uint8_t        *header,
+	void              *proof,
+	const void        *header,
 	size_t                header_len,
-	const uint8_t        *presentation_header,
+	const void        *presentation_header,
 	size_t                presentation_header_len,
 	uint64_t              num_messages,
 	size_t                num_disclosed
@@ -70,7 +70,7 @@ bbs_proof_gen_finalize (
 // (0,x) -> rand[x+2], (1,0) -> rand[0], (2,0) -> rand[1]
 void
 mocked_prf (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	blst_scalar              *out,
 	uint8_t             input_type,
 	uint64_t            input,
@@ -92,23 +92,23 @@ mocked_prf (
 // also prepares some randomness and uses mocked_prf instead of bbs_proof_prf.
 int
 mocked_proof_gen (
-	const bbs_cipher_suite_t *cipher_suite,
-	const bbs_public_key      pk,
-	const bbs_signature       signature,
-	uint8_t                  *proof,
-	const uint8_t            *header,
-	size_t                    header_len,
-	const uint8_t            *presentation_header,
-	size_t                    presentation_header_len,
-	const uint64_t           *disclosed_indexes,
-	size_t                    disclosed_indexes_len,
-	uint64_t                  num_messages,
-	const uint8_t *const     *messages,
-	const size_t             *messages_lens,
-	const uint8_t            *mocking_seed,
-	size_t                    mocking_seed_len,
-	const uint8_t            *mocking_dst,
-	size_t                    mocking_dst_len
+	const bbs_ciphersuite *cipher_suite,
+	const bbs_public_key   pk,
+	const bbs_signature    signature,
+	void                  *proof,
+	const void            *header,
+	size_t                 header_len,
+	const void            *presentation_header,
+	size_t                 presentation_header_len,
+	const uint64_t        *disclosed_indexes,
+	size_t                 disclosed_indexes_len,
+	uint64_t               num_messages,
+	const void *const     *messages,
+	const size_t          *messages_lens,
+	const void            *mocking_seed,
+	size_t                 mocking_seed_len,
+	const void            *mocking_dst,
+	size_t                 mocking_dst_len
 	)
 {
 	union bbs_hash_context h_ctx;
@@ -145,18 +145,18 @@ bbs_fix_proof_gen ()
 	for(size_t i=0; i < vectors_mocked_scalars_len; i++) {
 		uint8_t rand[vectors_mocked_scalars[i].result_len * 48];
 
-		(*fixture_cipher_suite)->expand_message_init(&ctx);
-		(*fixture_cipher_suite)->expand_message_update(&ctx,
+		(*fixture_ciphersuite)->expand_message_init(&ctx);
+		(*fixture_ciphersuite)->expand_message_update(&ctx,
 				vectors_mocked_scalars[i].seed,
 				vectors_mocked_scalars[i].seed_len);
-		(*fixture_cipher_suite)->expand_message_finalize(&ctx, rand,
+		(*fixture_ciphersuite)->expand_message_finalize(&ctx, rand,
 				vectors_mocked_scalars[i].result_len * 48,
 				vectors_mocked_scalars[i].dst,
 				vectors_mocked_scalars[i].dst_len);
 
 		for (size_t j = 0; j < vectors_mocked_scalars[i].result_len; j++) {
-			if(j<2) mocked_prf(*fixture_cipher_suite, &s, j+1, 0, rand);
-			else    mocked_prf(*fixture_cipher_suite, &s, 0, j-2, rand);
+			if(j<2) mocked_prf(*fixture_ciphersuite, &s, j+1, 0, rand);
+			else    mocked_prf(*fixture_ciphersuite, &s, 0, j-2, rand);
 			bn_write_bbs (s_buffer, &s);
 
 			ASSERT_EQ_PTR ("mocked scalar",
@@ -172,7 +172,7 @@ bbs_fix_proof_gen ()
 		if(!vectors_proof[i].result_valid) continue;
 		uint8_t proof[vectors_proof[i].result_len];
 
-		if (BBS_OK != mocked_proof_gen(*fixture_cipher_suite,
+		if (BBS_OK != mocked_proof_gen(*fixture_ciphersuite,
 					vectors_proof[i].pk,
 					vectors_proof[i].signature,
 					proof,

@@ -6,7 +6,7 @@
 int
 bbs_e2e_sign_n_proof ()
 {
-	const bbs_cipher_suite_t *suite = *fixture_cipher_suite;
+	const bbs_ciphersuite *suite = *fixture_ciphersuite;
 
 	bbs_secret_key sk;
 	bbs_public_key pk;

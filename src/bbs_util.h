@@ -16,7 +16,7 @@
 // RFC draft.
 
 #define LEN(m)          (sizeof(m) / sizeof(m[0]))
-#define DEBUG(p, a, l)  do { puts (p); for (size_t xx = 0; xx<l; xx++) printf ("%02x ", a[xx]); \
+#define DEBUG(p, a, l)  do { puts (p); for (size_t xx = 0; xx<l; xx++) printf ("%02x ", ((uint8_t*)a)[xx]); \
 			     puts (""); } while (0);
 #define RLC_ASSERT(expr) RLC_TRY { expr ; } RLC_CATCH_ANY { assert(0); }
 
@@ -33,7 +33,7 @@ union bbs_hash_context {
 /// @brief BBS cipher suite interface
 /// @note Strategy pattern to dispatch to the correct hash function for the
 /// cipher suite, keeping the same overall control flow for the caller.
-struct bbs_cipher_suite
+struct _bbs_ciphersuite
 {
 	uint8_t p1[BBS_G1_ELEM_LEN];
 
@@ -43,29 +43,29 @@ struct bbs_cipher_suite
 		);
 	void (*expand_message_update) (
 		union bbs_hash_context *ctx,
-		const uint8_t *msg,
+		const void  *msg,
 		size_t       msg_len
 		);
 	void (*expand_message_finalize) (
 		union bbs_hash_context *ctx,
-		uint8_t       *out,
+		void          *out,
 		uint16_t       out_len, // WARNING: only supports up to 255*256
-		const uint8_t *dst,
-		size_t        dst_len
+		const void    *dst,
+		size_t         dst_len
 		);
 
 	/// DST
-	const uint8_t *cipher_suite_id;
+	const void *cipher_suite_id;
 	size_t  cipher_suite_id_len;
-	const uint8_t *default_key_dst;
+	const void *default_key_dst;
 	size_t  default_key_dst_len;
-	const uint8_t *api_id;
+	const void *api_id;
 	size_t  api_id_len;
-	const uint8_t *signature_dst;
+	const void *signature_dst;
 	size_t  signature_dst_len;
-	const uint8_t *challenge_dst;
+	const void *challenge_dst;
 	size_t  challenge_dst_len;
-	const uint8_t *map_dst;
+	const void *map_dst;
 	size_t  map_dst_len;
 };
 
@@ -112,54 +112,54 @@ int ep2_read_bbs (
 
 // Hash to Scalar
 void hash_to_scalar_init (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx
 	);
 
 void hash_to_scalar_update (
-	const bbs_cipher_suite_t *cipher_suite,
-	union bbs_hash_context *ctx,
-	const uint8_t      *msg,
-	size_t              msg_len
+	const bbs_ciphersuite *cipher_suite,
+	union bbs_hash_context   *ctx,
+	const void               *msg,
+	size_t                    msg_len
 	);
 
 void hash_to_scalar_finalize (
-	const bbs_cipher_suite_t *cipher_suite,
-	union bbs_hash_context *ctx,
-	blst_scalar                *out,
-	const uint8_t      *dst,
-	size_t              dst_len
+	const bbs_ciphersuite *cipher_suite,
+	union bbs_hash_context   *ctx,
+	blst_scalar              *out,
+	const void               *dst,
+	size_t                    dst_len
 	);
 
 void hash_to_scalar (
-	const bbs_cipher_suite_t *cipher_suite,
-	blst_scalar                *out,
-	const uint8_t      *dst,
-	size_t               dst_len,
-	uint64_t            num_messages,
+	const bbs_ciphersuite *cipher_suite,
+	blst_scalar              *out,
+	const void               *dst,
+	size_t                    dst_len,
+	uint64_t                  num_messages,
 	...
 	);
 
 // you need to call update exactly num_messages + 1 times.
 void calculate_domain_init (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx,
 	const uint8_t       pk[BBS_PK_LEN],
 	uint64_t            num_messages
 	);
 
 void calculate_domain_update (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context *ctx,
 	const blst_p1          *generator
 	);
 
 void calculate_domain_finalize (
-	const bbs_cipher_suite_t *cipher_suite,
-	union bbs_hash_context *ctx,
-	blst_scalar                *out,
-	const uint8_t      *header,
-	size_t            header_len
+	const bbs_ciphersuite *cipher_suite,
+	union bbs_hash_context   *ctx,
+	blst_scalar              *out,
+	const void               *header,
+	size_t                    header_len
 	);
 
 
@@ -171,7 +171,7 @@ void calculate_domain_finalize (
  * @note Always supply the same api_id to next as you did to init
 */
 void create_generator_init (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	uint8_t             state[48 + 8]
 	);
 
@@ -184,7 +184,7 @@ void create_generator_init (
  * @note Always supply the same api_id to next as you did to init
  */
 void create_generator_next (
-	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_ciphersuite *cipher_suite,
 	uint8_t             state[48 + 8],
 	blst_p1                *generator
 	);
@@ -199,11 +199,11 @@ void create_generator_next (
 // message scalar, other scalars have input 0 and input_type i indicates the
 // i-th such scalar. This is because there may be up to 2^64 messages, bringing
 // the total possible message count slightly above 2^64.
-typedef void (bbs_bn_prf)(const bbs_cipher_suite_t *cipher_suite,
-			 blst_scalar                *out,
-			 uint8_t             input_type,
-			 uint64_t            input,
-			 void               *cookie
+typedef void (bbs_bn_prf)(const bbs_ciphersuite *cipher_suite,
+			 blst_scalar               *out,
+			 uint8_t                    input_type,
+			 uint64_t                   input,
+			 void                      *cookie
 			 );
 
 #endif /*BBS_UTIL_H*/

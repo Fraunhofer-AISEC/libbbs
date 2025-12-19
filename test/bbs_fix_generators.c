@@ -9,10 +9,10 @@ bbs_fix_generators ()
 	uint8_t g_buffer[BBS_G1_ELEM_LEN];
 
 	for(size_t i=0; i < vectors_generators_len; i++) {
-		create_generator_init (*fixture_cipher_suite, state);
+		create_generator_init (*fixture_ciphersuite, state);
 
 		for (size_t j = 0; j < vectors_generators[i].result_len; j++) {
-			create_generator_next (*fixture_cipher_suite, state, &g);
+			create_generator_next (*fixture_ciphersuite, state, &g);
 			ep_write_bbs (g_buffer, &g);
 
 			ASSERT_EQ_PTR ("generator",

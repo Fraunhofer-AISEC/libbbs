@@ -10,7 +10,7 @@
 int
 bbs_bench_individual ()
 {
-	const bbs_cipher_suite_t *cipher_suite = *fixture_cipher_suite;
+	const bbs_ciphersuite *cipher_suite = *fixture_ciphersuite;
 
 	#define USE_HEADER                          0
 

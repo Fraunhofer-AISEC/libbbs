@@ -16,7 +16,7 @@ bbs_bench_e2e ()
 	#define USE_HEADER       0
 	char msg1[MSG_LEN_END];
 	char msg2[MSG_LEN_END];
-	const bbs_cipher_suite_t *suite = *fixture_cipher_suite;
+	const bbs_ciphersuite *suite = *fixture_ciphersuite;
 	for (int j = 0; j < MSG_LEN_END; j++)
 	{
 		msg1[j] = (char) rand ();

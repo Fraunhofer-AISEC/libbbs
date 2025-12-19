@@ -8,7 +8,7 @@ bbs_fix_hash_to_scalar ()
 	uint8_t s_buffer[BBS_SCALAR_LEN];
 
 	for(size_t i=0; i < vectors_hash_to_scalar_len; i++) {
-		hash_to_scalar (*fixture_cipher_suite,
+		hash_to_scalar (*fixture_ciphersuite,
 				&s,
 				vectors_hash_to_scalar[i].dst,
 				vectors_hash_to_scalar[i].dst_len,
