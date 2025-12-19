@@ -44,4 +44,5 @@ add_subdirectory(test)
 
 install(TARGETS bbs)
 install(FILES include/bbs.h TYPE INCLUDE)
+install(DIRECTORY doc/man3 doc/man7 TYPE MAN)
 

@@ -1,0 +1,149 @@
+.TH bbs_proof_gen 3 2025-12-17 libbbs
+.SH NAME
+bbs_proof_gen, bbs_proof_verify \- create and verify zero knowledge proofs for
+the BBS signature scheme
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs.h>
+.P
+.BR "int bbs_proof_gen(" "size_t n;"
+.BI "                  const bbs_ciphersuite * " ciphersuite ","
+.BI "                  const bbs_public_key " pk ","
+.BI "                  const bbs_signature " signature ", void * " proof ","
+.BI "                  const void * " header ", size_t " header_len ","
+.BI "                  const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                  const size_t * " disclosed_indexes ", size_t " disclosed_indexes_len ","
+.BI "                  size_t " n ","
+.BI "                  const void *const " messages [ n "], const size_t " messages_lens [ n "]);"
+.BR "int bbs_proof_verify(" "size_t disclosed_indexes_len;"
+.BI "                     const bbs_ciphersuite * " ciphersuite ","
+.BI "                     const bbs_public_key " pk ","
+.BI "                     const void * " proof ", size_t " proof_len ","
+.BI "                     const void * " header ", size_t " header_len ","
+.BI "                     const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                     const size_t * " disclosed_indexes ", size_t " disclosed_indexes_len ","
+.BI "                     size_t " n ","
+.BI "                     const void *const " messages [ disclosed_indexes_len "],"
+.BI "                     const size_t " messages_lens [ disclosed_indexed_len "]);"
+.fi
+.SH DESCRIPTION
+The BBS proof functions create and verify a basic BBS zero knowledge proof over
+the
+.I n
+(at most 2^64) messages in
+.I messages,
+which have lengths
+.I messages_lens.
+The
+.I disclosed_indexes_len
+messages whose indices are given in ascending order by
+.I disclosed_indexes
+need not be provided to the verification function, but the authenticity of the
+remaining (disclosed) messages is still guaranteed. The special message
+.I header
+of length
+.I header_len
+must always be revealed.
+.P
+Two proofs do not themselves disclose whether or not they are derived from the
+same signature. However, information contained within the messages may enable
+such correlation.
+.P
+BBS proofs act as a simple kind of signature scheme. With every proof, a special
+message
+.I presentation_header
+of length
+.I presentation_header_len
+may be authenticated. This feature may be used to prevent replay of proofs by
+incorporating a challenge nonce in
+.I presentation_header.
+Note that anyone in possession of a valid signature can generate corresponding
+proofs. Consequently,
+.I the signature should never be disclosed directly.
+.P
+The length of a BBS proof is given by the macro
+.I BBS_PROOF_LEN(num_undisclosed)
+where
+.I num_undisclosed
+is the number of messages you do not wish to disclose, given by
+.I n
+-
+.I disclosed_indexes_len.
+.P
+All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+.SS bbs_proof_gen()
+The
+.BR bbs_proof_gen ()
+function creates a selective disclosure proof 
+.I proof
+given a public key
+.I pk
+and a valid signature for the
+.I messages,
+which have to be provided in the same order as during the signature operation.
+All signed messages have to be provided, including those which are not to be
+revealed.
+.SS bbs_proof_verify()
+The
+.BR bbs_proof_verify ()
+function verifies that a given
+.I proof
+was created from a signature which would have validated using public key
+.I pk.
+Further, it asserts that the messages originally at indices
+.I disclosed_indexes
+are equal to the ones in
+.I messages.
+You should provide the length of the proof as seen on the network in
+.I proof_len.
+.P
+Note that the number of messages in
+.I messages
+must be equal to the number of disclosed messages,
+.I disclosed_indexes_len,
+not the total number of messages,
+.I n.
+.SH RETURN VALUE
+All BBS functions return
+.BR BBS_OK
+on success. All other return values denote an error, the exact meaning of which
+may change in the future.
+.SH ATTRIBUTES
+For an explanation of the terms used in this section, see
+.BR attribute (7).
+.TS
+allbox;
+lbx lb lb
+l l l.
+Interface	Attribute	Value
+T{
+.na
+.nh
+.BR bbs_proof_gen (),
+.BR bbs_proof_verify ()
+T}	Thread safety	MT-Safe
+.TE
+.SH STANDARDS
+The
+.BR bbs_proof_gen ()
+and
+.BR bbs_proof_verify ()
+functions implement the corresponding algorithms from
+.I draft-irtf-cfrg-bbs-signatures-09.
+.SH CAVEATS
+The
+.BR bbs_proof_gen ()
+function emits a call to the POSIX 2024.1-2024 function
+.BR getentropy (3).
+On non-POSIX systems, this function has to be provided by the application at
+link-time.
+.SH SEE ALSO
+.BR bbs (7),
+.BR bbs_ciphersuite (3),
+.BR bbs_keygen (3)
+.BR bbs_sign (3)

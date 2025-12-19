@@ -1,0 +1,194 @@
+.TH bbs 7 2025-12-17 libbbs
+.SH NAME
+bbs \- libbbs: C library for the Boneh-Boyen-Shacham (BBS) signature scheme
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs, \~ \-lbbs )
+.SH INTRODUCTION
+The BBS signature library ("libbbs") provides a C implementation of the
+signature scheme originally by Boneh, Boyen and Shacham, known as BBS.
+.P
+BBS signatures are multi-message signatures, meaning that a single message
+covers multiple (usually small) messages. These signatures, unintuitively, are
+not supposed to be disclosed to verifiers. Instead, BBS signatures provide a
+dedicated mechanism to "prove" to a verifier that one is in possession of a
+valid signature whose messages fulfill certain properties.
+.P
+As a basic example, given a signature over two messages, it is possible to
+disclose only the first message to a verifier while keeping the second message
+secret. In this scenario, a traditional signature verification function cannot
+assert the authenticity of the first message. However, BBS allows to construct a
+proof of the authenticity from the signature, which the verifier can validate
+without knowledge of the second message.
+.P
+This overview is intended to give a rough overview of the functionality provided
+by "libbbs", the C library implementing the RFC-to-be. It is written to be
+extendable and does not use memory management or the standard library, apart
+from calls to
+.BR getentropy (3).
+See CAVEATS below.
+.P
+All functions and types of this library are defined in
+.I <bbs.h>.
+.SH TYPES
+.SS bbs_secret_key
+The
+.BR bbs_secret_key
+type holds a secret key. It is used exclusively for creating signatures
+with
+.BR bbs_sign (3)
+and for deriving a public key with
+.BR bbs_sk_to_pk (3).
+The memory associated with a
+.BR bbs_secret_key
+should be overwritten after use.
+.SS bbs_public_key
+The
+.BR bbs_public_key
+type holds a public key. It is necessary for the creation and verification of
+both signatures and proofs. Public keys are typically not considered sensitive.
+.SS bbs_signature
+The
+.BR bbs_signature
+type holds a signature. It is created by
+.BR bbs_sign (3)
+and can be used to produce BBS proofs with
+.BR bbs_proof_gen (3).
+.I BBS signatures are considered sensitive
+and may
+.I never
+be shared. This is because the proof mechanism is technically a simple signature
+scheme in itself, for which a valid signature acts as the secret key.
+Consequently, proving possession of a valid signature with certain properties
+can be taken as a means to authenticate oneself.
+.SS proofs
+A BBS proof does not have a fixed size. Instead, its size depends on the number
+of messages which are not disclosed. You may declare space for a BBS proof as
+.I uint8_t proof[BBS_PROOF_LEN(num_undisclosed)].
+.P
+BBS proofs are themselves signature schemes, which allows you to bind them to a
+message, such as a nonce for freshness of authentication.
+See the
+.I presentation_header
+parameter in
+.BR bbs_proof_gen (3).
+.SS bbs_ciphersuite
+The BBS signature scheme requires several internal parameters which are bundled
+in cipher suites. Typically, any given protocol will only use one such cipher
+suite at any given time. Applications should not worry about the exact choice
+presently, but need to use the same one for interoperability.
+.P
+The currently implemented cipher suites are:
+.IP bbs_sha256_ciphersuite
+The BLS12-381-SHA-256 ciphersuite
+.IP bbs_shake256_ciphersuite
+The BLS12-381-SHAKE-256 ciphersuite
+.SH FUNCTION OVERVIEW
+.SS bbs_keygen()
+.SS bbs_sk_to_pk()
+.SS bbs_keygen_full()
+These functions are used to generate a secret and public key for use with the
+algorithms below.
+.SS bbs_sign()
+.SS bbs_verify()
+These functions are used to digitally sign resp. verify an array of messages. A
+special message, called the
+.I header,
+is required to always be disclosed to any verifiers.
+.SS bbs_proof_gen()
+.SS bbs_proof_verify()
+These functions create and verify basic BBS selective disclosure proofs from a
+given signature. The signature's
+.I header
+always has to be disclosed. These functions act like a simple signature scheme
+in themselves, and you can sign a message, called the
+.I presentation_header
+with every proof you create.
+.SS bbs_sign_v()
+.SS bbs_verify_v()
+.SS bbs_proof_gen_v()
+.SS bbs_proof_verify_v()
+Varargs APIs of the above for simple integration into applications.
+.SH EXAMPLES
+The following example creates a signature on two messages, verifies it, and then
+creates a proof to disclose only the first message:
+.EX
+#include <bbs.h>
+\&
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+\&
+int main(void) {
+	const bbs_ciphersuite *s = bbs_sha256_ciphersuite;
+\&
+	bbs_secret_key sk;
+	bbs_public_key pk;
+	bbs_signature sig;
+	uint8_t proof[BBS_PROOF_LEN(1)];
+\&
+	char *head = "I am always disclosed!";
+	char *phdr = "I am a nonce!";
+	char *msg1 = "Message 1";
+	char *msg2 = "Message 2";
+	uint64_t disclosed_idxs[1] = {0};
+\&
+	if(BBS_OK != bbs_keygen_full(s, sk, pk)) {
+		perror("bbs_keygen_full");
+		return EXIT_FAILURE;
+	}
+\&
+	if(BBS_OK != bbs_sign_v(s, sk, pk, sig, head, strlen(head), 2,
+			msg1, strlen(msg1),
+			msg2, strlen(msg2))) {
+		perror("bbs_sign_v");
+		return EXIT_FAILURE;
+	}
+\&
+	if(BBS_OK != bbs_verify_v(s, pk, sig, head, strlen(head), 2,
+			msg1, strlen(msg1),
+			msg2, strlen(msg2))) {
+		perror("bbs_verify_v");
+		return EXIT_FAILURE;
+	}
+\&
+	if(BBS_OK != bbs_proof_gen_v(s, pk, sig, proof,
+			head, strlen(head),
+			phdr, strlen(phdr), disclosed_idxs, 1, 2,
+			msg1, strlen(msg1),
+			msg2, strlen(msg2))) {
+		perror("bbs_proof_gen_v");
+		return EXIT_FAILURE;
+	}
+\&
+	if(BBS_OK != bbs_proof_verify_v(s, pk, proof, sizeof(proof),
+			head, strlen(head),
+			phdr, strlen(phdr), disclosed_idxs, 1, 2,
+			msg1, strlen(msg1)
+			/* msg2 is not disclosed */)) {
+		perror("bbs_proof_verify_v");
+		return EXIT_FAILURE;
+	}
+\&
+	/* Erase secrets from memory */
+	memset_explicit(sk,  0, sizeof(sk));
+	memset_explicit(sig, 0, sizeof(sig));
+\&
+	return EXIT_SUCCESS;
+}
+.EE
+.SH CAVEATS
+Some functions emit a call to the POSIX 2024.1-2024 function
+.BR getentropy (3).
+On non-POSIX systems, this function has to be provided by the application at
+link-time.
+.SH REPORTING BUGS
+Bugs can be reported at 
+.UR https://github.com/Fraunhofer-AISEC/libbbs
+.UE .
+.SH SEE ALSO
+.BR bbs_keygen (3),
+.BR bbs_sign (3),
+.BR bbs_proof_gen (3),
+.BR getentropy (3)

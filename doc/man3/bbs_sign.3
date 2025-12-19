@@ -1,0 +1,100 @@
+.TH bbs_sign 3 2025-12-17 libbbs
+.SH NAME
+bbs_sign, bbs_verify \- create and verify signatures for the BBS signature scheme
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs.h>
+.P
+.BR "int bbs_sign(" "size_t n;"
+.BI "             const bbs_ciphersuite * " ciphersuite ", const bbs_secret_key " sk ","
+.BI "             const bbs_public_key " pk ", bbs_signature " signature ","
+.BI "             const void * " header ", size_t " header_len ", size_t " n ","
+.BI "             const void *const " messages [ n "], const size_t " messages_lens [ n "]);"
+.BR "int bbs_verify(" "size_t n;"
+.BI "               const bbs_ciphersuite * " ciphersuite ","
+.BI "               const bbs_public_key " pk ", const bbs_signature " signature ","
+.BI "               const void * " header ", size_t " header_len ", size_t " n ","
+.BI "               const void *const " messages [ n "], const size_t " messages_lens [ n "]);"
+.fi
+.SH DESCRIPTION
+The BBS signature functions create and verify a basic BBS signature over the
+.I n
+(at most 2^64) messages in
+.I messages,
+which have lengths
+.I messages_lens.
+These functions assume that all messages to be signed are provided to the signer.
+.P
+Using
+.BR bbs_proof_gen (3),
+the
+.I signature
+allows to create proofs of its validity while disclosing only arbitrary subsets
+of the
+.I messages.
+For this reason, the
+.I signature
+is considered sensitive.
+The special message
+.I header
+of length
+.I header_len
+will always have to be disclosed if present.
+.P
+All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+.SS bbs_sign()
+Sign the given
+.I messages
+using the provided secret key
+.I sk
+and the corresponding public key
+.I pk.
+Store the result in
+.I signature.
+.SS bbs_verify()
+Verify that
+.I signature
+given is a valid signature for the given
+.I messages
+using the public key
+.I pk.
+The
+.I messages
+need to have the same order as in the corresponding signature operation, and all
+messages must be present.
+.SH RETURN VALUE
+All BBS functions return
+.BR BBS_OK
+on success. All other return values denote an error, the exact meaning of which
+may change in the future.
+.SH ATTRIBUTES
+For an explanation of the terms used in this section, see
+.BR attribute (7).
+.TS
+allbox;
+lbx lb lb
+l l l.
+Interface	Attribute	Value
+T{
+.na
+.nh
+.BR bbs_sign (),
+.BR bbs_verify ()
+T}	Thread safety	MT-Safe
+.TE
+.SH STANDARDS
+The
+.BR bbs_sign ()
+and
+.BR bbs_verify ()
+functions implement the corresponding algorithms from
+.I draft-irtf-cfrg-bbs-signatures-09.
+.SH SEE ALSO
+.BR bbs (7),
+.BR bbs_ciphersuite (3),
+.BR bbs_keygen (3)

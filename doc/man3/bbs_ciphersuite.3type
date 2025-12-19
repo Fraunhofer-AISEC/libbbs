@@ -1,0 +1,53 @@
+.TH bbs_ciphersuite 7 2025-12-17 libbbs
+.SH NAME
+bbs_ciphersuite \- Parameters for the Boneh-Boyen-Shacham (BBS) signature scheme
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs, \~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs.h>
+.P
+.BI "typedef struct _bbs_ciphersuite bbs_ciphersuite;"
+.P
+.BI "extern const bbs_ciphersuite *const " bbs_sha256_ciphersuite ";"
+.BI "extern const bbs_ciphersuite *const " bbs_shake256_ciphersuite ";"
+.fi
+.SH DESCRIPTION
+The BBS signature scheme is defined in terms of hash functions and elliptic
+curves with an efficiently computable pairing. Given the many choices (good and
+bad) of combinations thereof,
+.I libbbs
+provides constants to select one of few standardized combinations. Care should
+be taken to not use key pairs and signatures generated using one ciphersuite in
+functions expecting a different ciphersuite, to guard against specification
+oversights in these corner cases.
+.P
+All choices are assumed to provide roughly 128 bits of forgeability protection
+against non-quantum attacks, and 128 bits of long-term privacy protection for
+undisclosed messages in proofs.
+.P
+The exact choice of ciphersuite is irrelevant for most applications. However,
+applications must choose the same one to interoperate. Multiple choices are
+provided mainly to facilitate the implementation of protocols with distinct
+preferences.
+.P
+The currently supported ciphersuites are as follows:
+.SS bbs_sha256_ciphersuite
+Implements the
+.I BLS12-381-SHA-256
+ciphersuite, using the elliptic curve BLS12-381 and the sha2-256 hash function
+in extensible message digest (XMD) mode.
+.SS bbs_shake256_ciphersuite
+Implements the
+.I BLS12-381-SHAKE-256
+ciphersuite, using the elliptic curve BLS12-381 and the shake256 extendable
+output function (XOF).
+.SH STANDARDS
+The currently implemented ciphersuites correspond to
+.I draft-irtf-cfrg-bbs-signatures-09.
+.SH SEE ALSO
+.BR bbs (7),
+.BR bbs_keygen (3),
+.BR bbs_sign (3),
+.BR bbs_proof_gen (3),

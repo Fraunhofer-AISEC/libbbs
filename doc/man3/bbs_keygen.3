@@ -1,0 +1,159 @@
+.TH bbs_keygen 3 2025-12-17 libbbs
+.SH NAME
+bbs_keygen, bbs_sk_to_pk, bbs_keygen_full \- generate keypairs for the BBS
+signature scheme
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs.h>
+.P
+.BI "int bbs_keygen(const bbs_ciphersuite * " ciphersuite ", bbs_secret_key " sk ","
+.BI "               const void * " key_material ", size_t " key_material_len ","
+.BI "               const void * " key_info ",     size_t " key_info_len ","
+.BI "               const void * " key_dst ",      size_t " key_dst_len ");"
+.BI "int bbs_sk_to_pk(const bbs_ciphersuite * " ciphersuite ","
+.BI "                 const bbs_secret_key " sk ", bbs_public_key " pk ");"
+.BI "int bbs_keygen_full(const bbs_ciphersuite * " ciphersuite ","
+.BI "                    bbs_secret_key " sk ", bbs_public_key " pk ");"
+.fi
+.SH DESCRIPTION
+The
+.BR bbs_keygen
+family of functions is used to generate signature key pairs for use with the BBS
+signature scheme. All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+.SS bbs_keygen()
+The
+.BR bbs_keygen ()
+function generates a secret signing key and stores it in
+.I sk.
+It reads
+.I key_material_len
+bytes from
+.I key_material,
+which should contain random data with at least 128 bits of secret entropy, which
+may be obtained beforehand by a call to
+.BR getentropy (3).
+If
+.I key_info_len
+resp.
+.I key_dst_len
+are non-zero, then the corresponding number of public bytes is additionally read
+from
+.I key_info
+resp.
+.I key_dst.
+.P
+Correlated or equal values of
+.I key_material
+may be used in multiple invocations of
+.BR bbs_keygen ()
+provided that either
+.I key_info
+or
+.I key_dst
+is changed between invocations. This allows to reuse and store a single seed
+from which to derive multiple key pairs.
+.P
+Both the key material and the secret key must be kept secret.
+.SS bbs_sk_to_pk()
+The
+.BR bbs_sk_to_pk ()
+function derives a public verification key
+.I pk
+from a secret signing key
+.I sk,
+which may have been obtained by a call to
+.BR bbs_keygen ().
+The public key may be shared with peers and is used for the generation and
+verification of BBS signatures and proofs.
+.SS bbs_keygen_full()
+The
+.BR bbs_keygen_full ()
+convenience function generates a key pair as if by invocations of
+.BR getentropy (3),
+.BR bbs_keygen ()
+and
+.BR bbs_sk_to_pk ().
+It is the preferred way for applications to generate a signature key pair, if no
+additional control over the key generation process is required.
+.SH RETURN VALUE
+All BBS functions return
+.BR BBS_OK
+on success. All other return values denote an error, the exact meaning of which
+may change in the future.
+.SH ATTRIBUTES
+For an explanation of the terms used in this section, see
+.BR attribute (7).
+.TS
+allbox;
+lbx lb lb
+l l l.
+Interface	Attribute	Value
+T{
+.na
+.nh
+.BR bbs_keygen (),
+.BR bbs_sk_to_pk (),
+.BR bbs_keygen_full ()
+T}	Thread safety	MT-Safe
+.TE
+.SH STANDARDS
+The
+.BR bbs_keygen ()
+and
+.BR bbs_sk_to_pk ()
+functions implement the corresponding algorithms from
+.I draft-irtf-cfrg-bbs-signatures-09.
+.SH CAVEATS
+The
+.BR bbs_keygen_full ()
+function emits a call to the POSIX 2024.1-2024 function
+.BR getentropy (3).
+On non-POSIX systems, this function has to be provided by the application at
+link-time.
+.SH EXAMPLES
+.EX
+#include <bbs.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+\&
+int main(void) {
+	uint8_t        key_material[32];
+	bbs_secret_key sk;
+	bbs_public_key pk;
+\&
+	if(-1 == getentropy(key_material, sizeof(key_material))) {
+		perror("getentropy");
+		return EXIT_FAILURE;
+	}
+\&
+	if(BBS_OK != bbs_keygen(bbs_sha256_ciphersuite, sk, key_material,
+			sizeof(key_material), NULL, 0, NULL, 0)) {
+		perror("bbs_keygen");
+		return EXIT_FAILURE;
+	}
+\&
+	if(BBS_OK != bbs_sk_to_pk(bbs_sha256_ciphersuite, sk, pk))
+		perror("bbs_keygen");
+		return EXIT_FAILURE;
+	}
+\&
+	/* Use sk and pk here */
+\&
+	/* Erase secrets from memory */
+	memset_explicit(key_material, 0, sizeof(key_material));
+	memset_explicit(sk, 0, sizeof(sk));
+\&
+	return EXIT_SUCCESS;
+}
+.EE
+.SH SEE ALSO
+.BR bbs (7),
+.BR bbs_ciphersuite (3type),
+.BR getentropy (3)
