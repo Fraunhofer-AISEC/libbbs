@@ -49,6 +49,17 @@ extern const struct fixture_signature {
 } *const vectors_signature;
 extern const size_t vectors_signature_len;
 
+// The proof_gen fixtures use mocked scalars
+extern const struct fixture_mocked_scalars {
+	const uint8_t  *seed;
+	size_t          seed_len;
+	const uint8_t  *dst;
+	size_t          dst_len;
+	const uint8_t (*result)[32];
+	size_t          result_len;
+} *const vectors_mocked_scalars;
+extern const size_t vectors_mocked_scalars_len;
+
 extern const struct fixture_proof {
 	uint8_t               pk[96];
 	uint8_t               signature[80];
@@ -61,6 +72,10 @@ extern const struct fixture_proof {
 	const size_t         *msg_lens;
 	const uint64_t       *disclosed_indexes;
 	size_t                disclosed_indexes_len;
+	const uint8_t        *mocking_seed;
+	size_t                mocking_seed_len;
+	const uint8_t        *mocking_dst;
+	size_t                mocking_dst_len;
 	const uint8_t        *result;
 	size_t                result_len;
 	int                   result_valid;

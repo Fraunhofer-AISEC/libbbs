@@ -109,6 +109,7 @@ int main(int argc, char **argv) {
 	char *f, *f2;
 	struct json *j, *j2, *tmp;
 	int dirfd, i, filenum;
+	size_t mocked_seed_len, mocked_dst_len;
 
 	// Argument parsing
 	if(argc != 3) { printf("Usage: %s <ciphersuite> <source_dir>\n", argv[0]); exit(0); }
@@ -274,6 +275,36 @@ int main(int argc, char **argv) {
 	fprintf(out, "const struct fixture_signature *const vectors_signature = _vectors_signature;\n");
 	fprintf(out, "const size_t vectors_signature_len = %d;\n\n", --filenum);
 
+	// Mocked Scalars
+	f = read_file(dirfd, "mockedRng.json");
+	json_parse(f, &j);
+	fprintf(out, "static const uint8_t mocked_seed[] = ");
+	tmp = json_object_get(j, "seed");
+	print_hex_str(tmp, out);
+	mocked_seed_len = tmp->len/2;
+	fprintf(out, ";\nstatic const uint8_t mocked_dst[] = ");
+	tmp = json_object_get(j, "dst");
+	print_hex_str(tmp, out);
+	mocked_dst_len = tmp->len/2;
+	fprintf(out, ";\nstatic const uint8_t mocked_scalars[][32] = {\n");
+	i=0;
+	for(struct json *k=json_object_get(j, "mockedScalars")->value; k; k = k->next) {
+		fprintf(out, "\t");
+		print_hex_str(k, out);
+		fprintf(out, ",\n");
+		i++;
+	}
+	fprintf(out, "};\n");
+	fprintf(out, "static const struct fixture_mocked_scalars _vectors_mocked_scalars[] = {\n");
+	fprintf(out, "\t{ .seed = mocked_seed, .seed_len = %zu", mocked_seed_len);
+	fprintf(out, ", .dst = mocked_dst, .dst_len = %zu", mocked_dst_len);
+	fprintf(out, ", .result = mocked_scalars, .result_len = %d }\n", i);
+	fprintf(out, "};\n");
+	fprintf(out, "const struct fixture_mocked_scalars *const vectors_mocked_scalars = _vectors_mocked_scalars;\n");
+	fprintf(out, "const size_t vectors_mocked_scalars_len = %d;\n\n", 1);
+	json_free(j);
+	free(f);
+
 	// Proofs
 	for(filenum = 1; 1; filenum++) {
 		sprintf(filename, "proof/proof%03d.json", filenum);
@@ -325,6 +356,8 @@ int main(int argc, char **argv) {
 		fprintf(out, ", .msgs = proof%d_msgs, .msg_lens = proof%d_msg_lens", filenum, filenum);
 		fprintf(out, ", .disclosed_indexes = proof%d_disclosed_indexes", filenum);
 		fprintf(out, ", .disclosed_indexes_len = %zu", json_array_len(json_object_get(j, "disclosedIndexes")));
+		fprintf(out, ", .mocking_seed = mocked_seed, .mocking_seed_len = %zu", mocked_seed_len);
+		fprintf(out, ", .mocking_dst = mocked_dst, .mocking_dst_len = %zu", mocked_dst_len);
 		tmp = json_object_get(j, "proof");
 		fprintf(out, ", .result = proof%d_proof, .result_len = %zu", filenum, tmp->len/2);
 		tmp = json_object_get(j, "result");

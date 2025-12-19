@@ -5,7 +5,7 @@ set(BBS_FIX_TESTS
     bbs_fix_keygen.c
     bbs_fix_sign.c
     bbs_fix_verify.c
-    #    bbs_fix_proof_gen.c
+    bbs_fix_proof_gen.c
     bbs_fix_proof_verify.c)
 set(BBS_E2E_TESTS bbs_e2e_sign_n_proof.c)
 set(BBS_BENCH_TESTS bbs_bench_e2e.c bbs_bench_individual.c)

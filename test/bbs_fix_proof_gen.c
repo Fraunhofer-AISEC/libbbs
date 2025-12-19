@@ -2,10 +2,18 @@
 #include "test_util.h"
 #include <stdbool.h>
 
+/* Note:
+ * We cannot test the main bbs_proof_gen here, because it involves randomness
+ * and thus cannot have fixed test vectors. Rather, the BBS draft has a custom
+ * procedure to test most of the subfunctions, which are supposed to be static.
+ * Therefore, we link against a custom version of libbbs, in which these
+ * functions are not static, and mock the PRF to use the fixed values from the
+ * draft. Not ideal, I know... */
+
 // BEGIN declarations of bbs.c
 // These are usually static, but made global in a modified library
 typedef struct {
-	bbs_cipher_suite_t   *cipher_suite;
+	const bbs_cipher_suite_t   *cipher_suite;
 	uint8_t                generator_ctx[48 + 8];
 	union bbs_hash_context dom_ctx;
 	blst_p1 Q_1;
@@ -24,94 +32,37 @@ typedef struct {
 	bbs_bn_prf           *prf;
 	void                 *prf_cookie;
 } bbs_proof_gen_ctx;
-
 void
 bbs_proof_gen_init (
 	bbs_proof_gen_ctx *ctx,
-	bbs_cipher_suite_t   *cipher_suite,
+	const bbs_cipher_suite_t   *cipher_suite,
 	const bbs_public_key  pk,
 	uint64_t              num_messages,
 	uint64_t              num_disclosed,
 	bbs_bn_prf            prf,
 	void                 *prf_cookie
 	);
-
 void
 bbs_proof_gen_update (
 	bbs_proof_gen_ctx *ctx,
 	uint8_t *proof,
-	uint8_t *msg,
-	uint64_t msg_len,
+	const uint8_t *msg,
+	size_t msg_len,
 	bool disclosed
 	);
-
 int
 bbs_proof_gen_finalize (
 	bbs_proof_gen_ctx *ctx,
 	const bbs_signature   signature,
 	uint8_t              *proof,
 	const uint8_t        *header,
-	uint64_t              header_len,
+	size_t                header_len,
 	const uint8_t        *presentation_header,
-	uint64_t              presentation_header_len,
+	size_t                presentation_header_len,
 	uint64_t              num_messages,
-	uint64_t              num_disclosed
+	size_t                num_disclosed
 	);
 // END declarations of bbs.c
-
-typedef struct
-{
-	bbs_cipher_suite_t  *cipher_suite;
-
-	uint8_t            *proof_SEED;
-	size_t proof_SEED_len;
-
-	uint8_t            *proof_DST;
-	size_t proof_DST_len;
-
-	uint8_t            *proof_random_scalar[10];
-	size_t proof_random_scalar_len[10];
-
-	uint8_t            *proof1_public_key;
-	uint8_t            *proof1_signature;
-	size_t proof1_signature_len;
-	uint8_t            *proof1_header;
-	size_t proof1_header_len;
-	uint8_t            *proof1_presentation_header;
-	size_t proof1_presentation_header_len;
-	uint64_t           *proof1_revealed_indexes;
-	size_t proof1_revealed_indexes_len;
-	uint8_t            *proof1_m_1;
-	size_t proof1_m_1_len;
-	uint8_t            *proof1_proof;
-	size_t proof1_proof_len;
-
-	uint8_t            *proof2_public_key;
-	uint8_t            *proof2_signature;
-	size_t proof2_signature_len;
-	uint8_t            *proof2_header;
-	size_t proof2_header_len;
-	uint8_t            *proof2_presentation_header;
-	size_t proof2_presentation_header_len;
-	uint64_t           *proof2_revealed_indexes;
-	size_t proof2_revealed_indexes_len;
-	uint8_t            *proof2_m[10];
-	size_t proof2_m_len[10];
-	uint8_t            *proof2_proof;
-	size_t proof2_proof_len;
-
-	uint8_t            *proof3_public_key;
-	uint8_t            *proof3_signature;
-	size_t proof3_signature_len;
-	uint8_t            *proof3_header;
-	size_t proof3_header_len;
-	uint8_t            *proof3_presentation_header;
-	size_t proof3_presentation_header_len;
-	uint64_t           *proof3_revealed_indexes;
-	size_t proof3_revealed_indexes_len;
-	uint8_t            *proof3_proof;
-	size_t proof3_proof_len;
-} fixture_proof_gen_t;
 
 // Mocked random scalars for bbs_proof_gen_det
 // The randomness-array contains r1, r3^-1, e~, r1~, r3~, and the m~
@@ -119,95 +70,65 @@ typedef struct
 // (0,x) -> rand[x+2], (1,0) -> rand[0], (2,0) -> rand[1]
 void
 mocked_prf (
-	bbs_cipher_suite_t *cipher_suite,
-	blst_scalar *out,
-	uint8_t input_type,
-	uint64_t input,
-	void     *cookie
+	const bbs_cipher_suite_t *cipher_suite,
+	blst_scalar              *out,
+	uint8_t             input_type,
+	uint64_t            input,
+	void               *seed
 	)
 {
 	(void)cipher_suite;
-	uint8_t *rand = (uint8_t*) cookie;
+	uint8_t *rand = (uint8_t*) seed;
 
-	// TODO: Fix mapping
-	if (0 == input_type && 10 > input)
-	{
-		// commitment randomness
-		rand += (2 + input) * 48;
-	}
-	else if (0 == input && 2 >= input_type)
-	{
-		// blinding randomness
-		rand += (input_type - 1) * 48;
-	}
+	if (0 == input_type && 10 > input)      rand += (2 + input) * 48;
+	else if (0 == input && 2 >= input_type) rand += (input_type - 1) * 48;
 	else return; // Will most likely violate the fixtures
 
 	blst_scalar_from_be_bytes(out, rand, 48);
 }
 
 
-void
-fill_randomness (
-	bbs_cipher_suite_t  *cipher_suite,
-	uint8_t            *rand,
-	int count,
-	const uint8_t      *seed,
-	uint64_t seed_len,
-	const uint8_t      *dst,
-	uint64_t dst_len
-	)
-{
-	union bbs_hash_context ctx;
-
-	cipher_suite->expand_message_init(&ctx);
-	cipher_suite->expand_message_update(&ctx, seed, seed_len);
-	cipher_suite->expand_message_finalize(&ctx, rand, count*48, dst, dst_len);
-}
-
-
+// This function should be almost identical to bbs_proof_gen, except that it
+// also prepares some randomness and uses mocked_prf instead of bbs_proof_prf.
 int
 mocked_proof_gen (
-	fixture_proof_gen_t test_case,
-	const bbs_public_key pk,
-	const bbs_signature signature,
-	uint8_t              *proof,
-	const uint8_t        *header,
-	uint64_t header_len,
-	const uint8_t        *presentation_header,
-	uint64_t presentation_header_len,
-	const uint64_t       *disclosed_indexes,
-	uint64_t disclosed_indexes_len,
-	uint64_t num_messages,
-	...
+	const bbs_cipher_suite_t *cipher_suite,
+	const bbs_public_key      pk,
+	const bbs_signature       signature,
+	uint8_t                  *proof,
+	const uint8_t            *header,
+	size_t                    header_len,
+	const uint8_t            *presentation_header,
+	size_t                    presentation_header_len,
+	const uint64_t           *disclosed_indexes,
+	size_t                    disclosed_indexes_len,
+	uint64_t                  num_messages,
+	const uint8_t *const     *messages,
+	const size_t             *messages_lens,
+	const uint8_t            *mocking_seed,
+	size_t                    mocking_seed_len,
+	const uint8_t            *mocking_dst,
+	size_t                    mocking_dst_len
 	)
 {
-	// Stores randomness for 15 random scalars, which is as much as we need
-	uint8_t randomness[48 * 15];
-	va_list ap;
+	union bbs_hash_context h_ctx;
+	uint8_t seed[(5 + num_messages - disclosed_indexes_len) * 48];
 	bbs_proof_gen_ctx ctx;
 	uint64_t di_idx = 0;
-	uint8_t *msg;
-	uint32_t msg_len;
 	bool disclosed;
 
-	fill_randomness (test_case.cipher_suite,
-	                 randomness,
-	                 5 + num_messages - disclosed_indexes_len,
-	                 test_case.proof_SEED,
-	                 test_case.proof_SEED_len,
-	                 test_case.proof_DST,
-	                 test_case.proof_DST_len);
+	cipher_suite->expand_message_init(&h_ctx);
+	cipher_suite->expand_message_update(&h_ctx, mocking_seed, mocking_seed_len);
+	cipher_suite->expand_message_finalize(&h_ctx, seed,
+			(5 + num_messages - disclosed_indexes_len) * 48,
+			mocking_dst, mocking_dst_len);
 
-	va_start (ap, num_messages);
-	bbs_proof_gen_init(&ctx, test_case.cipher_suite, pk, num_messages, disclosed_indexes_len, mocked_prf, randomness);
+	bbs_proof_gen_init(&ctx, cipher_suite, pk, num_messages, disclosed_indexes_len, mocked_prf, seed);
 	for(uint64_t i=0; i< num_messages; i++) {
 		disclosed = di_idx < disclosed_indexes_len && disclosed_indexes[di_idx] == i;
-		msg = va_arg (ap, uint8_t*);
-		msg_len = va_arg (ap, uint32_t);
-		bbs_proof_gen_update(&ctx, proof, msg, msg_len, disclosed);
+		bbs_proof_gen_update(&ctx, proof, messages[i], messages_lens[i], disclosed);
 		if(disclosed) di_idx++;
 	}
-	va_end(ap);
 
 	return bbs_proof_gen_finalize(&ctx, signature, proof, header, header_len, presentation_header, presentation_header_len, num_messages, disclosed_indexes_len);
 }
@@ -216,273 +137,67 @@ mocked_proof_gen (
 int
 bbs_fix_proof_gen ()
 {
-	// *INDENT-OFF* - Preserve formatting
-#ifdef LIBBBS_TEST_SUITE_SHA256
-	fixture_proof_gen_t test_case = {
-			.cipher_suite = bbs_sha256_cipher_suite,
+	union bbs_hash_context ctx;
+	blst_scalar s;
+	uint8_t s_buffer[BBS_SCALAR_LEN];
 
-			.proof_SEED = fixture_bls12_381_sha_256_proof_SEED,
-			.proof_SEED_len = sizeof(fixture_bls12_381_sha_256_proof_SEED),
+	// First test the mocking PRF
+	for(size_t i=0; i < vectors_mocked_scalars_len; i++) {
+		uint8_t rand[vectors_mocked_scalars[i].result_len * 48];
 
-			.proof_DST = fixture_bls12_381_sha_256_proof_DST,
-			.proof_DST_len = sizeof(fixture_bls12_381_sha_256_proof_DST),
+		(*fixture_cipher_suite)->expand_message_init(&ctx);
+		(*fixture_cipher_suite)->expand_message_update(&ctx,
+				vectors_mocked_scalars[i].seed,
+				vectors_mocked_scalars[i].seed_len);
+		(*fixture_cipher_suite)->expand_message_finalize(&ctx, rand,
+				vectors_mocked_scalars[i].result_len * 48,
+				vectors_mocked_scalars[i].dst,
+				vectors_mocked_scalars[i].dst_len);
 
-			.proof_random_scalar = {
-				fixture_bls12_381_sha_256_proof_random_scalar_1, fixture_bls12_381_sha_256_proof_random_scalar_2, fixture_bls12_381_sha_256_proof_random_scalar_3,
-				fixture_bls12_381_sha_256_proof_random_scalar_4, fixture_bls12_381_sha_256_proof_random_scalar_5, fixture_bls12_381_sha_256_proof_random_scalar_6,
-				fixture_bls12_381_sha_256_proof_random_scalar_7, fixture_bls12_381_sha_256_proof_random_scalar_8, fixture_bls12_381_sha_256_proof_random_scalar_9,
-				fixture_bls12_381_sha_256_proof_random_scalar_10
-			},
-			.proof_random_scalar_len = {
-				sizeof(fixture_bls12_381_sha_256_proof_random_scalar_1), sizeof(fixture_bls12_381_sha_256_proof_random_scalar_2), sizeof(fixture_bls12_381_sha_256_proof_random_scalar_3),
-				sizeof(fixture_bls12_381_sha_256_proof_random_scalar_4), sizeof(fixture_bls12_381_sha_256_proof_random_scalar_5), sizeof(fixture_bls12_381_sha_256_proof_random_scalar_6),
-				sizeof(fixture_bls12_381_sha_256_proof_random_scalar_7), sizeof(fixture_bls12_381_sha_256_proof_random_scalar_8), sizeof(fixture_bls12_381_sha_256_proof_random_scalar_9),
-				sizeof(fixture_bls12_381_sha_256_proof_random_scalar_10)
-			},
+		for (size_t j = 0; j < vectors_mocked_scalars[i].result_len; j++) {
+			if(j<2) mocked_prf(*fixture_cipher_suite, &s, j+1, 0, rand);
+			else    mocked_prf(*fixture_cipher_suite, &s, 0, j-2, rand);
+			bn_write_bbs (s_buffer, &s);
 
-			.proof1_public_key = fixture_bls12_381_sha_256_proof1_public_key,
-			.proof1_signature = fixture_bls12_381_sha_256_proof1_signature,
-			.proof1_signature_len = sizeof(fixture_bls12_381_sha_256_proof1_signature),
-			.proof1_header = fixture_bls12_381_sha_256_proof1_header,
-			.proof1_header_len = sizeof(fixture_bls12_381_sha_256_proof1_header),
-			.proof1_presentation_header = fixture_bls12_381_sha_256_proof1_presentation_header,
-			.proof1_presentation_header_len = sizeof(fixture_bls12_381_sha_256_proof1_presentation_header),
-			.proof1_revealed_indexes = fixture_bls12_381_sha_256_proof1_revealed_indexes,
-			.proof1_revealed_indexes_len = LEN (fixture_bls12_381_sha_256_proof1_revealed_indexes),
-			.proof1_m_1 = fixture_bls12_381_sha_256_proof1_m_1,
-			.proof1_m_1_len = sizeof(fixture_bls12_381_sha_256_proof1_m_1),
-			.proof1_proof = fixture_bls12_381_sha_256_proof1_proof,
-			.proof1_proof_len = sizeof(fixture_bls12_381_sha_256_proof1_proof),
-			.proof2_public_key = fixture_bls12_381_sha_256_proof2_public_key,
-			.proof2_signature = fixture_bls12_381_sha_256_proof2_signature,
-			.proof2_signature_len = sizeof(fixture_bls12_381_sha_256_proof2_signature),
-			.proof2_header = fixture_bls12_381_sha_256_proof2_header,
-			.proof2_header_len = sizeof(fixture_bls12_381_sha_256_proof2_header),
-			.proof2_presentation_header = fixture_bls12_381_sha_256_proof2_presentation_header,
-			.proof2_presentation_header_len = sizeof(fixture_bls12_381_sha_256_proof2_presentation_header),
-			.proof2_revealed_indexes = fixture_bls12_381_sha_256_proof2_revealed_indexes,
-			.proof2_revealed_indexes_len = LEN (fixture_bls12_381_sha_256_proof2_revealed_indexes),
-			.proof2_m = {
-				fixture_bls12_381_sha_256_proof2_m_1, fixture_bls12_381_sha_256_proof2_m_2, fixture_bls12_381_sha_256_proof2_m_3,
-				fixture_bls12_381_sha_256_proof2_m_4, fixture_bls12_381_sha_256_proof2_m_5, fixture_bls12_381_sha_256_proof2_m_6,
-				fixture_bls12_381_sha_256_proof2_m_7, fixture_bls12_381_sha_256_proof2_m_8, fixture_bls12_381_sha_256_proof2_m_9,
-				fixture_bls12_381_sha_256_proof2_m_10
-			},
-			.proof2_m_len = {
-				sizeof(fixture_bls12_381_sha_256_proof2_m_1), sizeof(fixture_bls12_381_sha_256_proof2_m_2), sizeof(fixture_bls12_381_sha_256_proof2_m_3),
-				sizeof(fixture_bls12_381_sha_256_proof2_m_4), sizeof(fixture_bls12_381_sha_256_proof2_m_5), sizeof(fixture_bls12_381_sha_256_proof2_m_6),
-				sizeof(fixture_bls12_381_sha_256_proof2_m_7), sizeof(fixture_bls12_381_sha_256_proof2_m_8), sizeof(fixture_bls12_381_sha_256_proof2_m_9),
-				0 /*m_10*/
-			},
-			.proof2_proof = fixture_bls12_381_sha_256_proof2_proof,
-			.proof2_proof_len = sizeof(fixture_bls12_381_sha_256_proof2_proof),
-
-			.proof3_public_key = fixture_bls12_381_sha_256_proof3_public_key,
-			.proof3_signature = fixture_bls12_381_sha_256_proof3_signature,
-			.proof3_signature_len = sizeof(fixture_bls12_381_sha_256_proof3_signature),
-			.proof3_header = fixture_bls12_381_sha_256_proof3_header,
-			.proof3_header_len = sizeof(fixture_bls12_381_sha_256_proof3_header),
-			.proof3_presentation_header = fixture_bls12_381_sha_256_proof3_presentation_header,
-			.proof3_presentation_header_len = sizeof(fixture_bls12_381_sha_256_proof3_presentation_header),
-			.proof3_revealed_indexes = fixture_bls12_381_sha_256_proof3_revealed_indexes,
-			.proof3_revealed_indexes_len = LEN (fixture_bls12_381_sha_256_proof3_revealed_indexes),
-			.proof3_proof = fixture_bls12_381_sha_256_proof3_proof,
-			.proof3_proof_len = sizeof(fixture_bls12_381_sha_256_proof3_proof),
-  };
-#elif LIBBBS_TEST_SUITE_SHAKE256
-	fixture_proof_gen_t test_case = {
-			.cipher_suite = bbs_shake256_cipher_suite,
-
-			.proof_SEED = fixture_bls12_381_shake_256_proof_SEED,
-			.proof_SEED_len = sizeof(fixture_bls12_381_shake_256_proof_SEED),
-
-			.proof_DST = fixture_bls12_381_shake_256_proof_DST,
-			.proof_DST_len = sizeof(fixture_bls12_381_shake_256_proof_DST),
-
-			.proof_random_scalar = {
-				fixture_bls12_381_shake_256_proof_random_scalar_1, fixture_bls12_381_shake_256_proof_random_scalar_2, fixture_bls12_381_shake_256_proof_random_scalar_3,
-				fixture_bls12_381_shake_256_proof_random_scalar_4, fixture_bls12_381_shake_256_proof_random_scalar_5, fixture_bls12_381_shake_256_proof_random_scalar_6,
-				fixture_bls12_381_shake_256_proof_random_scalar_7, fixture_bls12_381_shake_256_proof_random_scalar_8, fixture_bls12_381_shake_256_proof_random_scalar_9,
-				fixture_bls12_381_shake_256_proof_random_scalar_10
-			},
-			.proof_random_scalar_len = {
-				sizeof(fixture_bls12_381_shake_256_proof_random_scalar_1), sizeof(fixture_bls12_381_shake_256_proof_random_scalar_2), sizeof(fixture_bls12_381_shake_256_proof_random_scalar_3),
-				sizeof(fixture_bls12_381_shake_256_proof_random_scalar_4), sizeof(fixture_bls12_381_shake_256_proof_random_scalar_5), sizeof(fixture_bls12_381_shake_256_proof_random_scalar_6),
-				sizeof(fixture_bls12_381_shake_256_proof_random_scalar_7), sizeof(fixture_bls12_381_shake_256_proof_random_scalar_8), sizeof(fixture_bls12_381_shake_256_proof_random_scalar_9),
-				sizeof(fixture_bls12_381_shake_256_proof_random_scalar_10)
-			},
-
-			.proof1_public_key = fixture_bls12_381_shake_256_proof1_public_key,
-			.proof1_signature = fixture_bls12_381_shake_256_proof1_signature,
-			.proof1_signature_len = sizeof(fixture_bls12_381_shake_256_proof1_signature),
-			.proof1_header = fixture_bls12_381_shake_256_proof1_header,
-			.proof1_header_len = sizeof(fixture_bls12_381_shake_256_proof1_header),
-			.proof1_presentation_header = fixture_bls12_381_shake_256_proof1_presentation_header,
-			.proof1_presentation_header_len = sizeof(fixture_bls12_381_shake_256_proof1_presentation_header),
-			.proof1_revealed_indexes = fixture_bls12_381_shake_256_proof1_revealed_indexes,
-			.proof1_revealed_indexes_len = LEN (fixture_bls12_381_shake_256_proof1_revealed_indexes),
-			.proof1_m_1 = fixture_bls12_381_shake_256_proof1_m_1,
-			.proof1_m_1_len = sizeof(fixture_bls12_381_shake_256_proof1_m_1),
-			.proof1_proof = fixture_bls12_381_shake_256_proof1_proof,
-			.proof1_proof_len = sizeof(fixture_bls12_381_shake_256_proof1_proof),
-			.proof2_public_key = fixture_bls12_381_shake_256_proof2_public_key,
-			.proof2_signature = fixture_bls12_381_shake_256_proof2_signature,
-			.proof2_signature_len = sizeof(fixture_bls12_381_shake_256_proof2_signature),
-			.proof2_header = fixture_bls12_381_shake_256_proof2_header,
-			.proof2_header_len = sizeof(fixture_bls12_381_shake_256_proof2_header),
-			.proof2_presentation_header = fixture_bls12_381_shake_256_proof2_presentation_header,
-			.proof2_presentation_header_len = sizeof(fixture_bls12_381_shake_256_proof2_presentation_header),
-			.proof2_revealed_indexes = fixture_bls12_381_shake_256_proof2_revealed_indexes,
-			.proof2_revealed_indexes_len = LEN (fixture_bls12_381_shake_256_proof2_revealed_indexes),
-			.proof2_m = {
-				fixture_bls12_381_shake_256_proof2_m_1, fixture_bls12_381_shake_256_proof2_m_2, fixture_bls12_381_shake_256_proof2_m_3,
-				fixture_bls12_381_shake_256_proof2_m_4, fixture_bls12_381_shake_256_proof2_m_5, fixture_bls12_381_shake_256_proof2_m_6,
-				fixture_bls12_381_shake_256_proof2_m_7, fixture_bls12_381_shake_256_proof2_m_8, fixture_bls12_381_shake_256_proof2_m_9,
-				fixture_bls12_381_shake_256_proof2_m_10
-			},
-			.proof2_m_len = {
-				sizeof(fixture_bls12_381_shake_256_proof2_m_1), sizeof(fixture_bls12_381_shake_256_proof2_m_2), sizeof(fixture_bls12_381_shake_256_proof2_m_3),
-				sizeof(fixture_bls12_381_shake_256_proof2_m_4), sizeof(fixture_bls12_381_shake_256_proof2_m_5), sizeof(fixture_bls12_381_shake_256_proof2_m_6),
-				sizeof(fixture_bls12_381_shake_256_proof2_m_7), sizeof(fixture_bls12_381_shake_256_proof2_m_8), sizeof(fixture_bls12_381_shake_256_proof2_m_9),
-				0 /*m_10*/
-			},
-			.proof2_proof = fixture_bls12_381_shake_256_proof2_proof,
-			.proof2_proof_len = sizeof(fixture_bls12_381_shake_256_proof2_proof),
-
-			.proof3_public_key = fixture_bls12_381_shake_256_proof3_public_key,
-			.proof3_signature = fixture_bls12_381_shake_256_proof3_signature,
-			.proof3_signature_len = sizeof(fixture_bls12_381_shake_256_proof3_signature),
-			.proof3_header = fixture_bls12_381_shake_256_proof3_header,
-			.proof3_header_len = sizeof(fixture_bls12_381_shake_256_proof3_header),
-			.proof3_presentation_header = fixture_bls12_381_shake_256_proof3_presentation_header,
-			.proof3_presentation_header_len = sizeof(fixture_bls12_381_shake_256_proof3_presentation_header),
-			.proof3_revealed_indexes = fixture_bls12_381_shake_256_proof3_revealed_indexes,
-			.proof3_revealed_indexes_len = LEN (fixture_bls12_381_shake_256_proof3_revealed_indexes),
-			.proof3_proof = fixture_bls12_381_shake_256_proof3_proof,
-			.proof3_proof_len = sizeof(fixture_bls12_381_shake_256_proof3_proof),
-	};
-#endif
-	// *INDENT-ON* - Preserve formatting
-
-	printf ("Testing BBS Proof Generation with cipher suite %s\n",
-	        test_case.cipher_suite->cipher_suite_id);
-	if (bbs_init ())
-	{
-		bbs_deinit ();
-		return 1;
+			ASSERT_EQ_PTR ("mocked scalar",
+					s_buffer,
+					vectors_mocked_scalars[i].result[j],
+					sizeof(vectors_mocked_scalars[i].result[j]));
+		}
 	}
 
-	// Stores randomness for 15 random scalars, which is as much as we need
-	uint8_t randomness[48 * 15];
+	// Now test the actual proof_gen routines
+	for(size_t i=0; i < vectors_proof_len; i++) {
+		// Do not try to recreate invalid proofs
+		if(!vectors_proof[i].result_valid) continue;
+		uint8_t proof[vectors_proof[i].result_len];
 
-	// Randomness generation self check, to catch any errors related to this
-	// step
-	uint8_t scalar_buffer[BBS_SCALAR_LEN];
-	blst_scalar scalar;
-
-	fill_randomness (test_case.cipher_suite, randomness, 10,
-	                               test_case.proof_SEED, test_case.proof_SEED_len,
-	                               test_case.proof_DST, test_case.proof_DST_len);
-
-	// Test rerandomization scalars
-	for (int i = 0; i < 2; i++)
-	{
-		mocked_prf (test_case.cipher_suite, &scalar, i + 1, 0, randomness);
-		bn_write_bbs (scalar_buffer, &scalar);
-		ASSERT_EQ_PTR ("scalar test",
-		               scalar_buffer,
-		               test_case.proof_random_scalar[i],
-		               test_case.proof_random_scalar_len[i]);
+		if (BBS_OK != mocked_proof_gen(*fixture_cipher_suite,
+					vectors_proof[i].pk,
+					vectors_proof[i].signature,
+					proof,
+					vectors_proof[i].header,
+					vectors_proof[i].header_len,
+					vectors_proof[i].presentation_header,
+					vectors_proof[i].presentation_header_len,
+					vectors_proof[i].disclosed_indexes,
+					vectors_proof[i].disclosed_indexes_len,
+					vectors_proof[i].num_messages,
+					vectors_proof[i].msgs,
+					vectors_proof[i].msg_lens,
+					vectors_proof[i].mocking_seed,
+					vectors_proof[i].mocking_seed_len,
+					vectors_proof[i].mocking_dst,
+					vectors_proof[i].mocking_dst_len))
+		{
+			puts ("Error during proof generation");
+			return 1;
+		}
+		ASSERT_EQ_PTR ("proof generation",
+			       proof,
+			       vectors_proof[i].result,
+			       vectors_proof[i].result_len);
 	}
-
-	// Test commitment scalars
-	for (int i = 0; i < 8; i++)
-	{
-		mocked_prf (test_case.cipher_suite, &scalar, 0, i, randomness);
-		bn_write_bbs (scalar_buffer, &scalar);
-		ASSERT_EQ_PTR ("scalar test",
-		               scalar_buffer,
-		               test_case.proof_random_scalar[i + 2],
-		               test_case.proof_random_scalar_len[i + 2]);
-	}
-
-	uint8_t proof1[BBS_PROOF_LEN (0)];
-	BBS_BENCH_START (mocked_proof_gen)
-	if (BBS_OK != mocked_proof_gen (test_case, test_case.proof1_public_key,
-	                                test_case.proof1_signature, proof1,
-	                                test_case.proof1_header,
-	                                test_case.proof1_header_len,
-	                                test_case.proof1_presentation_header,
-	                                test_case.proof1_presentation_header_len,
-	                                test_case.proof1_revealed_indexes,
-	                                test_case.proof1_revealed_indexes_len, 1,         // num_messages
-	                                test_case.proof1_m_1, test_case.proof1_m_1_len))
-	{
-		puts ("Error during proof 1 generation");
-		return 1;
-	}
-	BBS_BENCH_END (mocked_proof_gen, "Valid Single Message Proof");
-	ASSERT_EQ_PTR ("proof 1 generation",
-	               proof1,
-	               test_case.proof1_proof,
-	               test_case.proof1_proof_len);
-
-	uint8_t proof2[BBS_PROOF_LEN (0)];
-if (BBS_OK != mocked_proof_gen (test_case, test_case.proof2_public_key,
-	                                test_case.proof2_signature, proof2,
-	                                test_case.proof2_header,
-	                                test_case.proof2_header_len,
-	                                test_case.proof2_presentation_header,
-	                                test_case.proof2_presentation_header_len,
-test_case.proof2_revealed_indexes,
-	                                test_case.proof2_revealed_indexes_len, 10,
-	                                test_case.proof2_m[0], test_case.proof2_m_len[0],
-	                                test_case.proof2_m[1], test_case.proof2_m_len[1],
-	                                test_case.proof2_m[2], test_case.proof2_m_len[2],
-	                                test_case.proof2_m[3], test_case.proof2_m_len[3],
-	                                test_case.proof2_m[4], test_case.proof2_m_len[4],
-	                                test_case.proof2_m[5], test_case.proof2_m_len[5],
-	                                test_case.proof2_m[6], test_case.proof2_m_len[6],
-	                                test_case.proof2_m[7], test_case.proof2_m_len[7],
-	                                test_case.proof2_m[8], test_case.proof2_m_len[8],
-	                                test_case.proof2_m[9], test_case.proof2_m_len[9]))
-	{
-		puts ("Error during proof 2 generation");
-		return 1;
-	}
-	ASSERT_EQ_PTR ("proof 2 generation",
-	               proof2,
-	               test_case.proof2_proof,
-	               test_case.proof2_proof_len);
-
-	// Only some messages are being revealed here
-	uint8_t proof3[BBS_PROOF_LEN (6)];
-	if (BBS_OK != mocked_proof_gen (test_case, test_case.proof3_public_key,
-	                                test_case.proof3_signature, proof3,
-	                                test_case.proof3_header,
-	                                test_case.proof3_header_len,
-	                                test_case.proof3_presentation_header,
-	                                test_case.proof3_presentation_header_len,
-	                                test_case.proof3_revealed_indexes,
-	                                test_case.proof3_revealed_indexes_len, 10,
-	                                test_case.proof2_m[0], test_case.proof2_m_len[0],
-	                                test_case.proof2_m[1], test_case.proof2_m_len[1],
-	                                test_case.proof2_m[2], test_case.proof2_m_len[2],
-	                                test_case.proof2_m[3], test_case.proof2_m_len[3],
-	                                test_case.proof2_m[4], test_case.proof2_m_len[4],
-	                                test_case.proof2_m[5], test_case.proof2_m_len[5],
-	                                test_case.proof2_m[6], test_case.proof2_m_len[6],
-	                                test_case.proof2_m[7], test_case.proof2_m_len[7],
-	                                test_case.proof2_m[8], test_case.proof2_m_len[8],
-	                                test_case.proof2_m[9], test_case.proof2_m_len[9]))
-	{
-		puts ("Error during proof 3 generation");
-		return 1;
-	}
-	ASSERT_EQ_PTR ("proof 3 generation",
-	               proof3,
-	               test_case.proof3_proof,
-	               test_case.proof3_proof_len);
 
 	return 0;
 }
