@@ -2,11 +2,28 @@
 #ifndef FIXTURES_H
 #define FIXTURES_H
 
-#include <bbs.h>
+#include "bbs.h"
+
 #include <stddef.h>
+#include <stdio.h>
 
 // This header file defines several extern constants, which are generated per
 // ciphersuite by genfixtures. 
+
+// Helpful macros to print and compare memory
+#define PRINT(p, a, l)  do { puts (p); for (size_t xx = 0; xx<l; xx++) printf ("%02x ", ((uint8_t*)a)[xx]); \
+			     puts (""); } while (0);
+#define ASSERT_EQ_PTR(purpose, actual, ref, len) \
+	for (size_t assert_eq_index = 0; assert_eq_index < len; assert_eq_index++) { \
+		if (((uint8_t*)actual)[assert_eq_index] != ((uint8_t*)ref)[assert_eq_index]) { \
+			puts ("Mismatch in " purpose); \
+			printf ("actual[%zu]: %02x\n", assert_eq_index, ((uint8_t*)actual)[assert_eq_index]); \
+			printf ("ref[%zu]: %02x\n",    assert_eq_index, ((uint8_t*)ref)[assert_eq_index]); \
+			PRINT ("Should be:", ref,    len); \
+			PRINT ("Is:",        actual, len); \
+			return 1; \
+		} \
+	}
 
 extern const bbs_ciphersuite *const *const fixture_ciphersuite;
 

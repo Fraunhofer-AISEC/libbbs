@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "fixtures.h"
-#include "test_util.h"
 
 int
 bbs_fix_sign ()

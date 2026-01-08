@@ -8,7 +8,7 @@ set(BBS_FIX_TESTS
     bbs_fix_proof_gen.c
     bbs_fix_proof_verify.c)
 set(BBS_E2E_TESTS bbs_e2e_sign_n_proof.c)
-set(BBS_BENCH_TESTS bbs_bench_e2e.c bbs_bench_individual.c)
+set(BBS_BENCH_TESTS bbs_bench_individual.c)
 
 # Generate driver source files
 create_test_sourcelist(fix_driver   bbs_fix_driver.c   ${BBS_FIX_TESTS})
@@ -62,7 +62,6 @@ foreach(suite IN LISTS BBS_CIPHERSUITES)
 endforeach()
 
 # Benchmark command
-# Do not automatically bench the e2e test as it has too many iterations
 add_custom_target(bench
 	COMMAND bbs-bench-bls12-381-shake-256 bbs_bench_individual
 	COMMAND bbs-bench-bls12-381-sha-256   bbs_bench_individual)

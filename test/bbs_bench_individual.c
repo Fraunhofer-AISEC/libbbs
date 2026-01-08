@@ -1,12 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "fixtures.h"
-#define BBS_NO_UTIL
-#include "test_util.h"
+#include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <inttypes.h>
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x)  STRINGIFY (x)
+#define BBS_BENCH_START(hint) \
+  struct timespec tp_start_ ## hint; \
+  struct timespec tp_end_ ## hint; \
+	clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &tp_start_ ## hint);
+#define BBS_BENCH_END(hint,info) \
+	clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &tp_end_ ## hint); \
+	fprintf (stdout, "%s: %" PRIu64 " ns\n", info,                          \
+		 (((uint64_t) tp_end_ ## hint.tv_sec * 1000000000) + tp_end_ ## hint.tv_nsec) -  \
+		 (((uint64_t) tp_start_ ## hint.tv_sec * 1000000000) + tp_start_ ## hint .tv_nsec));
 
 int
 bbs_bench_individual ()
