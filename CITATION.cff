@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+title: libbbs
+message: If you use this library, please cite it using this metadata.
+type: software
+authors:
+  - given-names: Thomas
+    family-names: Bellebaum
+    affiliation: Fraunhofer AISEC
+    orcid: 'https://orcid.org/0009-0000-2157-8678'
+  - given-names: Martin
+    family-names: Schanzenbach
+    affiliation: Fraunhofer AISEC
+    orcid: 'https://orcid.org/0000-0001-6153-504X'
+  - given-names: Stephan
+    family-names: Schmiedmayer
+    affiliation: Technical University of Munich
+repository-code: 'https://github.com/Fraunhofer-AISEC/libbbs'
+url: 'https://github.com/Fraunhofer-AISEC/libbbs'
+abstract: >-
+  Specification-compliant and performant C implementation of
+  the BBS signature scheme with little to no third party
+  dependencies.
+keywords:
+  - c
+  - cryptography
+  - bbs
+  - selective disclosure
+  - irtf
+  - internet-draft
+  - signatures
+license: Apache-2.0
