@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #include "sha256.h"
 #include "compat-endian.h"
 

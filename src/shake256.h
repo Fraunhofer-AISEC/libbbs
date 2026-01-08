@@ -1,5 +1,5 @@
-// sha3.h
-// 19-Nov-11  Markku-Juhani O. Saarinen <mjos@iki.fi>
+// SPDX-License-Identifier: Apache-2.0
+// Based on sha3.h by Markku-Juhani O. Saarinen <mjos@iki.fi>
 
 #ifndef SHA3_H
 #define SHA3_H

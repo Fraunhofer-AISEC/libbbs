@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #ifndef BBS_UTIL_H
 #define BBS_UTIL_H
 

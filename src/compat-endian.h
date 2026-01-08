@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #ifndef ENDIAN_H
 #define ENDIAN_H
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Parses the JSON fixtures in fixture_data/ to generate C source files from
 // which the tests may read the fixtures. We generate one source file per
 // ciphersuite.

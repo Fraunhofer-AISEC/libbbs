@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #include "fixtures.h"
 #define BBS_NO_UTIL
 #include "test_util.h"

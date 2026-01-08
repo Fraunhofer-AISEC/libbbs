@@ -1,8 +1,5 @@
-// sha3.c
-// 19-Nov-11  Markku-Juhani O. Saarinen <mjos@iki.fi>
-
-// Revised 07-Aug-15 to match with official release of FIPS PUB 202 "SHA3"
-// Revised 03-Sep-15 for portability + OpenSSL - style API
+// SPDX-License-Identifier: Apache-2.0
+// Based on sha3.c by Markku-Juhani O. Saarinen <mjos@iki.fi>
 
 #include "shake256.h"
 
