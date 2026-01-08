@@ -70,7 +70,7 @@ extern const struct fixture_proof {
 	size_t             num_messages;
 	const void *const *msgs;
 	const size_t      *msg_lens;
-	const uint64_t    *disclosed_indexes;
+	const size_t      *disclosed_indexes;
 	size_t             disclosed_indexes_len;
 	const void        *mocking_seed;
 	size_t             mocking_seed_len;

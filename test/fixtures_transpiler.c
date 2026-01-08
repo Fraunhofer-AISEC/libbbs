@@ -327,7 +327,7 @@ int main(int argc, char **argv) {
 		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
 			fprintf(out, "%zu, ", k->len/2);
 		}
-		fprintf(out, "};\nstatic const uint64_t proof%d_disclosed_indexes[] = {", filenum);
+		fprintf(out, "};\nstatic const size_t proof%d_disclosed_indexes[] = {", filenum);
 		for(struct json *k=json_object_get(j, "disclosedIndexes")->value; k; k = k->next) {
 			fprintf(out, "%.*s, ", (int)k->len, k->string);
 		}

@@ -43,7 +43,7 @@ bbs_e2e_sign_n_proof ()
 	BBS_BENCH_END (verify, "bbs_verify (2 messages, 1 header)")
 
 	uint8_t proof[BBS_PROOF_LEN (1)];
-	uint64_t disclosed_indexes[] = {0};
+	size_t disclosed_indexes[] = {0};
 	static char ph[]                = "I am a challenge nonce!";
 
 	BBS_BENCH_START (proof_gen)

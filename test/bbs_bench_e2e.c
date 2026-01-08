@@ -70,7 +70,7 @@ bbs_bench_e2e ()
 				}
 
 				uint8_t     proof[BBS_PROOF_LEN (1)];
-				uint64_t    disclosed_indexes[] = {0};
+				size_t      disclosed_indexes[] = {0};
 				static char ph[]                = "I am a challenge nonce!";
 
 				if (BBS_OK != bbs_proof_gen_v (suite, pk, sig, proof,

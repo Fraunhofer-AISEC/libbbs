@@ -91,7 +91,7 @@ bbs_bench_individual ()
 
 	// - MARK: Proof generation
 	uint8_t proof[ITERATIONS][BBS_PROOF_LEN (1)];
-	uint64_t       disclosed_indexes[] = {0};
+	size_t       disclosed_indexes[] = {0};
 	#define RANDOM_NONCE_SIZE 23
 	static uint8_t random_nonces[ITERATIONS][RANDOM_NONCE_SIZE];
 	for (int i = 0; i < ITERATIONS; i++)

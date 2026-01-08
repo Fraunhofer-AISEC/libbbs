@@ -100,7 +100,7 @@ mocked_proof_gen (
 	size_t                 header_len,
 	const void            *presentation_header,
 	size_t                 presentation_header_len,
-	const uint64_t        *disclosed_indexes,
+	const size_t          *disclosed_indexes,
 	size_t                 disclosed_indexes_len,
 	uint64_t               num_messages,
 	const void *const     *messages,

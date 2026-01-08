@@ -179,13 +179,13 @@ calculate_domain_finalize (
 	union bbs_hash_context *ctx,
 	blst_scalar               *out,
 	const void      *header,
-	uint64_t            header_len
+	size_t            header_len
 	)
 {
 	const uint8_t      *api_id = (uint8_t*) cipher_suite->api_id;
 	uint8_t             api_id_len = cipher_suite->api_id_len;
 	uint8_t  domain_dst[api_id_len + 4];
-	uint64_t header_len_be = htobe64 (header_len);
+	uint64_t header_len_be = htobe64 ((uint64_t)header_len);
 
 	bbs_memcpy(domain_dst, api_id, api_id_len);
 	bbs_memcpy(domain_dst + api_id_len, "H2S_", 4);
