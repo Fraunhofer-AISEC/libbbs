@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 // This header file defines several extern constants, which are generated per
-// ciphersuite by genfixtures. 
+// ciphersuite by fixtures_transpiler.c
 
 // Helpful macros to print and compare memory
 #define PRINT(p, a, l)  do { puts (p); for (size_t xx = 0; xx<l; xx++) printf ("%02x ", ((uint8_t*)a)[xx]); \
