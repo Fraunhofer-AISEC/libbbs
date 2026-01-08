@@ -4,7 +4,7 @@ Specification-compliant and performant C implementation of the [BBS signature sc
 
 Provides a library `libbbs` implementing the `BLS12-381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
 
-The API is documented in `include/bbs.h` and the manual. See bbs(7).
+The API is documented in `include/bbs.h` and the manual. See **bbs**(7).
 
 ## Build / Install from source
 
