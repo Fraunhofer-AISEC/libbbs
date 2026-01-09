@@ -26,6 +26,7 @@
 	}
 
 extern const bbs_ciphersuite *const *const fixture_ciphersuite;
+extern const char *const fixture_ciphersuite_name;
 
 extern const struct fixture_hash_to_scalar {
 	const void *msg;

@@ -1,18 +1,20 @@
 # libbbs
 
-Specification-compliant and performant C implementation of the [BBS signature scheme](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/) with little to no third party dependencies.
+Specification-compliant and performant C implementation of the [BBS signature scheme](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/) with little to no third party dependencies.[^1]
 
 Provides a library `libbbs` implementing the `BLS12-381-SHA-256` and `BLS12-381-SHAKE-256` cipher suite.
 
 The API is documented in `include/bbs.h` and the manual. See **bbs**(7).
 
+[^1]: The calling application needs to provide a source of randomness via
+    **getentropy**(2). On modern POSIX platforms, this function is included in libc.
+
 ## Build / Install from source
 
-Dependencies:
+Build dependencies:
 
-- `cmake` (build only)
-- blst (will be downloaded during build)
-- libc providing the `getentropy` function.
+- `cmake`
+- [blst](https://github.com/supranational/blst) (automatically downloaded / statically linked)
 
 ```sh
 $ mkdir build && cd build

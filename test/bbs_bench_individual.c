@@ -6,154 +6,119 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#define BBS_BENCH_START(hint) \
-  struct timespec tp_start_ ## hint; \
-  struct timespec tp_end_ ## hint; \
-	clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &tp_start_ ## hint);
-#define BBS_BENCH_END(hint,info) \
-	clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &tp_end_ ## hint); \
-	fprintf (stdout, "%s: %" PRIu64 " ns\n", info,                          \
-		 (((uint64_t) tp_end_ ## hint.tv_sec * 1000000000) + tp_end_ ## hint.tv_nsec) -  \
-		 (((uint64_t) tp_start_ ## hint.tv_sec * 1000000000) + tp_start_ ## hint .tv_nsec));
+struct result {
+	const char *name;
+	double      min;
+	double      avg;
+	double      max;
+};
+
+/* Print a markdown table of results */
+static void print_results(struct result *r, size_t n) {
+	size_t name_len = 9; /* Length of "Operation" */
+	for(size_t i=0; i<n; i++)
+		if(name_len < strlen(r[i].name)) name_len = strlen(r[i].name);
+	printf("| %-*s | %s | %s | %s |\n",
+			(int)name_len, "Operation", "min (ms)", "avg (ms)", "max (ms)");
+	printf("| %.*s | -------- | -------- | -------- |\n",
+			(int)name_len, "----------------------------------------");
+	for(size_t i=0; i<n; i++)
+		printf("| %-*s | %8.3f | %8.3f | %8.3f |\n",
+			(int)name_len, r[i].name, r[i].min, r[i].avg, r[i].max);
+}
 
 int
 bbs_bench_individual ()
 {
-	const bbs_ciphersuite *cipher_suite = *fixture_ciphersuite;
-
-	#define USE_HEADER                          0
-
-	printf ("Include header: %d \n", USE_HEADER);
-
+	#define WARMUP 100
 	#define ITERATIONS 1000
-
-	// - MARK: Key generation
-	bbs_secret_key sk[ITERATIONS];
-	bbs_public_key pk[ITERATIONS];
-
-	printf ("key generation %d iterations.\n", ITERATIONS);
-
-	BBS_BENCH_START (key_gen)
-	for (int i = 0; i < ITERATIONS; i++)
-	{
-		if (BBS_OK != bbs_keygen_full (cipher_suite, sk[i], pk[i]))
-		{
-			puts ("Error during key generation");
-			return 1;
-		}
-	}
-	BBS_BENCH_END (key_gen, "Key generation (SK & PK)")
-
-	// - MARK: Signing
-
 	#define MSG_LEN 64
+	#define NONCE_LEN 23
 
-	char msg1[ITERATIONS][MSG_LEN];
-	char          msg2[ITERATIONS][MSG_LEN];
-	bbs_signature sig[ITERATIONS];
+	clock_t clk; /* Because clock_gettime is POSIX-only */
+	double timing, sum; /* recorded in ms */
+	struct result results[10];
+	size_t results_idx = 0;
 
-	for (int i = 0; i < ITERATIONS; i++)
-	{
-		for (int j = 0; j < MSG_LEN; j++)
-		{
-			msg1[i][j] = (char) rand ();
-			msg2[i][j] = (char) rand ();
-		}
-	}
-	#if USE_HEADER
-	static char header[] = "But I am a header!";
-	#else
-	static char header[] = "";
-	#endif
+	const bbs_ciphersuite *cipher_suite = *fixture_ciphersuite;
+	bbs_secret_key sk;
+	bbs_public_key pk;
+	char           msg1[MSG_LEN];
+	char           msg2[MSG_LEN];
+	bbs_signature  sig;
+	char           header[] = "But I am a header!";
+	size_t         header_len = strlen(header);
+	uint8_t        proof[BBS_PROOF_LEN (1)];
+	size_t         disclosed_indexes[] = {0};
+	char           random_nonces[NONCE_LEN];
 
-	printf ("signing %d iterations of %d messages each of size %d bytes.\n",
-		ITERATIONS, 2, MSG_LEN);
+	for (int j = 0; j < MSG_LEN;   j++) msg1[j]          = (char) rand ();
+	for (int j = 0; j < MSG_LEN;   j++) msg2[j]          = (char) rand ();
+	for (int j = 0; j < NONCE_LEN; j++) random_nonces[j] = (char) rand ();
 
-	BBS_BENCH_START (sign)
-	for (int i = 0; i < ITERATIONS; i++)
-	{
-		if (BBS_OK != bbs_sign_v (cipher_suite, sk[i], pk[i], sig[i],
-							       (uint8_t*) header, strlen (header),
-							       2, msg1[i], MSG_LEN, msg2[i],
-							       MSG_LEN))
-		{
-			puts ("Error during signing");
-			return 1;
-		}
-	}
-	BBS_BENCH_END (sign, "Signing")
-
-	// - MARK: Verification
-	printf ("verification %d iterations of %d messages each of size %d bytes.\n",
-		ITERATIONS, 2, MSG_LEN);
-	BBS_BENCH_START (verify)
-	for (int i = 0; i < ITERATIONS; i++)
-	{
-		if (BBS_OK != bbs_verify_v (cipher_suite, pk[i], sig[i], (uint8_t*) header, strlen (header),
-						 2, msg1[i], MSG_LEN, msg2[i], MSG_LEN))
-		{
-			puts ("Error during signature verification");
-			return 1;
-		}
-	}
-	BBS_BENCH_END (verify, "Verification")
-
-	// - MARK: Proof generation
-	uint8_t proof[ITERATIONS][BBS_PROOF_LEN (1)];
-	size_t       disclosed_indexes[] = {0};
-	#define RANDOM_NONCE_SIZE 23
-	static uint8_t random_nonces[ITERATIONS][RANDOM_NONCE_SIZE];
-	for (int i = 0; i < ITERATIONS; i++)
-	{
-		for (int j = 0; j < 23; j++)
-		{
-			random_nonces[i][j] = (uint8_t) rand ();
-		}
+#define BBS_BENCH(_name, _code) \
+	results[results_idx].name = _name; \
+	printf("Benchmarking %s... ", results[results_idx].name); \
+	sum = 0.0; \
+	for(int ii = -WARMUP; ii < ITERATIONS; ii++) { \
+		clk = clock(); \
+		if(BBS_OK != _code) { puts("ERROR!"); return 1; } \
+		timing = ((double)(clock() - clk)/CLOCKS_PER_SEC) * 1000; \
+		if(ii < 0) continue; \
+		sum += timing; \
+		if(!ii || results[results_idx].min > timing) \
+			results[results_idx].min = timing; \
+		if(!ii || results[results_idx].max < timing) \
+			results[results_idx].max = timing; \
+	} \
+	results[results_idx++].avg = sum / ITERATIONS; \
+	puts("Done!");
+	
+	if(CLOCKS_PER_SEC < 1000000) {
+		printf("WARNING: CLOCKS_PER_SEC is too low for accurate "
+				"measurements (is %ld)\n", (long)CLOCKS_PER_SEC);
 	}
 
-	printf (
-		"proof generation %d iterations of %d messages each of size %d bytes disclosing first message only.\n",
-		ITERATIONS,
-		2,
-		MSG_LEN);
-	BBS_BENCH_START (proof_gen)
-	for (int i = 0; i < ITERATIONS; i++)
-	{
-		if (BBS_OK != bbs_proof_gen_v (cipher_suite, pk[i], sig[i], proof[i],
-								    (uint8_t*) header,
-								    strlen (header),
-								    (uint8_t*) random_nonces[i],
-								    RANDOM_NONCE_SIZE,
-								    disclosed_indexes, 1, 2,
-								    msg1[i], MSG_LEN, msg2[i],
-								    MSG_LEN))
-		{
-			puts ("Error during proof generation");
-			return 1;
-		}
-	}
-	BBS_BENCH_END (proof_gen, "Proof generation")
+	int title_len = printf("Benchmark for Ciphersuite %s\n", fixture_ciphersuite_name);
+	while(--title_len) printf("=");
+	puts("");
 
-	// - MARK: Proof verification
-	printf (
-		"proof verification %d iterations of %d messages each of size %d bytes disclosing first message only.\n",
-		ITERATIONS,
-		2,
-		MSG_LEN);
-	BBS_BENCH_START (proof_verify)
-	for (int i = 0; i < ITERATIONS; i++)
-	{
-		if (BBS_OK != bbs_proof_verify_v (cipher_suite, pk[i], proof[i], BBS_PROOF_LEN (1),
-						       (uint8_t*) header, strlen (header),
-						       (uint8_t*) random_nonces[i],
-						       RANDOM_NONCE_SIZE, disclosed_indexes, 1, 2,
-						       msg1[i], MSG_LEN))
-		{
-			puts ("Error during proof verification");
-			return 1;
-		}
-	}
-	BBS_BENCH_END (proof_verify, "Proof verification")
+	puts("Configuration:");
+	printf("- %d measured iterations, %d round of warmup\n", ITERATIONS, WARMUP);
+	printf("- %d messages, each of length %d bytes\n", 2, MSG_LEN);
+	printf("- %d messages disclosed\n", 1);
+	printf("- header of length %zu bytes\n", header_len);
+	printf("- presentation header of length %d bytes\n\n", NONCE_LEN);
 
+	BBS_BENCH ("Key Generation",
+		bbs_keygen_full (cipher_suite, sk, pk));
+
+	BBS_BENCH ("Signature Generation",
+		bbs_sign_v (cipher_suite, sk, pk, sig,
+				header, header_len, 2,
+				msg1, MSG_LEN, msg2, MSG_LEN));
+
+	BBS_BENCH ("Signature Verification",
+		bbs_verify_v (cipher_suite, pk, sig,
+				header, header_len, 2,
+				msg1, MSG_LEN, msg2, MSG_LEN));
+
+	BBS_BENCH ("Proof Generation",
+		bbs_proof_gen_v (cipher_suite, pk, sig, proof,
+				header, header_len,
+				random_nonces, NONCE_LEN,
+				disclosed_indexes, 1, 2,
+				msg1, MSG_LEN, msg2, MSG_LEN));
+
+	BBS_BENCH ("Proof Verification",
+		bbs_proof_verify_v (cipher_suite, pk, proof, BBS_PROOF_LEN (1),
+				header, strlen (header),
+				random_nonces, NONCE_LEN,
+				disclosed_indexes, 1, 2,
+				msg1, MSG_LEN));
+
+	puts("");
+	print_results(results, results_idx);
+	puts("");
 	return 0;
 }

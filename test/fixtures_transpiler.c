@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
 
 	// Ciphersuite
 	fprintf(out, "const bbs_ciphersuite *const *const fixture_ciphersuite = &%s; \n\n", cipher_suite);
+	fprintf(out, "const char *const fixture_ciphersuite_name = \"%s\"; \n\n", argv[1]);
 
 	// Hash to Scalar
 	f = read_file(dirfd, "MapMessageToScalarAsHash.json");
