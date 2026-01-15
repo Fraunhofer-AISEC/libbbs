@@ -7,7 +7,7 @@ Provides a library `libbbs` implementing the `BLS12-381-SHA-256` and `BLS12-381-
 The API is documented in `include/bbs.h` and the manual. See **bbs**(7).
 
 [^1]: The calling application needs to provide a source of randomness via
-    **getentropy**(2). On modern POSIX platforms, this function is included in libc.
+    [**getentropy**(3)](https://pubs.opengroup.org/onlinepubs/9799919799/). On modern POSIX platforms, this function is included in libc.
 
 ## Build / Install from source
 
