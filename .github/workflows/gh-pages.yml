@@ -21,6 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mandoc
+
       - name: Convert man to html
         # This converts to html via pandoc, makes links clickable and adds a
         # redirect as the first page.
