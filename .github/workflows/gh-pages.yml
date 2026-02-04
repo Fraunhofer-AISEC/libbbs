@@ -17,9 +17,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment:
-      # CSS file to refer to
-      css: https://man.archlinux.org/static/archmanweb/man_page.css
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,6 +25,7 @@ jobs:
         # This converts to html via pandoc, makes links clickable and adds a
         # redirect as the first page.
         run: |
+          css=https://man.archlinux.org/static/archmanweb/man_page.css
           cd doc
           for d in $(find . -type d); do mkdir -p _html/$d; done
           for f in $(find . \( -type f -o -type l \) )
