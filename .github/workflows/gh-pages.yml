@@ -1,0 +1,55 @@
+name: Publish Man Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      # CSS file to refer to
+      css: https://man.archlinux.org/static/archmanweb/man_page.css
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Convert man to html
+        # This converts to html via pandoc, makes links clickable and adds a
+        # redirect as the first page.
+        run: |
+          cd doc
+          for d in $(find . -type d); do mkdir -p _html/$d; done
+          for f in $(find . \( -type f -o -type l \) )
+          do mandoc -T html -O style=$css $f \
+          	| sed -E 's/<b>([a-zA-Z0-9_]*)<\/b>\(([0-9])([a-z]*)\)/<a href="..\/man\2\/\1.\2\3.html">\1(\2\3)<\/a>/g' \
+          	> _html/$f.html
+          done;
+          echo '<!doctype html><meta http-equiv="refresh" content="0; url=./man7/bbs.7.html">' > _html/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./doc/_html
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+
+        id: deployment
+        uses: actions/deploy-pages@v4
