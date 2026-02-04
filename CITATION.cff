@@ -15,7 +15,7 @@ authors:
     family-names: Schmiedmayer
     affiliation: Technical University of Munich
 repository-code: 'https://github.com/Fraunhofer-AISEC/libbbs'
-url: 'https://github.com/Fraunhofer-AISEC/libbbs'
+url: 'https://fraunhofer-aisec.github.io/libbbs/'
 abstract: >-
   Specification-compliant and performant C implementation of
   the BBS signature scheme with little to no third party
