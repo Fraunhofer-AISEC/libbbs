@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-/**
- * (C) 2025 Fraunhofer AISEC
- */
+// (C) 2025 Fraunhofer AISEC
 
 /**
  * @file bbs.h
@@ -10,6 +8,13 @@
  * @author Martin Schanzenbach
  * @date 2 Jun 2025
  * @brief The main libbbs header file.
+ *
+ * Using the BBS signature scheme requires several non-standard considerations,
+ * such as keeping the signature secret. For an introduction, see bbs(7), as
+ * well as the man-pages for each function.
+ *
+ * For the latest revision, up to date man-pages are also available as HTML at
+ * https://fraunhofer-aisec.github.io/libbbs/
  */
 
 #ifndef BBS_H

@@ -35,7 +35,7 @@ the
 .I n
 (at most 2^64) messages in
 .I messages,
-which have lengths
+whose lengths in bytes are given in
 .I messages_lens.
 The
 .I disclosed_indexes_len
@@ -46,7 +46,7 @@ remaining (disclosed) messages is still guaranteed. The special message
 .I header
 of length
 .I header_len
-must always be revealed.
+bytes must always be revealed.
 .P
 Two proofs do not themselves disclose whether or not they are derived from the
 same signature. However, information contained within the messages may enable
@@ -57,14 +57,14 @@ message
 .I presentation_header
 of length
 .I presentation_header_len
-may be authenticated. This feature may be used to prevent replay of proofs by
-incorporating a challenge nonce in
+bytes may be authenticated. This feature may be used to prevent replay of proofs
+by incorporating a challenge nonce in
 .I presentation_header.
 Note that anyone in possession of a valid signature can generate corresponding
 proofs. Consequently,
 .I the signature should never be disclosed directly.
 .P
-The length of a BBS proof is given by the macro
+The length in bytes of a BBS proof is given by the macro
 .I BBS_PROOF_LEN(num_undisclosed)
 where
 .I num_undisclosed
@@ -99,7 +99,7 @@ Further, it asserts that the messages originally at indices
 .I disclosed_indexes
 are equal to the ones in
 .I messages.
-You should provide the length of the proof as seen on the network in
+You should provide the length in bytes of the proof as seen on the network in
 .I proof_len.
 .P
 Note that the number of messages in

@@ -24,7 +24,7 @@ The BBS signature functions create and verify a basic BBS signature over the
 .I n
 (at most 2^64) messages in
 .I messages,
-which have lengths
+whose lengths in bytes is given in
 .I messages_lens.
 These functions assume that all messages to be signed are provided to the signer.
 .P
@@ -42,7 +42,7 @@ The special message
 .I header
 of length
 .I header_len
-will always have to be disclosed if present.
+bytes will always have to be disclosed if present.
 .P
 All functions take a pointer to a
 .BR bbs_ciphersuite (3type)
