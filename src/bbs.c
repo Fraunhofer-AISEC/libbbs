@@ -68,7 +68,7 @@ bbs_keygen (
 				      key_material,
 				      key_material_len,
 				      &key_info_len_be,
-				      2,
+				      (size_t)2,
 				      key_info,
 				      key_info_len);
 
@@ -747,7 +747,7 @@ bbs_proof_prf (
 		"random r_3 scalar",
 	};
 
-        hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, 32, &input, 8);
+        hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, (size_t)32, &input, (size_t)8);
 }
 
 int

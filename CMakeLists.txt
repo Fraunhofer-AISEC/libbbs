@@ -19,7 +19,7 @@ if (MSVC)
     add_compile_options(/W4)
 else()
     # additional warnings
-    add_compile_options(-Wall -Wextra -Wpedantic -Wabi)
+    add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 ExternalProject_Add(
