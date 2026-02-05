@@ -8,10 +8,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   test:
     runs-on: ubuntu-latest
