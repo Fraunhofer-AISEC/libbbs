@@ -1,0 +1,40 @@
+name: Build and Run Tests
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Build
+        # This converts to html via pandoc, makes links clickable and adds a
+        # redirect as the first page.
+        run: |
+          set -e
+          mkdir build && cd build
+          cmake ..
+          make
+
+      - name: Test
+        run: |
+          set -e
+          make test
+
