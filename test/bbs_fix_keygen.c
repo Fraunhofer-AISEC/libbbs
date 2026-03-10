@@ -11,11 +11,8 @@ bbs_fix_keygen ()
 		if (BBS_OK != bbs_keygen(*fixture_ciphersuite,
 					sk,
 					vectors_keygen[i].key_material,
-					vectors_keygen[i].key_material_len,
 					vectors_keygen[i].key_info,
-					vectors_keygen[i].key_info_len,
-					vectors_keygen[i].key_dst,
-					vectors_keygen[i].key_dst_len))
+					vectors_keygen[i].key_dst))
 		{
 			puts ("Error during secret key generation");
 			return 1;

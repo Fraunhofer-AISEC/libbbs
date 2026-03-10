@@ -12,10 +12,8 @@ bbs_fix_hash_to_scalar ()
 		hash_to_scalar (*fixture_ciphersuite,
 				&s,
 				vectors_hash_to_scalar[i].dst,
-				vectors_hash_to_scalar[i].dst_len,
 	                        1,
-				vectors_hash_to_scalar[i].msg,
-				vectors_hash_to_scalar[i].msg_len);
+				__BBS_MSGVEC(vectors_hash_to_scalar[i].msg));
 		bn_write_bbs (s_buffer, &s);
 		ASSERT_EQ_PTR ("hash to scalar",
 				s_buffer,

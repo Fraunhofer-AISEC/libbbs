@@ -15,10 +15,8 @@ bbs_fix_sign ()
 					vectors_signature[i].pk,
 					sig,
 					vectors_signature[i].header,
-					vectors_signature[i].header_len,
-					vectors_signature[i].num_messages,
 					vectors_signature[i].msgs,
-					vectors_signature[i].msg_lens))
+					vectors_signature[i].num_messages))
 		{
 			puts ("Error during signature generation");
 			return 1;

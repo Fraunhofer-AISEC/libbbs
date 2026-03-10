@@ -29,10 +29,8 @@ extern const bbs_ciphersuite *const *const fixture_ciphersuite;
 extern const char *const fixture_ciphersuite_name;
 
 extern const struct fixture_hash_to_scalar {
-	const void *msg;
-	size_t      msg_len;
-	const void *dst;
-	size_t      dst_len;
+	bbs_message msg;
+	bbs_message dst;
 	uint8_t     result[32];
 } *const vectors_hash_to_scalar;
 extern const size_t vectors_hash_to_scalar_len;
@@ -44,60 +42,47 @@ extern const struct fixture_generators {
 extern const size_t vectors_generators_len;
 
 extern const struct fixture_keygen {
-	const void *key_material;
-	size_t      key_material_len;
-	const void *key_info;
-	size_t      key_info_len;
-	const void *key_dst;
-	size_t      key_dst_len;
+	bbs_message key_material;
+	bbs_message key_info;
+	bbs_message key_dst;
 	uint8_t     result_sk[32];
 	uint8_t     result_pk[96];
 } *const vectors_keygen;
 extern const size_t vectors_keygen_len;
 
 extern const struct fixture_signature {
-	uint8_t            sk[32];
-	uint8_t            pk[96];
-	const void        *header;
-	size_t             header_len;
-	size_t             num_messages;
-	const void *const *msgs;
-	const size_t      *msg_lens;
-	uint8_t            result[80];
-	int                result_valid;
+	uint8_t      sk[32];
+	uint8_t      pk[96];
+	bbs_message  header;
+	size_t       num_messages;
+	const bbs_message *msgs;
+	uint8_t      result[80];
+	int          result_valid;
 } *const vectors_signature;
 extern const size_t vectors_signature_len;
 
 // The proof_gen fixtures use mocked scalars
 extern const struct fixture_mocked_scalars {
-	const void     *seed;
-	size_t          seed_len;
-	const void     *dst;
-	size_t          dst_len;
+	bbs_message     seed;
+	bbs_message     dst;
 	const uint8_t (*result)[32];
 	size_t          result_len;
 } *const vectors_mocked_scalars;
 extern const size_t vectors_mocked_scalars_len;
 
 extern const struct fixture_proof {
-	uint8_t            pk[96];
-	uint8_t            signature[80];
-	const void        *header;
-	size_t             header_len;
-	const void        *presentation_header;
-	size_t             presentation_header_len;
-	size_t             num_messages;
-	const void *const *msgs;
-	const size_t      *msg_lens;
-	const size_t      *disclosed_indexes;
-	size_t             disclosed_indexes_len;
-	const void        *mocking_seed;
-	size_t             mocking_seed_len;
-	const void        *mocking_dst;
-	size_t             mocking_dst_len;
-	const void        *result;
-	size_t             result_len;
-	int                result_valid;
+	uint8_t       pk[96];
+	uint8_t       signature[80];
+	bbs_message   header;
+	bbs_message   presentation_header;
+	size_t        num_messages;
+	const bbs_message *msgs;
+	const size_t *disclosed_indexes;
+	size_t        disclosed_indexes_len;
+	bbs_message   mocking_seed;
+	bbs_message   mocking_dst;
+	bbs_message   result;
+	int           result_valid;
 } *const vectors_proof;
 extern const size_t vectors_proof_len;
 

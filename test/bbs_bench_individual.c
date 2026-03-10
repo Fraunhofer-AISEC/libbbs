@@ -47,7 +47,6 @@ bbs_bench_individual ()
 	char           msg2[MSG_LEN];
 	bbs_signature  sig;
 	char           header[] = "But I am a header!";
-	size_t         header_len = strlen(header);
 	uint8_t        proof[BBS_PROOF_LEN (1)];
 	size_t         disclosed_indexes[] = {0};
 	char           random_nonces[NONCE_LEN];
@@ -87,35 +86,33 @@ bbs_bench_individual ()
 	printf("- %d measured iterations, %d round of warmup\n", ITERATIONS, WARMUP);
 	printf("- %d messages, each of length %d bytes\n", 2, MSG_LEN);
 	printf("- %d messages disclosed\n", 1);
-	printf("- header of length %zu bytes\n", header_len);
+	printf("- header of length %zu bytes\n", strlen(header));
 	printf("- presentation header of length %d bytes\n\n", NONCE_LEN);
 
 	BBS_BENCH ("Key Generation",
 		bbs_keygen_full (cipher_suite, sk, pk));
 
 	BBS_BENCH ("Signature Generation",
-		bbs_sign_v (cipher_suite, sk, pk, sig,
-				header, header_len, 2,
-				msg1, MSG_LEN, msg2, MSG_LEN));
+		bbs_sign_v (cipher_suite, sk, pk, sig, BBS_SMSG(header),
+				BBS_CMSG(msg1), BBS_CMSG(msg2)));
 
 	BBS_BENCH ("Signature Verification",
 		bbs_verify_v (cipher_suite, pk, sig,
-				header, header_len, 2,
-				msg1, MSG_LEN, msg2, MSG_LEN));
+				BBS_SMSG(header),
+				BBS_CMSG(msg1), BBS_CMSG(msg2)));
 
 	BBS_BENCH ("Proof Generation",
-		bbs_proof_gen_v (cipher_suite, pk, sig, proof,
-				header, header_len,
-				random_nonces, NONCE_LEN,
-				disclosed_indexes, 1, 2,
-				msg1, MSG_LEN, msg2, MSG_LEN));
+		bbs_proof_gen_v (cipher_suite, pk, sig, BBS_OUTMSG(proof, sizeof(proof)),
+				BBS_SMSG(header), BBS_MSG(random_nonces, NONCE_LEN),
+				disclosed_indexes, 1,
+				BBS_CMSG(msg1), BBS_CMSG(msg2)));
 
 	BBS_BENCH ("Proof Verification",
-		bbs_proof_verify_v (cipher_suite, pk, proof, BBS_PROOF_LEN (1),
-				header, strlen (header),
-				random_nonces, NONCE_LEN,
-				disclosed_indexes, 1, 2,
-				msg1, MSG_LEN));
+		bbs_proof_verify_v (cipher_suite, pk, BBS_CMSG(proof),
+				BBS_SMSG(header), BBS_MSG(random_nonces, NONCE_LEN),
+				disclosed_indexes, 1,
+				BBS_CMSG(msg1)));
+	// FIXME: The macro above substitutes the wrong number of messages!
 
 	puts("");
 	print_results(results, results_idx);

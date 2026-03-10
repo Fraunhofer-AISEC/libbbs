@@ -121,14 +121,14 @@ void shake256_init(shake256_t *c)
 
 // update state with more data
 
-void shake256_update(shake256_t *c, const void *data, size_t len)
+void shake256_update(shake256_t *c, bbs_message data)
 {
     size_t i;
     int j;
 
     j = c->pt;
-    for (i = 0; i < len; i++) {
-        c->st.b[j++] ^= ((const uint8_t *) data)[i];
+    for (i = 0; i < data.len; i++) {
+        c->st.b[j++] ^= ((const uint8_t *) data.loc)[i];
         if (j >= c->rsiz) {
             sha3_keccakf(c->st.q);
             j = 0;
@@ -139,7 +139,7 @@ void shake256_update(shake256_t *c, const void *data, size_t len)
 
 // finalize and output a hash
 
-void shake256_finalize(shake256_t *c, void *out, size_t len)
+void shake256_finalize(shake256_t *c, bbs_out_message out)
 {
     size_t i;
     int j = 0;
@@ -148,34 +148,33 @@ void shake256_finalize(shake256_t *c, void *out, size_t len)
     c->st.b[c->rsiz - 1] ^= 0x80;
     sha3_keccakf(c->st.q);
 
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < out.len; i++) {
         if (j >= c->rsiz) {
             sha3_keccakf(c->st.q);
             j = 0;
         }
-        ((uint8_t *) out)[i] = c->st.b[j++];
+        ((uint8_t *) out.loc)[i] = c->st.b[j++];
     }
 }
 
-void xof_shake256_finalize(shake256_t *shake, void *out, uint16_t out_len, const void *dst, size_t dst_len) {
+void xof_shake256_finalize(shake256_t *shake, bbs_out_message out, bbs_message dst) {
 	uint8_t dst2[32];
 
-	if(dst_len > 255) {
+	if(dst.len > 255) {
 		shake256_t shake2;
 		shake256_init(&shake2);
-		shake256_update(&shake2, "H2C-OVERSIZE-DST-", 17);
-		shake256_update(&shake2, dst, dst_len);
-		shake256_finalize(&shake2, dst2, 32);
-		dst = dst2;
-		dst_len = 32;
+		shake256_update(&shake2, BBS_LSMSG("H2C-OVERSIZE-DST-"));
+		shake256_update(&shake2, dst);
+		shake256_finalize(&shake2, BBS_OUTMSG(dst2, sizeof(dst2)));
+		dst = BBS_CMSG(dst2);
 	}
 
-	uint8_t num = out_len / 256;
-	shake256_update(shake, &num, 1);
-	num = out_len;
-	shake256_update(shake, &num, 1);
-	shake256_update(shake, dst, dst_len);
-	num = dst_len;
-	shake256_update(shake, &num, 1);
-	shake256_finalize(shake, out, out_len);
+	uint8_t num = out.len / 256;
+	shake256_update(shake, BBS_CMSG(num));
+	num = out.len;
+	shake256_update(shake, BBS_CMSG(num));
+	shake256_update(shake, dst);
+	num = dst.len;
+	shake256_update(shake, BBS_CMSG(num));
+	shake256_finalize(shake, out);
 }

@@ -30,18 +30,19 @@
 #define BBS_SIG_LEN                    80
 #define BBS_PROOF_BASE_LEN             272
 #define BBS_PROOF_UD_ELEM_LEN          32
-#define BBS_PROOF_LEN(num_undisclosed) (BBS_PROOF_BASE_LEN + (num_undisclosed) * BBS_PROOF_UD_ELEM_LEN \
-					)
+#define BBS_PROOF_LEN(num_undisclosed) (BBS_PROOF_BASE_LEN + (num_undisclosed) * BBS_PROOF_UD_ELEM_LEN)
+
 /* Return values. Other error codes may be defined in the future */
 #define BBS_OK    0
 #define BBS_ERROR 1
 
 /* Types */
-typedef uint8_t  bbs_secret_key[BBS_SK_LEN];
-typedef uint8_t  bbs_public_key[BBS_PK_LEN];
-typedef uint8_t  bbs_signature[BBS_SIG_LEN];
-/* typedef uint8_t proof[BBS_PROOF_LEN(num_undisclosed)]; */
-typedef struct _bbs_ciphersuite bbs_ciphersuite;
+typedef uint8_t                                 bbs_secret_key[BBS_SK_LEN];
+typedef uint8_t                                 bbs_public_key[BBS_PK_LEN];
+typedef uint8_t                                 bbs_signature[BBS_SIG_LEN];
+typedef struct { const void *loc; size_t len; } bbs_message;
+typedef struct {       void *loc; size_t len; } bbs_out_message;
+typedef struct _bbs_ciphersuite                 bbs_ciphersuite;
 
 /* Key Generation */
 int bbs_keygen_full (
@@ -52,12 +53,9 @@ int bbs_keygen_full (
 int bbs_keygen (
 	const bbs_ciphersuite *cipher_suite,
 	bbs_secret_key         sk,
-	const void            *key_material,
-	size_t                 key_material_len,
-	const void            *key_info,
-	size_t                 key_info_len,
-	const void            *key_dst,
-	size_t                 key_dst_len
+	bbs_message            key_material,
+	bbs_message            key_info,
+	bbs_message            key_dst
 	);
 int bbs_sk_to_pk (
 	const bbs_ciphersuite *cipher_suite,
@@ -66,126 +64,89 @@ int bbs_sk_to_pk (
 	);
 
 /* Signature Creation / Verification */
-int bbs_sign_v (
-	const bbs_ciphersuite *cipher_suite,
-	const bbs_secret_key   sk,
-	const bbs_public_key   pk,
-	bbs_signature          signature,
-	const void            *header,
-	size_t                 header_len,
-	size_t                 n,
-	...
-	);
 int bbs_sign (
 	const bbs_ciphersuite *cipher_suite,
 	const bbs_secret_key   sk,
 	const bbs_public_key   pk,
 	bbs_signature          signature,
-	const void            *header,
-	size_t                 header_len,
-	size_t                 n,
-	const void *const     *messages,
-	const size_t          *messages_lens
-	);
-int bbs_verify_v (
-	const bbs_ciphersuite *cipher_suite,
-	const bbs_public_key   pk,
-	const bbs_signature    signature,
-	const void            *header,
-	size_t                 header_len,
-	size_t                 n,
-	...
+	bbs_message            header,
+	const bbs_message     *messages,
+	size_t                 n
 	);
 int bbs_verify (
 	const bbs_ciphersuite *cipher_suite,
 	const bbs_public_key   pk,
 	const bbs_signature    signature,
-	const void            *header,
-	size_t                 header_len,
-	size_t                 n,
-	const void *const     *messages,
-	const size_t          *messages_lens
+	bbs_message            header,
+	const bbs_message     *messages,
+	size_t                 n
 	);
 
 /* Proof Creation / Verification */
-int bbs_proof_gen_v (
-	const bbs_ciphersuite *cipher_suite,
-	const bbs_public_key   pk,
-	const bbs_signature    signature,
-	void                  *proof,
-	const void            *header,
-	size_t                 header_len,
-	const void            *presentation_header,
-	size_t                 presentation_header_len,
-	const size_t          *disclosed_indexes,
-	size_t                 disclosed_indexes_len,
-	size_t                 n,
-	...
-	);
 int bbs_proof_gen (
 	const bbs_ciphersuite *cipher_suite,
 	const bbs_public_key   pk,
 	const bbs_signature    signature,
-	void                  *proof,
-	const void            *header,
-	size_t                 header_len,
-	const void            *presentation_header,
-	size_t                 presentation_header_len,
+	bbs_out_message        proof,
+	bbs_message            header,
+	bbs_message            presentation_header,
 	const size_t          *disclosed_indexes,
 	size_t                 disclosed_indexes_len,
-	size_t                 n,
-	const void *const     *messages,
-	const size_t          *messages_lens
-	);
-int bbs_proof_verify_v (
-	const bbs_ciphersuite *cipher_suite,
-	const bbs_public_key   pk,
-	const void            *proof,
-	size_t                 proof_len,
-	const void            *header,
-	size_t                 header_len,
-	const void            *presentation_header,
-	size_t                 presentation_header_len,
-	const size_t          *disclosed_indexes,
-	size_t                 disclosed_indexes_len,
-	size_t                 n,
-	...
+	const bbs_message     *messages,
+	size_t                 n
 	);
 int bbs_proof_verify (
 	const bbs_ciphersuite *cipher_suite,
 	const bbs_public_key   pk,
-	const void            *proof,
-	size_t                 proof_len,
-	const void            *header,
-	size_t                 header_len,
-	const void            *presentation_header,
-	size_t                 presentation_header_len,
+	bbs_message            proof,
+	bbs_message            header,
+	bbs_message            presentation_header,
 	const size_t          *disclosed_indexes,
 	size_t                 disclosed_indexes_len,
-	size_t                 n,
-	const void *const     *messages,
-	const size_t          *messages_lens
+	const bbs_message     *messages,
+	size_t                 n
 	);
 
 /* Cipher Suites */
 extern const bbs_ciphersuite *const bbs_sha256_ciphersuite;
 extern const bbs_ciphersuite *const bbs_shake256_ciphersuite;
 
-/* Helpful Macros */
-#define bbs_sha256_keygen_full(...)  bbs_keygen_full(bbs_sha256_cipher_suite,__VA_ARGS__)
-#define bbs_sha256_keygen(...)       bbs_keygen(bbs_sha256_cipher_suite,__VA_ARGS__)
-#define bbs_sha256_sk_to_pk(...)     bbs_sk_to_pk(bbs_sha256_cipher_suite,__VA_ARGS__)
-#define bbs_sha256_sign(...)         bbs_sign(bbs_sha256_cipher_suite,__VA_ARGS__)
-#define bbs_sha256_verify(...)       bbs_verify(bbs_sha256_cipher_suite,__VA_ARGS__)
-#define bbs_sha256_proof_gen(...)    bbs_proof_gen(bbs_sha256_cipher_suite,__VA_ARGS__)
-#define bbs_sha256_proof_verify(...) bbs_proof_verify(bbs_sha256_cipher_suite,__VA_ARGS__)
+/* Helpful Macros to construct messages */
+#define BBS_MSG(loc, len) ((bbs_message){ loc, len })
+#define BBS_CMSG(var)          BBS_MSG(&var, sizeof(var))      // Compile-time size
+#define BBS_SMSG(string)       BBS_MSG(string, strlen(string)) // C String, requires <string.h>
+#define BBS_LSMSG(str_literal) BBS_MSG("" str_literal, sizeof(str_literal) - 1) // String literal
+#define BBS_UNDISCLOSED_MSG    BBS_MSG((void*)0, 0)
+#define BBS_OUTMSG(loc, len) ((bbs_out_message){ loc, len })
 
-#define bbs_shake256_keygen_full(...)  bbs_keygen_full(bbs_shake256_cipher_suite,__VA_ARGS__)
-#define bbs_shake256_keygen(...)       bbs_keygen(bbs_shake256_cipher_suite,__VA_ARGS__)
-#define bbs_shake256_sk_to_pk(...)     bbs_sk_to_pk(bbs_shake256_cipher_suite,__VA_ARGS__)
-#define bbs_shake256_sign(...)         bbs_sign(bbs_shake256_cipher_suite,__VA_ARGS__)
-#define bbs_shake256_verify(...)       bbs_verify(bbs_shake256_cipher_suite,__VA_ARGS__)
-#define bbs_shake256_proof_gen(...)    bbs_proof_gen(bbs_shake256_cipher_suite,__VA_ARGS__)
-#define bbs_shake256_proof_verify(...) bbs_proof_verify(bbs_shake256_cipher_suite,__VA_ARGS__)
+/* Variadic variants of the above API */
+#define __BBS_MSGVEC(...) ((bbs_message[]){__VA_ARGS__})
+#define __BBS_MSGVEC_LEN(...) (sizeof(__BBS_MSGVEC(__VA_ARGS__)) / sizeof(bbs_message))
+#define bbs_sign_v(suite, sk, pk, sig, header, ...) \
+	bbs_sign(suite, sk, pk, sig, header, __BBS_MSGVEC(__VA_ARGS__), __BBS_MSGVEC_LEN(__VA_ARGS__))
+#define bbs_verify_v(suite, pk, sig, header, ...) \
+	bbs_verify(suite, pk, sig, header, __BBS_MSGVEC(__VA_ARGS__), __BBS_MSGVEC_LEN(__VA_ARGS__))
+#define bbs_proof_gen_v(suite, pk, sig, proof, header, ph, di, dilen, ...) \
+	bbs_proof_gen(suite, pk, sig, proof, header, ph, di, dilen, \
+			__BBS_MSGVEC(__VA_ARGS__), __BBS_MSGVEC_LEN(__VA_ARGS__))
+#define bbs_proof_verify_v(suite, pk, proof, header, ph, di, dilen, ...) \
+	bbs_proof_verify(suite, pk, proof, header, ph, di, dilen, \
+			__BBS_MSGVEC(__VA_ARGS__), __BBS_MSGVEC_LEN(__VA_ARGS__))
+
+#define bbs_sha256_keygen_full(...)    bbs_keygen_full   (bbs_sha256_cipher_suite,__VA_ARGS__)
+#define bbs_sha256_keygen(...)         bbs_keygen        (bbs_sha256_cipher_suite,__VA_ARGS__)
+#define bbs_sha256_sk_to_pk(...)       bbs_sk_to_pk      (bbs_sha256_cipher_suite,__VA_ARGS__)
+#define bbs_sha256_sign_v(...)         bbs_sign_v        (bbs_sha256_cipher_suite,__VA_ARGS__)
+#define bbs_sha256_verify_v(...)       bbs_verify_v      (bbs_sha256_cipher_suite,__VA_ARGS__)
+#define bbs_sha256_proof_gen_v(...)    bbs_proof_gen_v   (bbs_sha256_cipher_suite,__VA_ARGS__)
+#define bbs_sha256_proof_verify_v(...) bbs_proof_verify_v(bbs_sha256_cipher_suite,__VA_ARGS__)
+
+#define bbs_shake256_keygen_full(...)    bbs_keygen_full   (bbs_shake256_cipher_suite,__VA_ARGS__)
+#define bbs_shake256_keygen(...)         bbs_keygen        (bbs_shake256_cipher_suite,__VA_ARGS__)
+#define bbs_shake256_sk_to_pk(...)       bbs_sk_to_pk      (bbs_shake256_cipher_suite,__VA_ARGS__)
+#define bbs_shake256_sign_v(...)         bbs_sign_v        (bbs_shake256_cipher_suite,__VA_ARGS__)
+#define bbs_shake256_verify_v(...)       bbs_verify_v      (bbs_shake256_cipher_suite,__VA_ARGS__)
+#define bbs_shake256_proof_gen_v(...)    bbs_proof_gen_v   (bbs_shake256_cipher_suite,__VA_ARGS__)
+#define bbs_shake256_proof_verify_v(...) bbs_proof_verify_v(bbs_shake256_cipher_suite,__VA_ARGS__)
 
 #endif
