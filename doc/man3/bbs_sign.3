@@ -9,23 +9,22 @@ BBS Signatures
 .B #include <bbs.h>
 .P
 .BR "int bbs_sign(" "size_t n;"
-.BI "             const bbs_ciphersuite * " ciphersuite ", const bbs_secret_key " sk ","
-.BI "             const bbs_public_key " pk ", bbs_signature " signature ","
-.BI "             const void * " header ", size_t " header_len ", size_t " n ","
-.BI "             const void *const " messages [ n "], const size_t " messages_lens [ n "]);"
+.BI "             const bbs_ciphersuite * " ciphersuite ","
+.BI "             const bbs_secret_key " sk ", const bbs_public_key " pk ","
+.BI "             bbs_signature " signature ", bbs_message " header ","
+.BI "             const bbs_message " messages [ n "], size_t " n "]);"
 .BR "int bbs_verify(" "size_t n;"
-.BI "               const bbs_ciphersuite * " ciphersuite ","
-.BI "               const bbs_public_key " pk ", const bbs_signature " signature ","
-.BI "               const void * " header ", size_t " header_len ", size_t " n ","
-.BI "               const void *const " messages [ n "], const size_t " messages_lens [ n "]);"
+.BI "               const bbs_ciphersuite * " ciphersuite ", const bbs_public_key " pk ","
+.BI "             bbs_signature " signature ", bbs_message " header ","
+.BI "             const bbs_message " messages [ n "], size_t " n "]);"
 .fi
 .SH DESCRIPTION
 The BBS signature functions create and verify a basic BBS signature over the
 .I n
 (at most 2^64) messages in
-.I messages,
-whose lengths in bytes is given in
-.I messages_lens.
+.I messages
+and the special message
+.I header.
 These functions assume that all messages to be signed are provided to the signer.
 .P
 Using
@@ -40,9 +39,7 @@ For this reason, the
 is considered sensitive.
 The special message
 .I header
-of length
-.I header_len
-bytes will always have to be disclosed if present.
+will always have to be disclosed if present.
 .P
 All functions take a pointer to a
 .BR bbs_ciphersuite (3type)
