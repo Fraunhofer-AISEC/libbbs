@@ -39,7 +39,7 @@ bbs_e2e_sign_n_proof ()
 	size_t disclosed_indexes[] = {0};
 	static char ph[]                = "I am a challenge nonce!";
 
-	if (BBS_OK != bbs_proof_gen_v(suite, pk, sig, BBS_OUTMSG(proof, sizeof(proof)),
+	if (BBS_OK != bbs_proof_gen_v(suite, pk, sig, BBS_OUT_CMSG(proof),
 				BBS_SMSG(header), BBS_SMSG(ph), disclosed_indexes, 1,
 				BBS_SMSG(msg1), BBS_SMSG(msg2)))
 	{

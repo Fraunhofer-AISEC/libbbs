@@ -165,7 +165,7 @@ void xof_shake256_finalize(shake256_t *shake, bbs_out_message out, bbs_message d
 		shake256_init(&shake2);
 		shake256_update(&shake2, BBS_LSMSG("H2C-OVERSIZE-DST-"));
 		shake256_update(&shake2, dst);
-		shake256_finalize(&shake2, BBS_OUTMSG(dst2, sizeof(dst2)));
+		shake256_finalize(&shake2, BBS_OUT_CMSG(dst2));
 		dst = BBS_CMSG(dst2);
 	}
 

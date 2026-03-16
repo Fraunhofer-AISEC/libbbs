@@ -102,7 +102,7 @@ bbs_bench_individual ()
 				BBS_CMSG(msg1), BBS_CMSG(msg2)));
 
 	BBS_BENCH ("Proof Generation",
-		bbs_proof_gen_v (cipher_suite, pk, sig, BBS_OUTMSG(proof, sizeof(proof)),
+		bbs_proof_gen_v (cipher_suite, pk, sig, BBS_OUT_CMSG(proof),
 				BBS_SMSG(header), BBS_MSG(random_nonces, NONCE_LEN),
 				disclosed_indexes, 1,
 				BBS_CMSG(msg1), BBS_CMSG(msg2)));

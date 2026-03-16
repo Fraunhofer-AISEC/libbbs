@@ -28,9 +28,7 @@
 #define BBS_SK_LEN                     32
 #define BBS_PK_LEN                     96
 #define BBS_SIG_LEN                    80
-#define BBS_PROOF_BASE_LEN             272
-#define BBS_PROOF_UD_ELEM_LEN          32
-#define BBS_PROOF_LEN(num_undisclosed) (BBS_PROOF_BASE_LEN + (num_undisclosed) * BBS_PROOF_UD_ELEM_LEN)
+#define BBS_PROOF_LEN(num_undisclosed) (272 + (num_undisclosed) * 32)
 
 /* Return values. Other error codes may be defined in the future */
 #define BBS_OK    0
@@ -117,7 +115,8 @@ extern const bbs_ciphersuite *const bbs_shake256_ciphersuite;
 #define BBS_SMSG(string)       BBS_MSG(string, strlen(string)) // C String, requires <string.h>
 #define BBS_LSMSG(str_literal) BBS_MSG("" str_literal, sizeof(str_literal) - 1) // String literal
 #define BBS_UNDISCLOSED_MSG    BBS_MSG((void*)0, 0)
-#define BBS_OUTMSG(loc, len) ((bbs_out_message){ loc, len })
+#define BBS_OUT_MSG(loc, len) ((bbs_out_message){ loc, len })
+#define BBS_OUT_CMSG(var) BBS_OUT_MSG(&var, sizeof(var))
 
 /* Variadic variants of the above API */
 #define __BBS_MSGVEC(...) ((bbs_message[]){__VA_ARGS__})

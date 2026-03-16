@@ -109,7 +109,7 @@ hash_to_scalar_finalize (
 {
 	uint8_t buffer[48];
 
-	cipher_suite->expand_message_finalize (ctx, BBS_OUTMSG(buffer, sizeof(buffer)), dst);
+	cipher_suite->expand_message_finalize (ctx, BBS_OUT_CMSG(buffer), dst);
 	blst_scalar_from_be_bytes(out, buffer, sizeof(buffer));
 }
 
@@ -201,7 +201,7 @@ create_generator_init (
 	cipher_suite->expand_message_init (&hash_ctx);
 	cipher_suite->expand_message_update (&hash_ctx, api_id);
 	cipher_suite->expand_message_update (&hash_ctx, BBS_LSMSG("MESSAGE_GENERATOR_SEED"));
-	cipher_suite->expand_message_finalize(&hash_ctx, BBS_OUTMSG(state, 48), BBS_CMSG(buffer));
+	cipher_suite->expand_message_finalize(&hash_ctx, BBS_OUT_MSG(state, 48), BBS_CMSG(buffer));
 	*((uint64_t*) (state + 48)) = (uint64_t)1;
 }
 
@@ -234,14 +234,14 @@ create_generator_next (
 	cipher_suite->expand_message_init (&hash_ctx);
 	cipher_suite->expand_message_update (&hash_ctx, BBS_MSG(state, 48));
 	cipher_suite->expand_message_update (&hash_ctx, BBS_CMSG(i_be));
-	cipher_suite->expand_message_finalize (&hash_ctx, BBS_OUTMSG(state, 48), BBS_CMSG(dst_buf));
+	cipher_suite->expand_message_finalize (&hash_ctx, BBS_OUT_MSG(state, 48), BBS_CMSG(dst_buf));
 
 	bbs_memcpy(dst_buf + api_id.len, "SIG_GENERATOR_DST_", 18);
 
 	cipher_suite->expand_message_init (&hash_ctx);
 	cipher_suite->expand_message_update (&hash_ctx, BBS_MSG(state, 48));
 	cipher_suite->expand_message_finalize (&hash_ctx,
-			BBS_OUTMSG(rand_buf, sizeof(rand_buf)), BBS_MSG(dst_buf, api_id.len + 18));
+			BBS_OUT_CMSG(rand_buf), BBS_MSG(dst_buf, api_id.len + 18));
 
 	blst_fp_from_be_bytes(&u, rand_buf,    64);
 	blst_fp_from_be_bytes(&v, rand_buf+64, 64);

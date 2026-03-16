@@ -50,8 +50,7 @@ bbs_fix_proof_gen ()
 		(*fixture_ciphersuite)->expand_message_update(&ctx,
 				vectors_mocked_scalars[i].seed);
 		(*fixture_ciphersuite)->expand_message_finalize(&ctx,
-				BBS_OUTMSG(rand, vectors_mocked_scalars[i].result_len * 48),
-				vectors_mocked_scalars[i].dst);
+				BBS_OUT_CMSG(rand), vectors_mocked_scalars[i].dst);
 
 		for (size_t j = 0; j < vectors_mocked_scalars[i].result_len; j++) {
 			if(j<2) mocked_prf(*fixture_ciphersuite, &s, j+1, 0, rand);
@@ -78,13 +77,12 @@ bbs_fix_proof_gen ()
 		(*fixture_ciphersuite)->expand_message_update(&ctx,
 				vectors_proof[i].mocking_seed);
 		(*fixture_ciphersuite)->expand_message_finalize(&ctx,
-				BBS_OUTMSG(rand, sizeof(rand)),
-				vectors_proof[i].mocking_dst);
+				BBS_OUT_CMSG(rand), vectors_proof[i].mocking_dst);
 
 		if (BBS_OK != __bbs_proof_gen_deterministic(*fixture_ciphersuite,
 					vectors_proof[i].pk,
 					vectors_proof[i].signature,
-					BBS_OUTMSG(proof, sizeof(proof)),
+					BBS_OUT_CMSG(proof),
 					vectors_proof[i].header,
 					vectors_proof[i].presentation_header,
 					vectors_proof[i].disclosed_indexes,
