@@ -162,6 +162,14 @@ void calculate_domain_finalize (
 	const void               *header,
 	size_t                    header_len
 	);
+void calculate_domain_finalize_with_nym (
+	const bbs_ciphersuite   *cipher_suite,
+	union bbs_hash_context  *ctx,
+	blst_scalar             *out,
+	const void              *header,
+	size_t                  header_len,
+    uint64_t                length_nym_vector
+	);
 
 
 /**
@@ -173,7 +181,9 @@ void calculate_domain_finalize (
 */
 void create_generator_init (
 	const bbs_ciphersuite *cipher_suite,
-	uint8_t             state[48 + 8]
+	uint8_t             state[48 + 8],
+    uint8_t             *api_id_prefix,
+    uint32_t            api_id_prefix_len
 	);
 
 /**
@@ -187,7 +197,9 @@ void create_generator_init (
 void create_generator_next (
 	const bbs_ciphersuite *cipher_suite,
 	uint8_t             state[48 + 8],
-	blst_p1                *generator
+	blst_p1                *generator,
+    uint8_t                 *api_id_prefix,
+    uint32_t                api_id_prefix_len
 	);
 
 // You can control the randomness for bbs_proof_gen by supplying a prf.

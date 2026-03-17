@@ -198,21 +198,51 @@ calculate_domain_finalize (
 }
 
 void
-create_generator_init (
-	const bbs_ciphersuite *cipher_suite,
-	uint8_t             state[48 + 8]
+calculate_domain_finalize_with_nym (
+	const bbs_ciphersuite   *cipher_suite,
+	union bbs_hash_context  *ctx,
+	blst_scalar             *out,
+	const void              *header,
+	size_t                  header_len,
+    uint64_t                length_nym_vector
 	)
 {
-	const uint8_t      *api_id = (uint8_t*)cipher_suite->api_id;
-	size_t            api_id_len = cipher_suite->api_id_len;
-	uint8_t buffer[api_id_len + 19];
-	union bbs_hash_context hash_ctx;
+	const uint8_t      *api_id = (uint8_t*) cipher_suite->api_id;
+	uint8_t             api_id_len = cipher_suite->api_id_len;
+	uint8_t  domain_dst[api_id_len + 4];
+	uint64_t header_len_be = htobe64 (header_len + 8); // +8 for I2OSP(length_nym_vector, 8) thats "attached" after header
+	uint64_t length_nym_vector_be = htobe64 (length_nym_vector);
 
-	bbs_memcpy(buffer, api_id, api_id_len);
+	bbs_memcpy(domain_dst, api_id, api_id_len);
+	bbs_memcpy(domain_dst + api_id_len, "H2S_", 4);
+
+	hash_to_scalar_update (cipher_suite, ctx, api_id, api_id_len);
+	hash_to_scalar_update (cipher_suite, ctx, &header_len_be, 8);
+	hash_to_scalar_update (cipher_suite, ctx, header, header_len);
+	hash_to_scalar_update (cipher_suite, ctx, &length_nym_vector_be, 8);
+	hash_to_scalar_finalize (cipher_suite, ctx, out, domain_dst, api_id_len + 4);
+}
+
+void
+create_generator_init (
+	const bbs_ciphersuite   *cipher_suite,
+	uint8_t                 state[48 + 8],
+    uint8_t                 *api_id_prefix,
+    uint32_t                api_id_prefix_len
+	)
+{
+	union bbs_hash_context hash_ctx;
+    size_t api_id_len = api_id_prefix_len + cipher_suite->api_id_len;
+    size_t buffer_len = api_id_len + 19;
+	uint8_t buffer[buffer_len];
+
+    bbs_memcpy(buffer, api_id_prefix, api_id_prefix_len);
+	bbs_memcpy(buffer + api_id_prefix_len, cipher_suite->api_id, cipher_suite->api_id_len);
 	bbs_memcpy(buffer + api_id_len, "SIG_GENERATOR_SEED_", 19);
 
 	cipher_suite->expand_message_init (&hash_ctx);
-	cipher_suite->expand_message_update (&hash_ctx, api_id, api_id_len);
+	cipher_suite->expand_message_update (&hash_ctx, api_id_prefix, api_id_prefix_len);
+	cipher_suite->expand_message_update (&hash_ctx, cipher_suite->api_id, cipher_suite->api_id_len);
 	cipher_suite->expand_message_update (&hash_ctx, "MESSAGE_GENERATOR_SEED", 22);
 	cipher_suite->expand_message_finalize(&hash_ctx, state, 48, buffer, api_id_len + 19);
 	*((uint64_t*) (state + 48)) = (uint64_t)1;
@@ -221,14 +251,16 @@ create_generator_init (
 
 void
 create_generator_next (
-	const bbs_ciphersuite *cipher_suite,
-	uint8_t             state[48 + 8],
-	blst_p1               *generator
+	const bbs_ciphersuite   *cipher_suite,
+	uint8_t                 state[48 + 8],
+	blst_p1                 *generator,
+    uint8_t                 *api_id_prefix,
+    uint32_t                api_id_prefix_len
 	)
 {
-	const uint8_t      *api_id = (uint8_t*)cipher_suite->api_id;
-	size_t            api_id_len = cipher_suite->api_id_len;
-	uint8_t  dst_buf[api_id_len + 19];
+    uint32_t api_id_len = api_id_prefix_len + cipher_suite->api_id_len;
+	uint8_t dst_buf[api_id_len + 19];
+
 	uint8_t  rand_buf[128];
 	uint64_t i_be = htobe64 (*((uint64_t*) (state + 48)));
 	union bbs_hash_context hash_ctx;
@@ -242,7 +274,8 @@ create_generator_next (
 
 	*((uint64_t*) (state + 48)) += 1LL;
 
-	bbs_memcpy(dst_buf, api_id, api_id_len);
+    bbs_memcpy(dst_buf, api_id_prefix, api_id_prefix_len);
+	bbs_memcpy(dst_buf + api_id_prefix_len, cipher_suite->api_id, cipher_suite->api_id_len);
 	bbs_memcpy(dst_buf + api_id_len, "SIG_GENERATOR_SEED_", 19);
 
 	cipher_suite->expand_message_init (&hash_ctx);

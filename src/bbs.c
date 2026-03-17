@@ -127,8 +127,8 @@ bbs_acc_init (
 	ep_read_bbs (&ctx->B, s->p1);
 
 	// Calculate Q_1 and initialize domain calculation
-	create_generator_init (s, ctx->generator_ctx);
-	create_generator_next (s, ctx->generator_ctx, &ctx->Q_1);
+	create_generator_init (s, ctx->generator_ctx, nullptr, 0);
+	create_generator_next (s, ctx->generator_ctx, &ctx->Q_1, nullptr, 0);
 	calculate_domain_init (s, &ctx->dom_ctx, pk, n);
 	calculate_domain_update (s, &ctx->dom_ctx, &ctx->Q_1);
 }
@@ -139,7 +139,7 @@ bbs_acc_update_undisclosed (
 	)
 {
 	// Calculate H_i
-	create_generator_next (ctx->cipher_suite, ctx->generator_ctx, &ctx->H_i);
+	create_generator_next (ctx->cipher_suite, ctx->generator_ctx, &ctx->H_i, nullptr, 0);
 	calculate_domain_update (ctx->cipher_suite, &ctx->dom_ctx, &ctx->H_i);
 }
 
@@ -181,7 +181,7 @@ bbs_acc_finalize (
 
 // Checks e(A,W) * e(B,-BP2) = identity
 // This differs slightly from the spec, which checks the equivalent e(-B,BP2)
-static int bbs_check_sig_eqn(
+int bbs_check_sig_eqn(
 	blst_p1 *A,
 	blst_p1 *B,
 	const bbs_public_key  pk

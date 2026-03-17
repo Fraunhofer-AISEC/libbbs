@@ -4,6 +4,8 @@ BBS_0.1 {
 		bbs_proof_gen; bbs_proof_verify; bbs_sign_v; bbs_verify_v;
 		bbs_proof_gen_v; bbs_proof_verify_v; bbs_sha256_ciphersuite;
 		bbs_shake256_ciphersuite;
+        bbs_blind_commit; bbs_blind_sign; bbs_blind_verify;
+        bbs_blind_prof_gen; bbs_blind_proof_verify;
 	local:
 		*;
 };

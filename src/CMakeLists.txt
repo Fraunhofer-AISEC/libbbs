@@ -1,6 +1,8 @@
 # Compile sources into an object library
 add_library(bbs_sources OBJECT
 	bbs.c
+    bbs_blind.c
+    bbs_blind_with_nym.c
 	bbs_ciphersuites.c
 	bbs_util.c
 	sha256.c
