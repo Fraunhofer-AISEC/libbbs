@@ -1,0 +1,278 @@
+.TH bbs_blind 7 2026-03-16 libbbs
+.SH NAME
+bbs_blind \- libbbs: blind BBS signatures and selective disclosure proofs
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs, \~ \-lbbs )
+.SH INTRODUCTION
+This page describes the blind BBS extension of
+.BR libbbs .
+Readers unfamiliar with the base BBS scheme should first read
+.BR bbs (7).
+All functions and types described here are defined in
+.IR <bbs_blind.h> .
+.P
+In the base BBS scheme, the signer knows all messages before signing.
+Blind BBS relaxes this constraint: the
+.I prover
+(the party who will later prove possession of the signature)
+can include messages in the signature that the
+.I signer
+never sees.
+The signer signs a
+.I commitment
+to those hidden messages without learning their content.
+.SH CONCEPTS
+.SS Keys
+Blind BBS does not have its own key generation functions.
+The same key pair produced by
+.BR bbs_keygen (3)
+or
+.BR bbs_keygen_full (3)
+is used across all blind BBS operations.
+The secret key is required only by the signer for
+.BR bbs_blind_sign (3).
+The public key is required by all parties.
+.SS The commitment
+Before requesting a signature, the prover selects the messages they wish to
+keep hidden from the signer.
+These are called the
+.IR "committed messages" .
+The prover hashes them into a commitment together with a proof that the
+commitment was formed honestly.
+This blob is called the
+.I commitment_with_proof
+and is sent to the signer.
+.P
+The signer cannot recover the committed messages from the commitment.
+What they can check, and what
+.BR bbs_blind_sign (3)
+does automatically, is that the commitment-with-proof is well-formed, meaning
+that the prover really did commit to
+.I some
+messages without cheating.
+.SS The secret_prover_blind
+Alongside the commitment,
+.BR bbs_blind_commit (3)
+produces a 32-byte value called the
+.IR secret_prover_blind .
+The prover must keep this value
+.IR secret .
+It is used during proof generation to prevent the proof from leaking
+information about the committed messages.
+.P
+Disclosing the
+.I secret_prover_blind
+to any other party would allow them to recover the committed messages from the
+blind signature.
+The
+.I secret_prover_blind
+must be treated with the same sensitivity as the committed messages themselves
+and erased from memory after use.
+.SS The blind signature
+The signer calls
+.BR bbs_blind_sign (3)
+with their key pair, the commitment-with-proof, and any messages they wish to
+add on their own (the
+.IR "signer-known messages" ).
+The result is a blind signature that cryptographically covers both the
+signer-known messages and the committed messages, even though the signer has
+only seen the latter in committed form.
+.P
+The blind signature is the same size as a regular BBS signature.
+Like all BBS signatures, it must be kept
+.IR secret .
+See
+.BR bbs (7) .
+.SS Blind proof generation and verification
+Once the prover holds the blind signature, they use
+.BR bbs_blind_proof_gen (3)
+to produce a selective disclosure proof, just as with the base BBS scheme.
+The proof can selectively disclose any subset of the signer-known messages and
+any subset of the committed messages.
+.P
+The verifier only receives the disclosed messages and needs to know the total
+number of signer-known messages the signature covers.
+All undisclosed messages remain hidden, and the
+.I secret_prover_blind
+is never transmitted.
+.SH TYPES
+Types not listed here are shared with the base BBS scheme.
+See
+.BR bbs (7).
+.SS commitment_with_proof
+A variable-length byte buffer produced by
+.BR bbs_blind_commit (3).
+Its length for a given number of committed messages can be computed with the
+macro
+.BR BBS_BLIND_COMMITMENT_LEN (num_committed_messages).
+This buffer is sent to the signer as input to
+.BR bbs_blind_sign (3).
+It is not sensitive.
+.SS secret_prover_blind
+A 32-byte value produced alongside the commitment by
+.BR bbs_blind_commit (3).
+Its length is given by
+.BR BBS_BLIND_SECRET_PROVER_BLIND_LEN .
+It is
+.I sensitive
+and must be kept secret by the prover.
+It is passed to
+.BR bbs_blind_proof_gen (3)
+and must be erased after the proof has been generated.
+.SH FUNCTION OVERVIEW
+.SS bbs_blind_commit()
+Called by the prover.
+Produces a
+.I commitment_with_proof
+and a
+.I secret_prover_blind
+from the committed messages.
+The commitment is sent to the signer; the
+.I secret_prover_blind
+is retained by the prover.
+.SS bbs_blind_sign()
+Called by the signer.
+Verifies the commitment-with-proof, then signs the commitment together with any
+signer-known messages.
+Returns a blind signature.
+.SS bbs_blind_verify()
+Called by the prover after receiving the blind signature.
+Verifies that the signature is valid over all messages, both signer-known and
+committed.
+Requires the
+.I secret_prover_blind
+and the committed messages in plaintext.
+.SS bbs_blind_proof_gen()
+Called by the prover.
+Produces a selective disclosure proof from the blind signature.
+Takes the full set of both signer-known and committed messages, the
+.IR secret_prover_blind ,
+and index arrays specifying which messages to disclose.
+.SS bbs_blind_proof_verify()
+Called by the verifier.
+Verifies a selective disclosure proof.
+Takes only the disclosed messages and the total number of signer-known messages.
+The committed messages and the
+.I secret_prover_blind
+are not required.
+.SH CIPHER SUITES
+The blind BBS extension uses distinct cipher suites from the base scheme.
+.IP bbs_blind_sha256_ciphersuite
+The BLS12-381-SHA-256 blind ciphersuite.
+.IP bbs_blind_shake256_ciphersuite
+The BLS12-381-SHAKE-256 blind ciphersuite.
+.P
+Signer and prover must agree on the same cipher suite.
+The blind cipher suites are not interoperable with the base cipher suites
+in
+.BR bbs (7).
+.SH EXAMPLES
+The following example commits to one hidden message, obtains a blind signature
+over that message and one signer-known message, and then produces and verifies
+a proof that discloses only the signer-known message.
+.EX
+#include <bbs_blind.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+\&
+int main(void) {
+    const bbs_ciphersuite *s = bbs_blind_sha256_ciphersuite;
+\&
+    bbs_secret_key  sk;
+    bbs_public_key  pk;
+    bbs_signature   sig;
+\&
+    const char *header = "example header";
+    const char *ph     = "presentation nonce";
+    const char *msg    = "signer-known message";
+    const char *secret = "committed (hidden) message";
+\&
+    uint8_t cwp[BBS_BLIND_COMMITMENT_LEN(1)];
+    uint8_t spb[BBS_BLIND_SECRET_PROVER_BLIND_LEN];
+    uint8_t proof[BBS_PROOF_LEN(1)];
+\&
+    if (BBS_OK != bbs_keygen_full(s, sk, pk))
+        return EXIT_FAILURE;
+\&
+    /* Prover: commit to the hidden message */
+    const void   *committed_msgs[] = { secret };
+    const size_t  committed_lens[] = { strlen(secret) };
+    if (BBS_OK != bbs_blind_commit(s, cwp, spb, 1,
+                                   committed_msgs, committed_lens))
+        return EXIT_FAILURE;
+\&
+    /* Signer: sign the commitment and one signer-known message */
+    const void   *signer_msgs[] = { msg };
+    const size_t  signer_lens[] = { strlen(msg) };
+    if (BBS_OK != bbs_blind_sign(s, sk, pk, sig,
+                                 header, strlen(header),
+                                 cwp, sizeof(cwp),
+                                 1, signer_msgs, signer_lens))
+        return EXIT_FAILURE;
+\&
+    /* Prover: verify the blind signature before using it */
+    if (BBS_OK != bbs_blind_verify(s, pk, sig,
+                                   header, strlen(header),
+                                   1, signer_msgs, signer_lens,
+                                   1, committed_msgs, committed_lens, spb))
+        return EXIT_FAILURE;
+\&
+    /* Prover: generate a proof disclosing only the signer-known message */
+    const size_t disclose_signer[] = { 0 };
+    if (BBS_OK != bbs_blind_proof_gen(s, pk, sig, proof,
+                                      header, strlen(header),
+                                      ph, strlen(ph),
+                                      1, signer_msgs, signer_lens,
+                                      1, committed_msgs, committed_lens,
+                                      1, disclose_signer,
+                                      0, NULL, spb))
+        return EXIT_FAILURE;
+\&
+    /* Verifier: verify the proof with only the disclosed message */
+    if (BBS_OK != bbs_blind_proof_verify(s, pk, proof, sizeof(proof),
+                                         header, strlen(header),
+                                         ph, strlen(ph),
+                                         1,
+                                         1, signer_msgs, signer_lens,
+                                         disclose_signer,
+                                         0, NULL, NULL, NULL))
+        return EXIT_FAILURE;
+\&
+    memset_explicit(sk,  0, sizeof(sk));
+    memset_explicit(sig, 0, sizeof(sig));
+    memset_explicit(spb, 0, sizeof(spb));
+\&
+    puts("blind proof verified successfully");
+    return EXIT_SUCCESS;
+}
+.EE
+.SH CAVEATS
+The
+.I secret_prover_blind
+is as sensitive as the committed messages themselves.
+Disclosing it allows recovery of the committed messages from the blind
+signature.
+Erase it with
+.BR memset_explicit (3)
+as soon as proof generation is complete.
+.P
+The blind cipher suites are separate objects from the base cipher suites.
+Passing
+.B bbs_sha256_ciphersuite
+to a blind function, or vice-versa, will produce incorrect results without
+returning an error.
+.P
+The same
+.BR getentropy (3)
+caveat from
+.BR bbs (7)
+applies here.
+.SH SEE ALSO
+.BR bbs (7),
+.BR bbs_blind_commit (3),
+.BR bbs_blind_sign (3),
+.BR bbs_blind_proof_gen (3),
+.BR bbs_blind_proof_verify (3),
+.BR getentropy (3)
