@@ -1,0 +1,154 @@
+.TH bbs_blind_proof_gen_with_nym 3 2026-03-14 libbbs
+.SH NAME
+bbs_blind_proof_gen_with_nym, bbs_blind_proof_verify_with_nym \- create and
+verify blind BBS selective disclosure proofs with pseudonyms
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs_blind_with_nym.h>
+.P
+.BR "int bbs_blind_proof_gen_with_nym(" "size_t num_messages, num_committed_messages, num_nym_secrets;"
+.BI "                                 const bbs_ciphersuite * " ciphersuite ","
+.BI "                                 const bbs_public_key " pk ","
+.BI "                                 const bbs_signature " signature ","
+.BI "                                 void * " proof ", bbs_pseudonym " pseudonym ","
+.BI "                                 const void * " header ", size_t " header_len ","
+.BI "                                 const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                                 const void * " context_id ", size_t " context_id_len ","
+.BI "                                 size_t " num_messages ","
+.BI "                                 const void *const " messages [ num_messages "],"
+.BI "                                 const size_t " message_lens [ num_messages "],"
+.BI "                                 size_t " num_committed_messages ","
+.BI "                                 const void *const " committed_messages [ num_committed_messages "],"
+.BI "                                 const size_t " committed_message_lens [ num_committed_messages "],"
+.BI "                                 size_t " num_disclosed_indexes ","
+.BI "                                 const size_t " disclosed_indexes [ num_disclosed_indexes "],"
+.BI "                                 size_t " num_disclosed_committed_indexes ","
+.BI "                                 const size_t " disclosed_committed_indexes [ num_disclosed_committed_indexes "],"
+.BI "                                 const uint8_t " secret_prover_blind "[BBS_BLIND_SECRET_PROVER_BLIND_LEN],"
+.BI "                                 size_t " num_nym_secrets ","
+.BI "                                 const void *const " nym_secrets [ num_nym_secrets "]);"
+.P
+.BR "int bbs_blind_proof_verify_with_nym(" "size_t num_signer_known_messages,"
+.BI "                                    num_disclosed_messages, num_disclosed_committed_messages;"
+.BI "                                    const bbs_ciphersuite * " ciphersuite ","
+.BI "                                    const bbs_public_key " pk ","
+.BI "                                    bbs_pseudonym " pseudonym ","
+.BI "                                    const void * " proof ", size_t " proof_len ","
+.BI "                                    const void * " header ", size_t " header_len ","
+.BI "                                    const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                                    const void * " context_id ", size_t " context_id_len ","
+.BI "                                    size_t " length_nym_vector ","
+.BI "                                    size_t " num_signer_known_messages ","
+.BI "                                    size_t " num_disclosed_messages ","
+.BI "                                    const void *const " disclosed_messages [ num_disclosed_messages "],"
+.BI "                                    const size_t " disclosed_message_lens [ num_disclosed_messages "],"
+.BI "                                    const size_t " disclosed_indexes [ num_disclosed_messages "],"
+.BI "                                    size_t " num_disclosed_committed_messages ","
+.BI "                                    const void *const " disclosed_committed_messages [ num_disclosed_committed_messages "],"
+.BI "                                    const size_t " disclosed_committed_message_lens [ num_disclosed_committed_messages "],"
+.BI "                                    const size_t " disclosed_committed_indexes [ num_disclosed_committed_messages "]);"
+.fi
+.SH DESCRIPTION
+These functions extend
+.BR bbs_blind_proof_gen (3)
+and
+.BR bbs_blind_proof_verify (3)
+to produce and verify proofs that include a per-verifier pseudonym.
+For a description of the general blind proof flow, selective disclosure,
+.IR proof_len ,
+.IR presentation_header ,
+and index ordering, see
+.BR bbs_blind_proof_gen (3).
+For a description of nym_secrets, the context_id, and pseudonyms, see
+.BR bbs_blind_with_nym (7).
+.P
+All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+.SS bbs_blind_proof_gen_with_nym()
+Extends
+.BR bbs_blind_proof_gen ()
+with two additional features.
+First, the
+.I num_nym_secrets
+nym_secrets in
+.I nym_secrets
+are included in the proof as undisclosed committed values.
+Second, a pseudonym is computed from the nym_secrets and the
+.I context_id
+and written to
+.IR pseudonym .
+The pseudonym is an output.
+.P
+The nym_secrets must not be added to the disclosed index arrays.
+.P
+The proof length is given by
+.I BBS_PROOF_LEN(num_undisclosed)
+where
+.I num_undisclosed
+counts all undisclosed signer-known messages, all undisclosed committed
+messages, the secret_prover_blind, and all nym_secrets.
+.SS bbs_blind_proof_verify_with_nym()
+Extends
+.BR bbs_blind_proof_verify ()
+to also verify the pseudonym.
+.I pseudonym
+must be the value produced by
+.BR bbs_blind_proof_gen_with_nym ()
+for the same prover and context.
+.I context_id
+must match the value used during proof generation.
+.I length_nym_vector
+is the total number of nym_secrets in the proof, whether or not any messages
+from the same commitment are disclosed.
+.P
+The nym_secrets themselves are not required by the verifier.
+The function confirms that the pseudonym in
+.I pseudonym
+was correctly derived from secrets that are covered by the signature.
+.SH RETURN VALUE
+Returns
+.B BBS_OK
+on success.
+All other return values denote an error, the exact meaning of which may change
+in the future.
+.SH ATTRIBUTES
+For an explanation of the terms used in this section, see
+.BR attribute (7).
+.TS
+allbox;
+lbx lb lb
+l l l.
+Interface	Attribute	Value
+T{
+.na
+.nh
+.BR bbs_blind_proof_gen_with_nym (),
+.BR bbs_blind_proof_verify_with_nym ()
+T}	Thread safety	MT-Safe
+.TE
+.SH STANDARDS
+The
+.BR bbs_blind_proof_gen_with_nym ()
+and
+.BR bbs_blind_proof_verify_with_nym ()
+functions implement the corresponding algorithms from
+.IR draft-irtf-cfrg-bbs-per-verifier-linkability-02 .
+.SH CAVEATS
+The
+.BR bbs_blind_proof_gen_with_nym ()
+function emits a call to the POSIX 2024.1-2024 function
+.BR getentropy (3).
+On non-POSIX systems, this function has to be provided by the application at
+link-time.
+.SH SEE ALSO
+.BR bbs_blind_with_nym (7),
+.BR bbs_blind (7),
+.BR bbs_ciphersuite (3type),
+.BR bbs_keygen (3),
+.BR bbs_blind_commit_with_nym (3),
+.BR bbs_blind_sign_with_nym (3),
+.BR getentropy (3)

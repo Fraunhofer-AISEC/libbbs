@@ -82,9 +82,9 @@ int bbs_blind_proof_gen_mock(
     uint8_t seed[count * 48];
     int ret = BBS_OK;
 
-    printf("rnd mock count = %ld\n", count);
-    printf("rnd mock seed = %.*s\n", (int)mocking_seed_len, (char*)mocking_seed);
-    printf("rnd mock dst = %.*s\n", (int)mocking_dst_len, (char*)mocking_dst);
+    //printf("rnd mock count = %ld\n", count);
+    //printf("rnd mock seed = %.*s\n", (int)mocking_seed_len, (char*)mocking_seed);
+    //printf("rnd mock dst = %.*s\n", (int)mocking_dst_len, (char*)mocking_dst);
 
     cipher_suite->expand_message_init(&h_ctx);
 	cipher_suite->expand_message_update(&h_ctx, mocking_seed, mocking_seed_len);

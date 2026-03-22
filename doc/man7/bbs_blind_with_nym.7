@@ -1,0 +1,298 @@
+.TH bbs_blind_with_nym 7 2026-03-14 libbbs
+.SH NAME
+bbs_blind_with_nym \- libbbs: blind BBS signatures with per-verifier pseudonyms
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH INTRODUCTION
+This page describes the per-verifier pseudonym extension of
+.BR libbbs .
+Readers unfamiliar with BBS signatures should first read
+.BR bbs (7),
+and those unfamiliar with blind BBS should read
+.BR bbs_blind (7).
+All functions and types described here are defined in
+.IR <bbs_blind_with_nym.h> .
+.P
+Standard BBS proofs are
+.IR unlinkable :
+given any two proofs, there is no way to determine whether they came from the
+same prover or the same signature.
+This is desirable for privacy, but some applications need a verifier to
+recognise presentations from the same prover over time, for example to
+enforce access policies, prevent abuse, or maintain a persistent session,
+without that verifier being able to correlate the prover's activity with any
+other verifier.
+.P
+Per-verifier pseudonyms solve this problem.
+The prover obtains a pseudonym that is stable for a given verifier context but
+different for every other context.
+The verifier can track presentations from the same prover within their own
+context, but cannot collaborate with another verifier to link the prover's
+identity across contexts.
+.SH CONCEPTS
+.SS Keys
+Per-verifier pseudonyms use the same key pair as the rest of the library.
+See
+.BR bbs_keygen (3).
+.SS The nym_secret
+Before requesting a signature, the prover chooses one or more
+.I nym_secrets.
+These are secret values, chosen by the prover, that are committed into the
+signature in the same way as committed messages in blind BBS.
+The signer never learns them.
+.P
+The nym_secrets must be kept secret.
+They are the prover's long-term identity material within any given verifier
+context: anyone who learns them can compute the prover's pseudonym for any
+context and thus track the prover universally.
+Erase them with
+.BR memset_explicit (3)
+when no longer needed.
+.SS The context_id
+Every verifier chooses a
+.IR context_id ,
+which is an arbitrary byte string that identifies the verifier's domain or
+purpose.
+The pseudonym is computed by combining the prover's nym_secrets with the
+context_id.
+.P
+A verifier who uses the same context_id across sessions will see the same
+pseudonym from the same prover each time.
+A verifier who uses a different context_id will see a completely unrelated
+pseudonym, even for the same prover.
+The context_id is not secret.
+.SS The pseudonym
+A
+.I pseudonym
+is a stable, verifier-specific identifier for the prover, derived from the
+nym_secrets and the context_id.
+It is produced during proof generation and included in the proof.
+.P
+The pseudonym is stable: the same prover presenting to the same verifier
+context always produces the same pseudonym.
+The proof cryptographically demonstrates that the pseudonym was computed
+correctly from secrets that are covered by the signature, without revealing
+those secrets.
+.P
+The pseudonym is
+.I not
+secret.
+It is given to the verifier as part of the proof.
+.SS The signer_nym_entropy
+The signer contributes an additional random value called
+.I signer_nym_entropy
+during signing.
+This prevents a dishonest prover from choosing nym_secrets that would make
+their pseudonym collide with another prover's pseudonym.
+The signer_nym_entropy is not secret after signing, but it must be chosen
+freshly and randomly for each signing operation.
+.SS Relationship to blind BBS
+The commitment step for per-verifier pseudonyms extends blind BBS commitment:
+the prover commits to both regular committed messages and the nym_secrets in
+a single commitment blob.
+The signer, proof generation, and proof verification flows are otherwise
+analogous to blind BBS.
+See
+.BR bbs_blind (7)
+for a description of the commitment, secret_prover_blind, and the general
+blind signing flow.
+.SH TYPES
+Types not listed here are shared with blind BBS or the base BBS scheme.
+See
+.BR bbs_blind (7)
+and
+.BR bbs (7).
+.SS bbs_pseudonym
+A fixed-length byte buffer holding a pseudonym.
+Its length is given by
+.BR BBS_PSEUDONYM_LEN .
+It is produced as an output of
+.BR bbs_blind_proof_gen_with_nym (3)
+and passed to
+.BR bbs_blind_proof_verify_with_nym (3).
+It is not sensitive.
+.SH FUNCTION OVERVIEW
+.SS bbs_blind_commit_with_nym()
+Called by the prover.
+Extends
+.BR bbs_blind_commit (3)
+by also committing the nym_secrets into the commitment.
+Produces a commitment_with_proof and a secret_prover_blind.
+.SS bbs_blind_sign_with_nym()
+Called by the signer.
+Extends
+.BR bbs_blind_sign (3)
+by incorporating the signer_nym_entropy into the signature, binding it to the
+committed nym_secrets.
+.SS bbs_blind_verify_with_nym()
+Called by the prover after receiving the signature.
+Extends
+.BR bbs_blind_verify (3)
+by also verifying the nym_secrets.
+Produces the nym_secrets as an output, which the prover stores for use in
+proof generation.
+.SS bbs_blind_proof_gen_with_nym()
+Called by the prover.
+Produces a selective disclosure proof together with the pseudonym for the
+given context_id.
+The pseudonym is an output. It is computed from the nym_secrets
+and the context_id during proof generation.
+.SS bbs_blind_proof_verify_with_nym()
+Called by the verifier.
+Verifies the proof and confirms that the pseudonym was correctly derived from
+secrets covered by the signature.
+Takes the pseudonym as an input.
+Does not require the nym_secrets.
+.SH CIPHER SUITES
+Per-verifier pseudonyms use distinct cipher suites different
+from both the base BBS and blind BBS schemes.
+.IP bbs_blind_nym_sha256_ciphersuite
+The BLS12-381-SHA-256 blind-with-pseudonym ciphersuite.
+.IP bbs_blind_nym_shake256_ciphersuite
+The BLS12-381-SHAKE-256 blind-with-pseudonym ciphersuite.
+.P
+These cipher suites are not interoperable with the base BBS or blind BBS
+cipher suites.
+.SH PRIVACY CONSIDERATIONS
+The pseudonym is stable per verifier context.
+This means that a verifier can correlate all proof presentations from the same
+prover to the same pseudonym, which is the intended design.
+However, this also means that if a prover reuses nym_secrets across contexts
+in a way that allows two verifiers to compare pseudonyms, those verifiers could
+link the prover's activity.
+To prevent this, each verifier must choose a distinct context_id that is not
+shared with other verifiers.
+.P
+The unlinkability guarantee of BBS is preserved across different verifier contexts.
+Only within the same context_id are presentations linkable, and only to the
+verifier who holds that context_id.
+.P
+The nym_secrets must never be disclosed.
+Losing the nym_secrets does not prevent proof generation if the prover stored
+the output of
+.BR bbs_blind_verify_with_nym (3),
+but anyone who obtains them can impersonate the prover within any context.
+.SH EXAMPLES
+The following example illustrates the full flow: the prover commits a
+nym_secret, the signer issues a blind signature, the prover generates a proof
+with a pseudonym for a specific verifier context, and the verifier checks it.
+.EX
+#include <bbs_blind_with_nym.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+\&
+int main(void) {
+    const bbs_ciphersuite *s = bbs_blind_nym_sha256_ciphersuite;
+\&
+    bbs_secret_key  sk;
+    bbs_public_key  pk;
+    bbs_signature   sig;
+\&
+    const char *header      = "example header";
+    const char *ph          = "presentation nonce";
+    const char *msg         = "signer-known message";
+    const char *nym_secret  = "my secret nym material";
+    const char *context_id  = "verifier-A-domain";
+    /* signer_nym_entropy should be random in production */
+    uint8_t     entropy[32] = { 0 };
+\&
+    uint8_t cwp[BBS_BLIND_COMMITMENT_LEN(1)];
+    uint8_t spb[BBS_BLIND_SECRET_PROVER_BLIND_LEN];
+    /* proof length: 1 undisclosed (nym_secret) + 1 spb */
+    uint8_t proof[BBS_PROOF_LEN(2)];
+    bbs_pseudonym nym;
+\&
+    if (BBS_OK != bbs_keygen_full(s, sk, pk))
+        return EXIT_FAILURE;
+\&
+    /* Prover: commit to the nym_secret */
+    const void   *nyms[]     = { nym_secret };
+    const size_t  nym_lens[] = { strlen(nym_secret) };
+    if (BBS_OK != bbs_blind_commit_with_nym(s, cwp, spb,
+                                            0, NULL, NULL,
+                                            1, nyms))
+        return EXIT_FAILURE;
+\&
+    /* Signer: blind-sign with nym entropy */
+    const void   *msgs[]      = { msg };
+    const size_t  msg_lens[]  = { strlen(msg) };
+    if (BBS_OK != bbs_blind_sign_with_nym(s, sk, pk, sig,
+                                          entropy, 1,
+                                          header, strlen(header),
+                                          cwp, sizeof(cwp),
+                                          1, msgs, msg_lens))
+        return EXIT_FAILURE;
+\&
+    /* Prover: verify and recover nym_secrets from signature */
+    void  *out_secrets[1];
+    uint8_t recovered_nym[32];
+    out_secrets[0] = recovered_nym;
+    if (BBS_OK != bbs_blind_verify_with_nym(s, pk, sig,
+                                            header, strlen(header),
+                                            1, msgs, msg_lens,
+                                            0, NULL, NULL, spb,
+                                            entropy, 1, nyms,
+                                            out_secrets))
+        return EXIT_FAILURE;
+\&
+    /* Prover: generate a proof with pseudonym for verifier-A */
+    const size_t disclose[] = { 0 };
+    if (BBS_OK != bbs_blind_proof_gen_with_nym(s, pk, sig, proof, nym,
+                                               header, strlen(header),
+                                               ph, strlen(ph),
+                                               context_id, strlen(context_id),
+                                               1, msgs, msg_lens,
+                                               0, NULL, NULL,
+                                               1, disclose,
+                                               0, NULL, spb,
+                                               1, out_secrets))
+        return EXIT_FAILURE;
+\&
+    /* Verifier: check the proof and pseudonym */
+    if (BBS_OK != bbs_blind_proof_verify_with_nym(s, pk, nym,
+                                                   proof, sizeof(proof),
+                                                   header, strlen(header),
+                                                   ph, strlen(ph),
+                                                   context_id, strlen(context_id),
+                                                   1, 1,
+                                                   1, msgs, msg_lens, disclose,
+                                                   0, NULL, NULL, NULL))
+        return EXIT_FAILURE;
+\&
+    memset_explicit(sk,  0, sizeof(sk));
+    memset_explicit(sig, 0, sizeof(sig));
+    memset_explicit(spb, 0, sizeof(spb));
+    memset_explicit(recovered_nym, 0, sizeof(recovered_nym));
+\&
+    puts("per-verifier proof verified successfully");
+    return EXIT_SUCCESS;
+}
+.EE
+.SH CAVEATS
+The nym_secrets are long-term sensitive material.
+Unlike the secret_prover_blind, which is only needed until proof generation
+and can then be erased, the nym_secrets are needed every time a proof is
+generated.
+They should be stored securely and erased when the credential is revoked or
+abandoned.
+.P
+The per-verifier pseudonym cipher suites are separate objects from the blind
+BBS cipher suites.
+Passing a blind BBS cipher suite to these functions, or vice-versa, will
+produce incorrect results without returning an error.
+.P
+The same
+.BR getentropy (3)
+caveat from
+.BR bbs (7)
+applies here.
+.SH SEE ALSO
+.BR bbs (7),
+.BR bbs_blind (7),
+.BR bbs_blind_commit_with_nym (3),
+.BR bbs_blind_sign_with_nym (3),
+.BR bbs_blind_proof_gen_with_nym (3),
+.BR bbs_blind_proof_verify_with_nym (3),
+.BR getentropy (3)

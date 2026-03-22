@@ -2,7 +2,7 @@
 #include "bbs_util.h"
 #include "blst.h"
 
-#include <stdio.h>
+//#include <stdio.h>
 
 #define BBS_BLIND_API_ID_PREFIX "BLIND_"
 
@@ -17,13 +17,6 @@ ep_mult_scalar(blst_p1 *out, const blst_p1 *p, const blst_scalar *s, size_t _ign
 	(void)_ignored;
 	blst_p1_mult(out, p, s->b, 255);
 }
-
-// FOR DISCUSSION
-// Scope?? Theres always something to do better, what's enough for 1.0?
-// Is using bbs_blind_commit_with_nym_inner for bbs_blind_commit ok?
-// Should I integrate the bbs_acc struct and methods into blind and blind_with_nym?
-// The current design of bbs_blind_commit_with_nym_inner would allow for va_args but it would mean
-//    only the commit operation would support va_args as the others are not possible
 
 // COMMIT
 
@@ -181,34 +174,6 @@ bbs_commit_finalize(
     }
 }
 
-/*int
-bbs_blind_commit_inner(
-    const bbs_ciphersuite  *cipher_suite,
-    uint8_t                *commitment_with_proof,
-    uint8_t                *secret_prover_blind,
-    size_t                  num_messages,
-    const void *const      *messages,
-    const size_t           *message_lens,
-    bbs_bn_prf              prf,
-    void                   *prf_cookie
-) {
-    bbs_commit_ctx ctx = {
-        .s            = cipher_suite,
-        .prf          = prf,
-        .prf_cookie   = prf_cookie,
-    };
-
-    bbs_commit_init(&ctx, num_messages);
-
-    for(size_t i = 0; i < num_messages; i++) {
-        bbs_commit_update(&ctx, messages[i], message_lens[i], i, CWP_SCALAR_PTR(commitment_with_proof, i));
-    }
-
-    bbs_commit_finalize(&ctx, secret_prover_blind, commitment_with_proof, num_messages);
-
-    return BBS_OK;
-}*/
-
 #undef CWP_SCALAR_PTR
 
 void
@@ -252,25 +217,6 @@ bbs_blind_commit(
     const void *const      *messages,
     const size_t           *message_lens
 ) {
-    /*int ret = BBS_OK;
-
-    // generate single random seed for random scalar generation
-    uint8_t seed[32];
-    getentropy(seed, 32);
-
-    ret = bbs_blind_commit_inner(
-        cipher_suite,
-        commitment_with_proof,
-        secret_prover_blind,
-        num_messages,
-        messages,
-        message_lens,
-        bbs_blind_commit_prf,
-        &seed
-    );
-
-    return ret;*/
-
     uint8_t seed[32];
     getentropy(seed, sizeof(seed));
     return bbs_blind_commit_with_nym_inner(

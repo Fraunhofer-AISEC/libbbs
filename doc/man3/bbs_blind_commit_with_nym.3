@@ -1,0 +1,103 @@
+.TH bbs_blind_commit_with_nym 3 2026-03-14 libbbs
+.SH NAME
+bbs_blind_commit_with_nym \- create a commitment for blind BBS signatures with pseudonyms
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs_blind_with_nym.h>
+.P
+.BR "int bbs_blind_commit_with_nym(" "size_t num_messages, num_prover_nyms;"
+.BI "                              const bbs_ciphersuite * " ciphersuite ","
+.BI "                              void * " commitment_with_proof ","
+.BI "                              uint8_t " secret_prover_blind "[BBS_BLIND_SECRET_PROVER_BLIND_LEN],"
+.BI "                              size_t " num_messages ","
+.BI "                              const void *const " messages [ num_messages "],"
+.BI "                              const size_t " message_lens [ num_messages "],"
+.BI "                              size_t " num_prover_nyms ","
+.BI "                              const void *const " prover_nyms [ num_prover_nyms "]);"
+.fi
+.SH DESCRIPTION
+The
+.BR bbs_blind_commit_with_nym ()
+function extends
+.BR bbs_blind_commit (3)
+by additionally committing to one or more
+.IR nym_secrets .
+The
+.I num_prover_nyms
+nym_secrets in
+.I prover_nyms
+are committed alongside the
+.I num_messages
+regular committed messages.
+The signer never learns either.
+For a description of the commitment mechanism, the outputs, and the
+sensitivity of the
+.IR secret_prover_blind ,
+see
+.BR bbs_blind_commit (3).
+For a description of nym_secrets and their role, see
+.BR bbs_blind_with_nym (7).
+.P
+The caller must allocate
+.I BBS_BLIND_COMMITMENT_LEN(num_messages + num_prover_nyms)
+bytes for
+.IR commitment_with_proof .
+.P
+If no regular committed messages are needed,
+.I num_messages
+may be zero and
+.I messages
+and
+.I message_lens
+may be NULL.
+.I num_prover_nyms
+must be at least one.
+.P
+The function takes a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+.SH RETURN VALUE
+Returns
+.B BBS_OK
+on success.
+All other return values denote an error, the exact meaning of which may change
+in the future.
+.SH ATTRIBUTES
+For an explanation of the terms used in this section, see
+.BR attribute (7).
+.TS
+allbox;
+lbx lb lb
+l l l.
+Interface	Attribute	Value
+T{
+.na
+.nh
+.BR bbs_blind_commit_with_nym ()
+T}	Thread safety	MT-Safe
+.TE
+.SH STANDARDS
+The
+.BR bbs_blind_commit_with_nym ()
+function implements the
+.I CommitWithNym
+algorithm from
+.IR draft-irtf-cfrg-bbs-per-verifier-linkability-02 .
+.SH CAVEATS
+The
+.BR bbs_blind_commit_with_nym ()
+function emits a call to the POSIX 2024.1-2024 function
+.BR getentropy (3).
+On non-POSIX systems, this function has to be provided by the application at
+link-time.
+.SH SEE ALSO
+.BR bbs_blind_with_nym (7),
+.BR bbs_blind (7),
+.BR bbs_ciphersuite (3type),
+.BR bbs_blind_commit (3),
+.BR bbs_blind_sign_with_nym (3),
+.BR bbs_blind_proof_gen_with_nym (3),
+.BR getentropy (3)

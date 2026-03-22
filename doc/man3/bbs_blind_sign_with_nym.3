@@ -1,0 +1,144 @@
+.TH bbs_blind_sign_with_nym 3 2026-03-14 libbbs
+.SH NAME
+bbs_blind_sign_with_nym, bbs_blind_verify_with_nym \- create and verify blind
+BBS signatures with pseudonyms
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs_blind_with_nym.h>
+.P
+.BR "int bbs_blind_sign_with_nym(" "size_t num_messages;"
+.BI "                            const bbs_ciphersuite * " ciphersuite ","
+.BI "                            const bbs_secret_key " sk ", const bbs_public_key " pk ","
+.BI "                            bbs_signature " signature ","
+.BI "                            const void * " signer_nym_entropy ", size_t " length_nym_vector ","
+.BI "                            const void * " header ", size_t " header_len ","
+.BI "                            const void * " commitment_with_proof ", size_t " commitment_with_proof_len ","
+.BI "                            size_t " num_messages ","
+.BI "                            const void *const " messages [ num_messages "],"
+.BI "                            const size_t " message_lens [ num_messages "]);"
+.P
+.BR "int bbs_blind_verify_with_nym(" "size_t num_messages, num_committed_messages, num_pseudonyms;"
+.BI "                              const bbs_ciphersuite * " ciphersuite ","
+.BI "                              const bbs_public_key " pk ","
+.BI "                              const bbs_signature " signature ","
+.BI "                              const void * " header ", size_t " header_len ","
+.BI "                              size_t " num_messages ","
+.BI "                              const void *const " messages [ num_messages "],"
+.BI "                              const size_t " message_lens [ num_messages "],"
+.BI "                              size_t " num_committed_messages ","
+.BI "                              const void *const " committed_messages [ num_committed_messages "],"
+.BI "                              const size_t " committed_message_lens [ num_committed_messages "],"
+.BI "                              const uint8_t " secret_prover_blind "[BBS_BLIND_SECRET_PROVER_BLIND_LEN],"
+.BI "                              const void * " signer_nym_entropy ","
+.BI "                              size_t " num_pseudonyms ","
+.BI "                              const void *const " prover_nyms [ num_pseudonyms "],"
+.BI "                              void *const " nym_secrets [ num_pseudonyms "]);"
+.fi
+.SH DESCRIPTION
+These functions extend
+.BR bbs_blind_sign (3)
+and
+.BR bbs_blind_verify (3)
+to support per-verifier pseudonyms.
+For a description of the general blind signing flow, the
+.IR commitment_with_proof ,
+.IR secret_prover_blind ,
+.IR header ,
+and the sensitivity of the signature, see
+.BR bbs_blind_sign (3).
+For a description of nym_secrets, the signer_nym_entropy, and pseudonyms, see
+.BR bbs_blind_with_nym (7).
+.P
+All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+.SS bbs_blind_sign_with_nym()
+Extends
+.BR bbs_blind_sign ()
+by incorporating
+.I signer_nym_entropy
+into the signature.
+This binds the signer's contribution to the nym_secrets that the prover
+committed, preventing a dishonest prover from manipulating their pseudonym.
+.I length_nym_vector
+is the number of nym_secrets in the commitment.
+.I signer_nym_entropy
+must be a freshly generated random value for each signing operation. It does
+not need to be kept secret after signing.
+Otherwise the parameters and behaviour are identical to
+.BR bbs_blind_sign (3).
+.SS bbs_blind_verify_with_nym()
+Extends
+.BR bbs_blind_verify ()
+by recovering the nym_secrets from the signature.
+In addition to verifying the signature over the signer-known and committed
+messages, the function derives and writes the nym_secrets into the
+.I nym_secrets
+output array.
+The caller must provide
+.I num_pseudonyms
+pre-allocated 32-byte buffers in
+.IR nym_secrets .
+.P
+.I prover_nyms
+provides the original nym_secret values as committed in
+.IR commitment_with_proof ,
+in the same order as during
+.BR bbs_blind_commit_with_nym (3).
+.I signer_nym_entropy
+must match the value used during
+.BR bbs_blind_sign_with_nym ().
+.P
+The recovered
+.I nym_secrets
+are sensitive and must be stored securely by the prover for use with
+.BR bbs_blind_proof_gen_with_nym (3).
+They should be erased with
+.BR memset_explicit (3)
+when the credential is revoked or abandoned.
+.SH RETURN VALUE
+Returns
+.B BBS_OK
+on success.
+All other return values denote an error, the exact meaning of which may change
+in the future.
+.SH ATTRIBUTES
+For an explanation of the terms used in this section, see
+.BR attribute (7).
+.TS
+allbox;
+lbx lb lb
+l l l.
+Interface	Attribute	Value
+T{
+.na
+.nh
+.BR bbs_blind_sign_with_nym (),
+.BR bbs_blind_verify_with_nym ()
+T}	Thread safety	MT-Safe
+.TE
+.SH STANDARDS
+The
+.BR bbs_blind_sign_with_nym ()
+and
+.BR bbs_blind_verify_with_nym ()
+functions implement the corresponding algorithms from
+.IR draft-irtf-cfrg-bbs-per-verifier-linkability-02 .
+.SH CAVEATS
+The
+.BR bbs_blind_sign_with_nym ()
+function emits a call to the POSIX 2024.1-2024 function
+.BR getentropy (3).
+On non-POSIX systems, this function has to be provided by the application at
+link-time.
+.SH SEE ALSO
+.BR bbs_blind_with_nym (7),
+.BR bbs_blind (7),
+.BR bbs_ciphersuite (3type),
+.BR bbs_keygen (3),
+.BR bbs_blind_commit_with_nym (3),
+.BR bbs_blind_proof_gen_with_nym (3),
+.BR getentropy (3)
