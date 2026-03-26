@@ -19,6 +19,7 @@ set(BBS_BLIND_WITH_NYM_FIX_TESTS
     blind_with_nym_bbs_fix_proof_gen.c
 )
 set(BBS_E2E_TESTS bbs_e2e_sign_n_proof.c)
+set(BBS_BLIND_WITH_NYM_E2E_TESTS bbs_e2e_blind_with_nym.c)
 set(BBS_BENCH_TESTS bbs_bench_individual.c)
 
 # Generate driver source files
@@ -26,6 +27,7 @@ create_test_sourcelist(fix_driver                   bbs_fix_driver.c            
 create_test_sourcelist(blind_fix_driver             bbs_blind_fix_driver.c          ${BBS_BLIND_FIX_TESTS})
 create_test_sourcelist(blind_with_nym_fix_driver    bbs_blind_with_nym_fix_driver.c ${BBS_BLIND_WITH_NYM_FIX_TESTS})
 create_test_sourcelist(e2e_driver                   bbs_e2e_driver.c                ${BBS_E2E_TESTS})
+create_test_sourcelist(blind_with_nym_e2e_driver    bbs_blind_with_nym_e2e_driver.c ${BBS_BLIND_WITH_NYM_E2E_TESTS})
 create_test_sourcelist(bench_driver                 bbs_bench_driver.c              ${BBS_BENCH_TESTS})
 
 # Compile generic sources
@@ -33,12 +35,14 @@ add_library(bbs_fix_sources                 OBJECT ${fix_driver})
 add_library(bbs_blind_fix_sources           OBJECT ${blind_fix_driver})
 add_library(bbs_blind_with_nym_fix_sources  OBJECT ${blind_with_nym_fix_driver})
 add_library(bbs_e2e_sources                 OBJECT ${e2e_driver})
+add_library(bbs_blind_with_nym_e2e_sources  OBJECT ${blind_with_nym_e2e_driver})
 add_library(bbs_bench_sources               OBJECT ${bench_driver})
 
 target_include_directories(bbs_fix_sources                  PUBLIC ../include ../src)
 target_include_directories(bbs_blind_fix_sources            PUBLIC ../include ../src)
 target_include_directories(bbs_blind_with_nym_fix_sources   PUBLIC ../include ../src)
 target_include_directories(bbs_e2e_sources                  PUBLIC ../include)
+target_include_directories(bbs_blind_with_nym_e2e_sources   PUBLIC ../include)
 target_include_directories(bbs_bench_sources                PUBLIC ../include)
 
 # define ciphersuite sets
@@ -122,6 +126,17 @@ foreach(suite IN LISTS BBS_BLIND_WITH_NYM_CIPHERSUITES)
 		get_filename_component(TName ${test} NAME_WE)
 		add_test(NAME ${TName}_${suite} COMMAND bbs-blind-with-nym-fix-${suite} ${TName})
 	endforeach()
+
+    # End-to-End tests
+    add_executable(bbs-blind-with-nym-e2e-${suite}
+        $<TARGET_OBJECTS:bbs_blind_with_nym_e2e_sources>
+        $<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
+    target_link_libraries(bbs-blind-with-nym-e2e-${suite} PRIVATE bbs)
+    foreach(test ${BBS_BLIND_WITH_NYM_E2E_TESTS})
+        get_filename_component(TName ${test} NAME_WE)
+        add_test(NAME ${TName}_${suite}
+            COMMAND bbs-blind-with-nym-e2e-${suite} ${TName})
+    endforeach()
 endforeach()
 
 # Benchmark command

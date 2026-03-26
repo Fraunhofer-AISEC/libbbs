@@ -25,7 +25,7 @@ extern "C" {
 #define BBS_BLIND_COMMITMENT_WITH_PROOF_BASE_LEN 112
 
 #define BBS_BLIND_COMMITMENT_LEN(num_committed_messages) \
-    BBS_BLIND_COMMITMENT_WITH_PROOF_BASE_LEN + num_committed_messages * BBS_SCALAR_LEN
+    BBS_BLIND_COMMITMENT_WITH_PROOF_BASE_LEN + num_committed_messages * 32
 
 #define BBS_BLIND_SECRET_PROVER_BLIND_LEN 32
 
