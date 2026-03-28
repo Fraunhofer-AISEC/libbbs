@@ -1,18 +1,6 @@
 #include "fixtures.h"
 #include "bbs_util.h"
 
-// link to inner implementation
-/*int bbs_blind_commit_inner(
-    const bbs_ciphersuite *cipher_suite,
-    uint8_t *commitment_with_proof,
-    uint8_t *secret_prover_blind,
-    uint64_t num_blinded_messages,
-    const void *const *messages,
-	const size_t *messages_lens,
-    bbs_bn_prf *prf,
-    void *prf_cookie
-);*/
-
 int
 bbs_blind_commit_with_nym_inner(
     const bbs_ciphersuite  *cipher_suite,
@@ -40,12 +28,14 @@ void blind_commit_mocked_prf(
     // secret_prover_blind = 0
 
     // s~ = 1
-    if (input_type == 1)
+    if (input_type == 1) {
         rand += 48;
+    }
 
     // message = index = input
-    if (input_type == 2)
+    if (input_type == 2) {
         rand += (2 * 48) + (input * 48);
+    }
 
 	blst_scalar_from_be_bytes(out, rand, 48);
 }

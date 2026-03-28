@@ -39,11 +39,13 @@ void blind_blind_proof_gen_prf(
 	(void)cipher_suite;
 	uint8_t *rand = (uint8_t*) cookie;
 
-    if (input_type == 0)
+    if (input_type == 0) {
         rand += (input * 48);
+    }
 
-    if (input_type == 1)
+    if (input_type == 1) {
         rand += (5 * 48) + (input * 48);
+    }
 
 	blst_scalar_from_be_bytes(out, rand, 48);
 }

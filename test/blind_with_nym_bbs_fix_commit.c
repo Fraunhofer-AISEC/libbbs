@@ -28,12 +28,14 @@ void blind_with_nym_commit_mocked_prf(
     // secret_prover_blind = 0
 
     // s~ = 1
-    if (input_type == 1)
+    if (input_type == 1) {
         rand += 48;
+    }
 
     // message = index = input
-    if (input_type == 2)
+    if (input_type == 2) {
         rand += (2 * 48) + (input * 48);
+    }
 
 	blst_scalar_from_be_bytes(out, rand, 48);
 }

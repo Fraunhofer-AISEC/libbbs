@@ -19,7 +19,6 @@ ep_mult_scalar(blst_p1 *out, const blst_p1 *p, const blst_scalar *s, size_t _ign
 }
 
 // COMMIT
-
 typedef struct {
 	const bbs_ciphersuite   *s;
     union bbs_hash_context  hc;
@@ -55,8 +54,11 @@ bbs_commit_init(
     hash_to_scalar_update(ctx->s, &ctx->hc, buffer, BBS_G1_ELEM_LEN);
 
     // generate random secret_prover_blind and s~
+    //{ printf("prf_cookie: "); for(int i=0; i<32; i++) printf("%02x", ((uint8_t*)ctx->prf_cookie)[i]); printf("\n"); }
     ctx->prf(ctx->s, &ctx->spb, 0, 1, ctx->prf_cookie);
+    //{ uint8_t b[32]; blst_bendian_from_scalar(b, &ctx->spb); printf("secret_prover_blind: "); for(int i=0; i<32; i++) printf("%02x", b[i]); printf("\n"); }
     ctx->prf(ctx->s, &ctx->st, 1, 2, ctx->prf_cookie);
+    //{ uint8_t b[32]; blst_bendian_from_scalar(b, &ctx->st); printf("s~: "); for(int i=0; i<32; i++) printf("%02x", b[i]); printf("\n"); }
 }
 
 void
@@ -71,7 +73,7 @@ commit_update_with_scalar(
 
 	create_generator_next(ctx->s, ctx->generator_ctx, &J_i, (uint8_t*)BBS_BLIND_API_ID_PREFIX, 6);
 
-    //{ uint8_t b[48]; blst_p1_compress(b, &J_i); printf("J_%lld: ", msg_index); for(int i=0; i<48; i++) printf("%02x", b[i]); printf("\n"); }
+    //{ uint8_t b[48]; blst_p1_compress(b, &J_i); printf("J_%ld: ", msg_index); for(int i=0; i<48; i++) printf("%02x", b[i]); printf("\n"); }
 
     // C = ... + J_i * msg_i + ...
     ep_mult_scalar(&tmp, &J_i, sc, 255);
@@ -82,7 +84,7 @@ commit_update_with_scalar(
 
     // Cbar = ... + J_i * m~_i + ...
     ctx->prf(ctx->s, sc, 2, msg_index, ctx->prf_cookie);
-    //{ uint8_t b[32]; blst_bendian_from_scalar(b, &sc); printf("m~%lld: ", msg_index); for(int i=0; i<32; i++) printf("%02x", b[i]); printf("\n"); }
+    //{ uint8_t b[32]; blst_bendian_from_scalar(b, sc); printf("m~%ld: ", msg_index); for(int i=0; i<32; i++) printf("%02x", b[i]); printf("\n"); }
 
     ep_mult_scalar(&tmp, &J_i, sc, 255);
 	blst_p1_add_or_double (&ctx->Cbar, &ctx->Cbar, &tmp);
@@ -191,7 +193,7 @@ bbs_blind_commit_prf(
 		(uint8_t*) "random msg scalar",
 	};
 
-    hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, 32, &input, 8);
+    hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, (size_t)32, &input, (size_t)8);
 }
 
 int
@@ -857,7 +859,7 @@ static void bbs_blind_proof_gen_prf(
 		(uint8_t*) "random msg scalar",
 	};
 
-    hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, 32, &input, 8);
+    hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, (size_t)32, &input, (size_t)8);
 }
 
 int bbs_blind_proof_gen(

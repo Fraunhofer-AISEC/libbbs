@@ -880,7 +880,7 @@ static void bbs_blind_proof_gen_with_nym_prf(
 		(uint8_t*) "random msg scalar",
 	};
 
-    hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, 32, &input, 8);
+    hash_to_scalar(cipher_suite, out, prf_dsts[input_type], 17, 2, seed, (size_t)32, &input, (size_t)8);
 }
 
 int
