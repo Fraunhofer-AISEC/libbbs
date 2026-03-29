@@ -1,124 +1,136 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "fixtures.h"
 #include <time.h>
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <inttypes.h>
+
+#define WARMUP     1000
+#define ITERATIONS 10000
+#define MSG_LEN    64
+#define NONCE_LEN  23
 
 struct result {
-	const char *name;
-	double      min;
-	double      avg;
-	double      max;
+    const char *name;
+    double      min;
+    double      avg;
+    double      max;
+    double      stddev;
 };
 
-/* Print a markdown table of results */
 static void print_results(struct result *r, size_t n) {
-	size_t name_len = 9; /* Length of "Operation" */
-	for(size_t i=0; i<n; i++)
-		if(name_len < strlen(r[i].name)) name_len = strlen(r[i].name);
-	printf("| %-*s | %s | %s | %s |\n",
-			(int)name_len, "Operation", "min (ms)", "avg (ms)", "max (ms)");
-	printf("| %.*s | -------- | -------- | -------- |\n",
-			(int)name_len, "----------------------------------------");
-	for(size_t i=0; i<n; i++)
-		printf("| %-*s | %8.3f | %8.3f | %8.3f |\n",
-			(int)name_len, r[i].name, r[i].min, r[i].avg, r[i].max);
+    size_t name_len = 9;
+    for (size_t i = 0; i < n; i++)
+        if (name_len < strlen(r[i].name)) name_len = strlen(r[i].name);
+    printf("| %-*s | %8s | %8s | %8s | %8s |\n",
+           (int)name_len, "Operation", "min (ms)", "avg (ms)", "max (ms)", "std (ms)");
+    printf("| %.*s | -------- | -------- | -------- | -------- |\n",
+           (int)name_len, "--------------------------------------------");
+    for (size_t i = 0; i < n; i++)
+        printf("| %-*s | %8.3f | %8.3f | %8.3f | %8.3f |\n",
+               (int)name_len, r[i].name,
+               r[i].min, r[i].avg, r[i].max, r[i].stddev);
 }
 
+#define BBS_BENCH(_name, _code)                                                 \
+    results[results_idx].name = (_name);                                        \
+    printf("Benchmarking %s... ", results[results_idx].name);                   \
+    fflush(stdout);                                                             \
+    {                                                                           \
+        double _min = 0, _max = 0, _mean = 0, _M2 = 0;                          \
+        for (int _ii = -WARMUP; _ii < ITERATIONS; _ii++) {                      \
+            double _t0 = clock();                                               \
+            if (BBS_OK != (_code)) { puts("ERROR!"); return 1; }                \
+            double _t1  = clock();                                              \
+            double _t = (((double)(_t1 - _t0) * 1000.0) / CLOCKS_PER_SEC);      \
+            if (_ii < 0) continue;                                              \
+            if (!_ii || _t < _min) _min = _t;                                   \
+            if (!_ii || _t > _max) _max = _t;                                   \
+            double _delta = _t - _mean;                                         \
+            _mean += _delta / (_ii + 1);                                        \
+            _M2   += _delta * (_t - _mean);                                     \
+        }                                                                       \
+        results[results_idx].min = _min;                                        \
+        results[results_idx].avg = _mean;                                       \
+        results[results_idx].max = _max;                                        \
+        results[results_idx].stddev = sqrt(_M2 / (ITERATIONS - 1));             \
+    }                                                                           \
+    results_idx++;                                                              \
+    puts("Done!");
+
+
 int
-bbs_bench_individual ()
+bbs_bench_individual(void)
 {
-	#define WARMUP 100
-	#define ITERATIONS 1000
-	#define MSG_LEN 64
-	#define NONCE_LEN 23
+    const bbs_ciphersuite *suite = *fixture_ciphersuite;
 
-	clock_t clk; /* Because clock_gettime is POSIX-only */
-	double timing, sum; /* recorded in ms */
-	struct result results[10];
-	size_t results_idx = 0;
+    bbs_secret_key sk;
+    bbs_public_key pk;
+    bbs_signature  sig;
+    uint8_t        proof[BBS_PROOF_LEN(1)];
 
-	const bbs_ciphersuite *cipher_suite = *fixture_ciphersuite;
-	bbs_secret_key sk;
-	bbs_public_key pk;
-	char           msg1[MSG_LEN];
-	char           msg2[MSG_LEN];
-	bbs_signature  sig;
-	char           header[] = "But I am a header!";
-	size_t         header_len = strlen(header);
-	uint8_t        proof[BBS_PROOF_LEN (1)];
-	size_t         disclosed_indexes[] = {0};
-	char           random_nonces[NONCE_LEN];
+    char msg1[MSG_LEN], msg2[MSG_LEN], nonce[NONCE_LEN];
+    static const char header[] = "benchmark header";
+    static const size_t disclosed[] = { 0 };
 
-	for (int j = 0; j < MSG_LEN;   j++) msg1[j]          = (char) rand ();
-	for (int j = 0; j < MSG_LEN;   j++) msg2[j]          = (char) rand ();
-	for (int j = 0; j < NONCE_LEN; j++) random_nonces[j] = (char) rand ();
+    for (int j = 0; j < MSG_LEN; j++) msg1[j] = (char)rand();
+    for (int j = 0; j < MSG_LEN; j++) msg2[j] = (char)rand();
+    for (int j = 0; j < NONCE_LEN; j++) nonce[j] = (char)rand();
 
-#define BBS_BENCH(_name, _code) \
-	results[results_idx].name = _name; \
-	printf("Benchmarking %s... ", results[results_idx].name); \
-	sum = 0.0; \
-	for(int ii = -WARMUP; ii < ITERATIONS; ii++) { \
-		clk = clock(); \
-		if(BBS_OK != _code) { puts("ERROR!"); return 1; } \
-		timing = ((double)(clock() - clk)/CLOCKS_PER_SEC) * 1000; \
-		if(ii < 0) continue; \
-		sum += timing; \
-		if(!ii || results[results_idx].min > timing) \
-			results[results_idx].min = timing; \
-		if(!ii || results[results_idx].max < timing) \
-			results[results_idx].max = timing; \
-	} \
-	results[results_idx++].avg = sum / ITERATIONS; \
-	puts("Done!");
-	
-	if(CLOCKS_PER_SEC < 1000000) {
-		printf("WARNING: CLOCKS_PER_SEC is too low for accurate "
-				"measurements (is %ld)\n", (long)CLOCKS_PER_SEC);
-	}
+    const void *msgs[] = { msg1, msg2 };
+    const size_t msg_lens[] = { MSG_LEN, MSG_LEN };
 
-	int title_len = printf("Benchmark for Ciphersuite %s\n", fixture_ciphersuite_name);
-	while(--title_len) printf("=");
-	puts("");
+    struct result results[8];
+    size_t results_idx = 0;
 
-	puts("Configuration:");
-	printf("- %d measured iterations, %d round of warmup\n", ITERATIONS, WARMUP);
-	printf("- %d messages, each of length %d bytes\n", 2, MSG_LEN);
-	printf("- %d messages disclosed\n", 1);
-	printf("- header of length %zu bytes\n", header_len);
-	printf("- presentation header of length %d bytes\n\n", NONCE_LEN);
+    int title_len = printf("Benchmark for Ciphersuite %s\n", fixture_ciphersuite_name);
+    while (--title_len) printf("=");
+    puts("");
+    printf("- %d measured iterations, %d warmup\n", ITERATIONS, WARMUP);
+    printf("- 2 messages of %d bytes, 1 disclosed\n\n", MSG_LEN);
 
-	BBS_BENCH ("Key Generation",
-		bbs_keygen_full (cipher_suite, sk, pk));
+    BBS_BENCH("Key Generation", bbs_keygen_full(suite, sk, pk));
 
-	BBS_BENCH ("Signature Generation",
-		bbs_sign_v (cipher_suite, sk, pk, sig,
-				header, header_len, 2,
-				msg1, MSG_LEN, msg2, MSG_LEN));
+    if (BBS_OK != bbs_keygen_full(suite, sk, pk)) return 1;
 
-	BBS_BENCH ("Signature Verification",
-		bbs_verify_v (cipher_suite, pk, sig,
-				header, header_len, 2,
-				msg1, MSG_LEN, msg2, MSG_LEN));
+    BBS_BENCH("Signature Generation",
+        bbs_sign(suite, sk, pk, sig,
+                 header, sizeof(header) - 1,
+                 2, msgs, msg_lens));
 
-	BBS_BENCH ("Proof Generation",
-		bbs_proof_gen_v (cipher_suite, pk, sig, proof,
-				header, header_len,
-				random_nonces, NONCE_LEN,
-				disclosed_indexes, 1, 2,
-				msg1, MSG_LEN, msg2, MSG_LEN));
+    if (BBS_OK != bbs_sign(suite, sk, pk, sig,
+                            header, sizeof(header) - 1,
+                            2, msgs, msg_lens)) return 1;
 
-	BBS_BENCH ("Proof Verification",
-		bbs_proof_verify_v (cipher_suite, pk, proof, BBS_PROOF_LEN (1),
-				header, strlen (header),
-				random_nonces, NONCE_LEN,
-				disclosed_indexes, 1, 2,
-				msg1, MSG_LEN));
+    BBS_BENCH("Signature Verification",
+        bbs_verify(suite, pk, sig,
+                   header, sizeof(header) - 1,
+                   2, msgs, msg_lens));
 
-	puts("");
-	print_results(results, results_idx);
-	puts("");
-	return 0;
+    BBS_BENCH("Proof Generation",
+        bbs_proof_gen(suite, pk, sig, proof,
+                      header, sizeof(header) - 1,
+                      nonce, NONCE_LEN,
+                      disclosed, 1,
+                      2, msgs, msg_lens));
+
+    if (BBS_OK != bbs_proof_gen(suite, pk, sig, proof,
+                                 header, sizeof(header) - 1,
+                                 nonce, NONCE_LEN,
+                                 disclosed, 1,
+                                 2, msgs, msg_lens)) return 1;
+
+    BBS_BENCH("Proof Verification",
+        bbs_proof_verify(suite, pk, proof, BBS_PROOF_LEN(1),
+                         header, sizeof(header) - 1,
+                         nonce, NONCE_LEN,
+                         disclosed, 1,
+                         2, (const void *const[]){ msg1 },
+                            (const size_t[]){ MSG_LEN }));
+
+    puts("");
+    print_results(results, results_idx);
+    puts("");
+    return 0;
 }
