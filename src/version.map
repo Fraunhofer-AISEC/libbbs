@@ -5,7 +5,7 @@ BBS_0.1 {
 		bbs_proof_gen_v; bbs_proof_verify_v; bbs_sha256_ciphersuite;
 		bbs_shake256_ciphersuite;
         bbs_blind_commit; bbs_blind_sign; bbs_blind_verify;
-        bbs_blind_prof_gen; bbs_blind_proof_verify;
+        bbs_blind_proof_gen; bbs_blind_proof_verify;
         bbs_blind_sha256_ciphersuite; bbs_blind_shake256_ciphersuite;
         bbs_blind_commit_with_nym; bbs_blind_sign_with_nym; bbs_blind_verify_with_nym;
         bbs_blind_proof_gen_with_nym; bbs_blind_proof_verify_with_nym;

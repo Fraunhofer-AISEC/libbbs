@@ -126,6 +126,7 @@ foreach(suite IN LISTS BBS_CIPHERSUITES)
 	add_executable(bbs-bench-${suite} $<TARGET_OBJECTS:bbs_bench_sources>
 		$<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
 	target_link_libraries(bbs-bench-${suite} PRIVATE bbs)
+    target_link_libraries(bbs-bench-${suite} PUBLIC m)
 endforeach()
 
 # Link blind bbs test executables
@@ -153,6 +154,7 @@ foreach(suite IN LISTS BBS_BLIND_CIPHERSUITES)
     add_executable(bbs-blind-bench-${suite} $<TARGET_OBJECTS:bbs_blind_bench_sources>
         $<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
     target_link_libraries(bbs-blind-bench-${suite} PRIVATE bbs)
+    target_link_libraries(bbs-blind-bench-${suite} PUBLIC m)
 endforeach()
 
 # Link blind with nym bbs test executables
@@ -180,6 +182,7 @@ foreach(suite IN LISTS BBS_BLIND_WITH_NYM_CIPHERSUITES)
     add_executable(bbs-blind-with-nym-bench-${suite} $<TARGET_OBJECTS:bbs_blind_with_nym_bench_sources>
         $<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
     target_link_libraries(bbs-blind-with-nym-bench-${suite} PRIVATE bbs)
+    target_link_libraries(bbs-blind-with-nym-bench-${suite} PUBLIC m)
 endforeach()
 
 # Benchmark command
