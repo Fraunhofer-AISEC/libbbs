@@ -44,8 +44,7 @@ The signer never learns them.
 .P
 The nym_secrets must be kept secret.
 They are the prover's long-term identity material within any given verifier
-context: anyone who learns them can compute the prover's pseudonym for any
-context and thus track the prover universally.
+context.
 Erase them with
 .BR memset_explicit (3)
 when no longer needed.
@@ -54,8 +53,6 @@ Every verifier chooses a
 .IR context_id ,
 which is an arbitrary byte string that identifies the verifier's domain or
 purpose.
-The pseudonym is computed by combining the prover's nym_secrets with the
-context_id.
 .P
 A verifier who uses the same context_id across sessions will see the same
 pseudonym from the same prover each time.
@@ -65,8 +62,7 @@ The context_id is not secret.
 .SS The pseudonym
 A
 .I pseudonym
-is a stable, verifier-specific identifier for the prover, derived from the
-nym_secrets and the context_id.
+is a stable, verifier-specific identifier for the prover.
 It is produced during proof generation and included in the proof.
 .P
 The pseudonym is stable: the same prover presenting to the same verifier
@@ -83,8 +79,7 @@ It is given to the verifier as part of the proof.
 The signer contributes an additional random value called
 .I signer_nym_entropy
 during signing.
-This prevents a dishonest prover from choosing nym_secrets that would make
-their pseudonym collide with another prover's pseudonym.
+This prevents the possibility of pseudonym collisions with any prover.
 The signer_nym_entropy is not secret after signing, but it must be chosen
 freshly and randomly for each signing operation.
 .SS Relationship to blind BBS
@@ -97,6 +92,32 @@ See
 .BR bbs_blind (7)
 for a description of the commitment, secret_prover_blind, and the general
 blind signing flow.
+.SS Quantum Considerations
+Standard BBS proofs provide everlasting unlinkability: even a future quantum
+computer cannot link two proofs after the fact.
+Per-verifier pseudonyms provide a weaker but still meaningful guarantee called
+.IR "limited everlasting unlinkability" .
+.P
+Let
+.I N
+be the number of nym_secrets in the prover's commitment, and let
+.I M
+be the number of pseudonyms that colluding verifiers have collected, each
+holding a distinct context_id.
+In the presence of a cryptographically relevant quantum computer, pseudonyms
+remain unlinkable as long as
+.IR "N > M" ,
+that is, as long as the prover has not generated pseudonyms for more distinct
+verifier contexts than they have nym_secrets.
+.P
+In practice this means that a prover who commits to
+.I N
+nym_secrets is protected against a coalition of up to
+.IR "N - 1"
+colluding verifiers, even against a future quantum adversary.
+Choosing a larger
+.I N
+at commit time therefore directly controls the quantum unlinkability budget.
 .SH TYPES
 Types not listed here are shared with blind BBS or the base BBS scheme.
 See
@@ -144,16 +165,26 @@ Verifies the proof and confirms that the pseudonym was correctly derived from
 secrets covered by the signature.
 Takes the pseudonym as an input.
 Does not require the nym_secrets.
+
 .SH CIPHER SUITES
-Per-verifier pseudonyms use distinct cipher suites different
-from both the base BBS and blind BBS schemes.
+All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+The per-verifier linkability BBS extension uses distinct cipher suites from the
+base scheme and the blind BBS extension.
 .IP bbs_blind_nym_sha256_ciphersuite
 The BLS12-381-SHA-256 blind-with-pseudonym ciphersuite.
 .IP bbs_blind_nym_shake256_ciphersuite
 The BLS12-381-SHAKE-256 blind-with-pseudonym ciphersuite.
 .P
-These cipher suites are not interoperable with the base BBS or blind BBS
-cipher suites.
+Using a ciphersuite from
+.I <bbs.h>
+or
+.I <bbs_blind.h>
+will produce an error.
+Keys generated with any ciphersuite may be used here; see
+.BR bbs_keygen (3).
+
 .SH PRIVACY CONSIDERATIONS
 The pseudonym is stable per verifier context.
 This means that a verifier can correlate all proof presentations from the same
@@ -271,18 +302,6 @@ int main(void) {
 }
 .EE
 .SH CAVEATS
-The nym_secrets are long-term sensitive material.
-Unlike the secret_prover_blind, which is only needed until proof generation
-and can then be erased, the nym_secrets are needed every time a proof is
-generated.
-They should be stored securely and erased when the credential is revoked or
-abandoned.
-.P
-The per-verifier pseudonym cipher suites are separate objects from the blind
-BBS cipher suites.
-Passing a blind BBS cipher suite to these functions, or vice-versa, will
-produce incorrect results without returning an error.
-.P
 The same
 .BR getentropy (3)
 caveat from

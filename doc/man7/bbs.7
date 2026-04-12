@@ -72,17 +72,28 @@ See the
 .I presentation_header
 parameter in
 .BR bbs_proof_gen (3).
+
 .SS bbs_ciphersuite
 The BBS signature scheme requires several internal parameters which are bundled
 in cipher suites. Typically, any given protocol will only use one such cipher
 suite at any given time. Applications should not worry about the exact choice
-presently, but need to use the same one for interoperability.
+presently, but need to use the same one for interoperability. The base BBS
+signature scheme uses distinct ciphersuites from the blind and the per-verifier
+BBS extension schemes.
 .P
 The currently implemented cipher suites are:
 .IP bbs_sha256_ciphersuite
 The BLS12-381-SHA-256 ciphersuite
 .IP bbs_shake256_ciphersuite
 The BLS12-381-SHAKE-256 ciphersuite
+Using a ciphersuite from
+.I <bbs_blind.h>
+or
+.I <bbs_blind_with_nym.h>
+will produce an error.
+Keys generated with any ciphersuite may be used here; see
+.BR bbs_keygen (3).
+
 .SH FUNCTION OVERVIEW
 .SS bbs_keygen()
 .SS bbs_sk_to_pk()

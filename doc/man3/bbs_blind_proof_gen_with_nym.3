@@ -68,6 +68,18 @@ For a description of nym_secrets, the context_id, and pseudonyms, see
 All functions take a pointer to a
 .BR bbs_ciphersuite (3type)
 to use, which determines several parameters for the scheme.
+These functions are compatible with
+.B bbs_blind_nym_sha256_ciphersuite
+and
+.B bbs_blind_nym_shake256_ciphersuite
+only.
+Using a ciphersuite from
+.I <bbs.h>
+or
+.I <bbs_blind.h>
+will produce an error.
+Keys generated with any ciphersuite may be used here; see
+.BR bbs_keygen (3).
 .SS bbs_blind_proof_gen_with_nym()
 Extends
 .BR bbs_blind_proof_gen ()
@@ -76,7 +88,9 @@ First, the
 .I num_nym_secrets
 nym_secrets in
 .I nym_secrets
-are included in the proof as undisclosed committed values.
+(as recovered by
+.BR bbs_blind_verify_with_nym (3)
+) are included in the proof as undisclosed committed values.
 Second, a pseudonym is computed from the nym_secrets and the
 .I context_id
 and written to
@@ -102,8 +116,10 @@ for the same prover and context.
 .I context_id
 must match the value used during proof generation.
 .I length_nym_vector
-is the total number of nym_secrets in the proof, whether or not any messages
-from the same commitment are disclosed.
+is the total number of nym_secrets covered by the proof, equal to the
+.I num_prover_nyms
+value used during
+.BR bbs_blind_commit_with_nym (3).
 .P
 The nym_secrets themselves are not required by the verifier.
 The function confirms that the pseudonym in

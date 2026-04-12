@@ -219,6 +219,9 @@ bbs_blind_commit(
     const void *const      *messages,
     const size_t           *message_lens
 ) {
+    if (cipher_suite != bbs_blind_sha256_ciphersuite && cipher_suite != bbs_blind_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
     uint8_t seed[32];
     getentropy(seed, sizeof(seed));
     return bbs_blind_commit_with_nym_inner(
@@ -352,6 +355,9 @@ bbs_blind_sign(
     blst_scalar tmp, sk_n;
     size_t m = 0;
 
+    if (s != bbs_blind_sha256_ciphersuite && s != bbs_blind_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
     if (deserialize_and_verify_commitment(
             s,
             commitment_with_proof,
@@ -473,6 +479,9 @@ bbs_blind_verify(
     uint8_t generator_ctx[48 + 8];
     blst_scalar tmp;
     blst_p1 B, Q_1, H_i, res;
+
+    if (s != bbs_blind_sha256_ciphersuite && s != bbs_blind_shake256_ciphersuite)
+        { return BBS_ERROR; }
 
     // init B to P1
     ep_read_bbs(&B, s->p1);
@@ -889,6 +898,9 @@ int bbs_blind_proof_gen(
     uint8_t seed[32];
     getentropy(seed, 32);
 
+    if (cipher_suite != bbs_blind_sha256_ciphersuite && cipher_suite != bbs_blind_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
     ret = bbs_blind_proof_gen_inner(
         cipher_suite,
         pk,
@@ -937,6 +949,9 @@ bbs_blind_proof_verify(
     const size_t           *disclosed_committed_indexes
 ) {
     // sanity checks
+    if (s != bbs_blind_sha256_ciphersuite && s != bbs_blind_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
     const size_t floor = 3 * BBS_G1_ELEM_LEN + 4 * BBS_SCALAR_LEN;
     if (proof_len < floor) return BBS_ERROR;
     if ((proof_len - floor) % BBS_SCALAR_LEN != 0) return BBS_ERROR;

@@ -140,6 +140,9 @@ bbs_blind_commit_with_nym(
     uint8_t seed[32];
     getentropy(seed, 32);
 
+    if (cipher_suite != bbs_blind_nym_sha256_ciphersuite && cipher_suite != bbs_blind_nym_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
     ret = bbs_blind_commit_with_nym_inner(
         cipher_suite,
         commitment_with_proof,
@@ -188,6 +191,9 @@ bbs_blind_sign_with_nym(
     blst_p1 commitment, B, Q_1, H_i, res;
     blst_scalar tmp, sk_n;
     size_t m = 0;
+
+    if (s != bbs_blind_nym_sha256_ciphersuite && s != bbs_blind_nym_shake256_ciphersuite)
+        { return BBS_ERROR; }
 
     if (deserialize_and_verify_commitment(
             s,
@@ -339,6 +345,9 @@ bbs_blind_verify_with_nym(
     uint8_t generator_ctx[48 + 8];
     blst_scalar tmp, s_entropy;
     blst_p1 B, Q_1, H_i, res;
+
+    if (s != bbs_blind_nym_sha256_ciphersuite && s != bbs_blind_nym_shake256_ciphersuite)
+        { return BBS_ERROR; }
 
     // init B to P1
     ep_read_bbs(&B, s->p1);
@@ -916,6 +925,9 @@ bbs_blind_proof_gen_with_nym(
     uint8_t seed[32];
     getentropy(seed, 32);
 
+    if (cipher_suite != bbs_blind_nym_sha256_ciphersuite && cipher_suite != bbs_blind_nym_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
     ret = bbs_blind_proof_gen_with_nym_inner(
         cipher_suite,
         pk,
@@ -976,6 +988,9 @@ bbs_blind_proof_verify_with_nym(
     union bbs_hash_context c_ctx; // challenge_hash_context
 
     // sanity checks
+    if (s != bbs_blind_nym_sha256_ciphersuite && s != bbs_blind_nym_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
     const size_t floor = 3 * BBS_G1_ELEM_LEN + 4 * BBS_SCALAR_LEN;
     if (proof_len < floor) return BBS_ERROR;
     if ((proof_len - floor) % BBS_SCALAR_LEN != 0) return BBS_ERROR;
@@ -1112,6 +1127,20 @@ bbs_blind_proof_verify_with_nym(
         calculate_domain_update(s, &d_ctx, &H_i);
     }
 
+    // PseudonymProofVerifyInit
+    // init z
+    uint8_t context_id_hash_dst[s->api_id_len + 16];
+	bbs_memcpy(context_id_hash_dst, s->api_id, s->api_id_len);
+	bbs_memcpy(context_id_hash_dst + s->api_id_len, "VECT_NYM_SECRETS", 16);
+    hash_to_scalar(s, &tmp, context_id_hash_dst, s->api_id_len + 16, 1, context_id, context_id_len);
+
+    // we the polynom multiplication the non-horner way, because doing so requires reverse order which requires a second loop where we need to
+    // read in the scalars from the proof again which is suboptimal. therefore we do more multiplications but dont read in values twice
+    blst_fr z_fr, z_n_fr, acc_fr, coeff_fr;
+    blst_fr_from_scalar(&z_fr, &tmp);
+    blst_fr_from_uint64(&z_n_fr, (const uint64_t[]){1, 0, 0, 0}); // z_n starts as 1
+    bbs_memset(&acc_fr, 0, sizeof(acc_fr));
+
     // loop over pseudonyms, they all count as undisclosed and are encoded
     for (uint64_t i = 0; i < length_nym_vector; i++) {
         // get next generator and read in next nym_secret
@@ -1124,6 +1153,14 @@ bbs_blind_proof_verify_with_nym(
         // T2 = T2 + H_ji * m^_ji
         ep_mult_scalar(&res, &H_i, &tmp, 255);
         blst_p1_add_or_double(&T2, &T2, &res);
+
+        // poly_eval_proof += c[i] * z^i
+        blst_fr_from_scalar(&coeff_fr, &tmp);
+        blst_fr_mul(&coeff_fr, &coeff_fr, &z_n_fr);
+        blst_fr_add(&acc_fr, &acc_fr, &coeff_fr);
+
+        // z_n *= z  (advance to z^(i+1) for next iteration)
+        blst_fr_mul(&z_n_fr, &z_n_fr, &z_fr);
 
         //{ uint8_t b[48]; blst_p1_compress(b, &H_i); printf("J_i: "); for(int i=0; i<48; i++) printf("%02x", b[i]); printf("\n"); }
         // update domain calculation
@@ -1209,15 +1246,7 @@ bbs_blind_proof_verify_with_nym(
     //{ printf("[challenge add] T2: "); for(int i=0; i<48; i++) printf("%02x", sbuf[i]); printf("\n"); }
     hash_to_scalar_update(s, &c_ctx, sbuf, BBS_G1_ELEM_LEN);
 
-    // PseudonymProofVerifyInit
-    // TODO dont do it with Horner's rule and integrate it into main pseudonym loop again
-
-    // init z
-    uint8_t context_id_hash_dst[s->api_id_len + 16];
-	bbs_memcpy(context_id_hash_dst, s->api_id, s->api_id_len);
-	bbs_memcpy(context_id_hash_dst + s->api_id_len, "VECT_NYM_SECRETS", 16);
-    hash_to_scalar(s, &tmp, context_id_hash_dst, s->api_id_len + 16, 1, context_id, context_id_len);
-
+    // PseudonymProofVerifyInit (second part)
     // generate OP (reuse B)
     uint8_t htg1_buf[128];
     blst_fp u, v;
@@ -1228,27 +1257,7 @@ bbs_blind_proof_verify_with_nym(
     blst_fp_from_be_bytes(&u, htg1_buf,      64);
     blst_fp_from_be_bytes(&v, htg1_buf + 64, 64);
     blst_map_to_g1(&B, &u, &v);
-    //blst_hash_to_g1(&B, context_id, context_id_len, s->api_id, s->api_id_len, nullptr, 0);
     //{ uint8_t b[48]; blst_p1_compress(b, &B); printf("hash_to_g1(context_id): "); for(int i=0; i<48; i++) printf("%02x", b[i]); printf("\n"); }
-
-    // iterate over nym_secret_commitments in proof
-    uint8_t *upper_bound = (uint8_t*)proof + (proof_len - BBS_SCALAR_LEN);
-
-    // Horner's rule: p(z) = c[0] + c[1]*z + ... + c[n-1]*z^(n-1)
-    // evaluated as: p(z) = c[0] + z*(c[1] + z*(... + z*c[n-1])...) by iterating from c[n-1] down to c[0] through proof memory.
-    // z_fr is constant, acc_fr is the running accumulator, coeff_fr holds current coefficient from proof
-    blst_fr z_fr, acc_fr, coeff_fr;
-    blst_fr_from_scalar(&z_fr, &tmp);
-
-    bn_read_bbs(&tmp, upper_bound - BBS_SCALAR_LEN);
-    blst_fr_from_scalar(&acc_fr, &tmp);
-
-    for (uint64_t i = 1; i < length_nym_vector; i++) {
-        bn_read_bbs(&tmp, upper_bound - (i + 1) * BBS_SCALAR_LEN);
-        blst_fr_from_scalar(&coeff_fr, &tmp);
-        blst_fr_mul(&acc_fr, &acc_fr, &z_fr);
-        blst_fr_add(&acc_fr, &acc_fr, &coeff_fr);
-    }
 
     // turn poly_eval_proof into scalar again
     blst_scalar_from_fr(&tmp, &acc_fr);

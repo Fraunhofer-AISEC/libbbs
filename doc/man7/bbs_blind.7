@@ -44,13 +44,6 @@ This blob is called the
 .I commitment_with_proof
 and is sent to the signer.
 .P
-The signer cannot recover the committed messages from the commitment.
-What they can check, and what
-.BR bbs_blind_sign (3)
-does automatically, is that the commitment-with-proof is well-formed, meaning
-that the prover really did commit to
-.I some
-messages without cheating.
 .SS The secret_prover_blind
 Alongside the commitment,
 .BR bbs_blind_commit (3)
@@ -156,17 +149,26 @@ Takes only the disclosed messages and the total number of signer-known messages.
 The committed messages and the
 .I secret_prover_blind
 are not required.
+
 .SH CIPHER SUITES
+
+All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
 The blind BBS extension uses distinct cipher suites from the base scheme.
 .IP bbs_blind_sha256_ciphersuite
 The BLS12-381-SHA-256 blind ciphersuite.
 .IP bbs_blind_shake256_ciphersuite
 The BLS12-381-SHAKE-256 blind ciphersuite.
 .P
-Signer and prover must agree on the same cipher suite.
-The blind cipher suites are not interoperable with the base cipher suites
-in
-.BR bbs (7).
+Using a ciphersuite from
+.I <bbs.h>
+or
+.I <bbs_blind_with_nym.h>
+will produce an error.
+Keys generated with any ciphersuite may be used here; see
+.BR bbs_keygen (3).
+
 .SH EXAMPLES
 The following example commits to one hidden message, obtains a blind signature
 over that message and one signer-known message, and then produces and verifies
@@ -249,21 +251,6 @@ int main(void) {
 }
 .EE
 .SH CAVEATS
-The
-.I secret_prover_blind
-is as sensitive as the committed messages themselves.
-Disclosing it allows recovery of the committed messages from the blind
-signature.
-Erase it with
-.BR memset_explicit (3)
-as soon as proof generation is complete.
-.P
-The blind cipher suites are separate objects from the base cipher suites.
-Passing
-.B bbs_sha256_ciphersuite
-to a blind function, or vice-versa, will produce incorrect results without
-returning an error.
-.P
 The same
 .BR getentropy (3)
 caveat from

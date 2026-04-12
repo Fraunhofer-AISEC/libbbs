@@ -51,6 +51,18 @@ for a full explanation.
 All functions take a pointer to a
 .BR bbs_ciphersuite (3type)
 to use, which determines several parameters for the scheme.
+These functions are compatible with
+.B bbs_blind_sha256_ciphersuite
+and
+.B bbs_blind_shake256_ciphersuite
+only.
+Using a ciphersuite from
+.I <bbs.h>
+or
+.I <bbs_blind_with_nym.h>
+will produce an error.
+Keys generated with any ciphersuite may be used here; see
+.BR bbs_keygen (3).
 .SS bbs_blind_sign()
 Signs the
 .I num_messages
@@ -124,17 +136,9 @@ and
 .BR bbs_blind_verify ()
 functions implement the corresponding algorithms from
 .I draft-irtf-cfrg-bbs-blind-signatures-02.
-.SH CAVEATS
-The
-.BR bbs_blind_sign ()
-function emits a call to the POSIX 2024.1-2024 function
-.BR getentropy (3).
-On non-POSIX systems, this function has to be provided by the application at
-link-time.
 .SH SEE ALSO
 .BR bbs_blind (7),
 .BR bbs_ciphersuite (3type),
 .BR bbs_keygen (3),
 .BR bbs_blind_commit (3),
 .BR bbs_blind_proof_gen (3),
-.BR getentropy (3)

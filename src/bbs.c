@@ -211,6 +211,8 @@ bbs_sign_init (
 	size_t              n
 	)
 {
+
+
 	hash_to_scalar_init (cipher_suite, &ctx->ch_ctx);
 	// Future: We can add some randomness to ctx->ch_ctx. This breaks the
 	// testvectors but not interop, and is heuristically more secure against
@@ -307,7 +309,10 @@ bbs_sign_v (
 	bbs_sign_ctx ctx;
 	const void *msg;
 	size_t msg_len;
-	va_list                ap;
+	va_list ap;
+
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
 
 	va_start (ap, n);
 	bbs_sign_init(&ctx, cipher_suite, sk, pk, n);
@@ -336,6 +341,9 @@ bbs_sign (
 {
 	bbs_sign_ctx ctx;
 
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
 	bbs_sign_init(&ctx, cipher_suite, sk, pk, n);
 	for(size_t i=0; i< n; i++) {
 		bbs_sign_update(&ctx, messages[i], messages_lens[i]);
@@ -358,7 +366,10 @@ bbs_verify_v (
 	bbs_acc_ctx ctx;
 	const void *msg;
 	size_t msg_len;
-	va_list                ap;
+	va_list ap;
+
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
 
 	va_start (ap, n);
 	bbs_verify_init(&ctx, cipher_suite, pk, n);
@@ -385,6 +396,9 @@ bbs_verify (
 	)
 {
 	bbs_acc_ctx ctx;
+
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
 
 	bbs_verify_init(&ctx, cipher_suite, pk, n);
 	for(size_t i=0; i< n; i++) {
@@ -774,7 +788,10 @@ bbs_proof_gen_v (
 	size_t msg_len;
 	bool disclosed;
 
-	// Gather randomness. The seed is used for any randomness within this
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
+    // Gather randomness. The seed is used for any randomness within this
 	// function. In particular, this implies that we do not need to store
 	// intermediate derivations. Currently, we derive new values via
 	// hash_to_scalar, but we might want to exchange that for
@@ -817,7 +834,10 @@ bbs_proof_gen (
 	size_t di_idx = 0;
 	bool disclosed;
 
-	// Gather randomness. The seed is used for any randomness within this
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
+    // Gather randomness. The seed is used for any randomness within this
 	// function. In particular, this implies that we do not need to store
 	// intermediate derivations. Currently, we derive new values via
 	// hash_to_scalar, but we might want to exchange that for
@@ -857,7 +877,10 @@ bbs_proof_verify_v (
 	size_t msg_len = 0;
 	bool disclosed;
 
-	// Sanity check
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
+
+    // Sanity check
 	if(proof_len != BBS_PROOF_LEN(n - disclosed_indexes_len)) return BBS_ERROR;
 
 	va_start (ap, n);
@@ -896,6 +919,9 @@ bbs_proof_verify (
 	bbs_proof_gen_ctx ctx;
 	size_t di_idx = 0;
 	bool disclosed;
+
+    if (cipher_suite != bbs_sha256_ciphersuite && cipher_suite != bbs_shake256_ciphersuite)
+        { return BBS_ERROR; }
 
 	// Sanity check
 	if(proof_len != BBS_PROOF_LEN(n - disclosed_indexes_len)) return BBS_ERROR;

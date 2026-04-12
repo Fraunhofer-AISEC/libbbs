@@ -23,11 +23,10 @@ The
 .BR bbs_blind_commit_with_nym ()
 function extends
 .BR bbs_blind_commit (3)
-by additionally committing to one or more
-.IR nym_secrets .
+by additionally committing to one or more prover-controlled pseudonym values.
 The
 .I num_prover_nyms
-nym_secrets in
+values in
 .I prover_nyms
 are committed alongside the
 .I num_messages
@@ -38,8 +37,6 @@ sensitivity of the
 .IR secret_prover_blind ,
 see
 .BR bbs_blind_commit (3).
-For a description of nym_secrets and their role, see
-.BR bbs_blind_with_nym (7).
 .P
 The caller must allocate
 .I BBS_BLIND_COMMITMENT_LEN(num_messages + num_prover_nyms)
@@ -56,9 +53,21 @@ may be NULL.
 .I num_prover_nyms
 must be at least one.
 .P
-The function takes a pointer to a
+This function takes a pointer to a
 .BR bbs_ciphersuite (3type)
 to use, which determines several parameters for the scheme.
+This function is compatible with
+.B bbs_blind_nym_sha256_ciphersuite
+and
+.B bbs_blind_nym_shake256_ciphersuite
+only.
+Using a ciphersuite from
+.I <bbs.h>
+or
+.I <bbs_blind.h>
+will produce an error.
+Keys generated with any ciphersuite may be used here; see
+.BR bbs_keygen (3).
 .SH RETURN VALUE
 Returns
 .B BBS_OK

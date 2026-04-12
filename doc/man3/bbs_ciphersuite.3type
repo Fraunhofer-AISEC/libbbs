@@ -12,6 +12,16 @@ BBS Signatures
 .P
 .BI "extern const bbs_ciphersuite *const " bbs_sha256_ciphersuite ";"
 .BI "extern const bbs_ciphersuite *const " bbs_shake256_ciphersuite ";"
+.P
+.B #include <bbs_blind.h>
+.P
+.BI "extern const bbs_ciphersuite *const " bbs_blind_sha256_ciphersuite ";"
+.BI "extern const bbs_ciphersuite *const " bbs_blind_shake256_ciphersuite ";"
+.P
+.B #include <bbs_blind_with_nym.h>
+.P
+.BI "extern const bbs_ciphersuite *const " bbs_blind_nym_sha256_ciphersuite ";"
+.BI "extern const bbs_ciphersuite *const " bbs_blind_nym_shake256_ciphersuite ";"
 .fi
 .SH DESCRIPTION
 The BBS signature scheme is defined in terms of hash functions and elliptic
@@ -31,23 +41,86 @@ The exact choice of ciphersuite is irrelevant for most applications. However,
 applications must choose the same one to interoperate. Multiple choices are
 provided mainly to facilitate the implementation of protocols with distinct
 preferences.
+.SS Ciphersuite compatibility
+Each family of functions requires a matching ciphersuite.
+Functions from
+.I <bbs.h>
+must be used with
+.B bbs_sha256_ciphersuite
+or
+.BR bbs_shake256_ciphersuite .
+Functions from
+.I <bbs_blind.h>
+must be used with
+.B bbs_blind_sha256_ciphersuite
+or
+.BR bbs_blind_shake256_ciphersuite .
+Functions from
+.I <bbs_blind_with_nym.h>
+must be used with
+.B bbs_blind_nym_sha256_ciphersuite
+or
+.BR bbs_blind_nym_shake256_ciphersuite .
+Passing a ciphersuite from the wrong family to a function will produce an error.
 .P
-The currently supported ciphersuites are as follows:
-.SS bbs_sha256_ciphersuite
+Key generation is the sole exception.
+Keys generated with any ciphersuite are interoperable across all ciphersuites
+and all function families.
+See
+.BR bbs_keygen (3).
+.SS SHA-256 variants
+.TP
+.B bbs_sha256_ciphersuite
 Implements the
 .I BLS12-381-SHA-256
-ciphersuite, using the elliptic curve BLS12-381 and the sha2-256 hash function
+ciphersuite, using the elliptic curve BLS12-381 and the SHA-256 hash function
 in extensible message digest (XMD) mode.
-.SS bbs_shake256_ciphersuite
+For use with functions from
+.IR <bbs.h> .
+.TP
+.B bbs_blind_sha256_ciphersuite
+The blind BBS variant of the SHA-256 ciphersuite.
+For use with functions from
+.IR <bbs_blind.h> .
+.TP
+.B bbs_blind_nym_sha256_ciphersuite
+The per-verifier pseudonym variant of the SHA-256 ciphersuite.
+For use with functions from
+.IR <bbs_blind_with_nym.h> .
+.SS SHAKE-256 variants
+.TP
+.B bbs_shake256_ciphersuite
 Implements the
 .I BLS12-381-SHAKE-256
-ciphersuite, using the elliptic curve BLS12-381 and the shake256 extendable
+ciphersuite, using the elliptic curve BLS12-381 and the SHAKE-256 extendable
 output function (XOF).
+For use with functions from
+.IR <bbs.h> .
+.TP
+.B bbs_blind_shake256_ciphersuite
+The blind BBS variant of the SHAKE-256 ciphersuite.
+For use with functions from
+.IR <bbs_blind.h> .
+.TP
+.B bbs_blind_nym_shake256_ciphersuite
+The per-verifier pseudonym variant of the SHAKE-256 ciphersuite.
+For use with functions from
+.IR <bbs_blind_with_nym.h> .
 .SH STANDARDS
-The currently implemented ciphersuites correspond to
-.I draft-irtf-cfrg-bbs-signatures-09.
+The base ciphersuites correspond to
+.IR draft-irtf-cfrg-bbs-signatures-09 .
+The blind ciphersuites correspond to
+.IR draft-irtf-cfrg-bbs-blind-signatures-02 .
+The blind-with-pseudonym ciphersuites correspond to
+.IR draft-irtf-cfrg-bbs-per-verifier-linkability-02 .
 .SH SEE ALSO
 .BR bbs (7),
+.BR bbs_blind (7),
+.BR bbs_blind_with_nym (7),
 .BR bbs_keygen (3),
 .BR bbs_sign (3),
 .BR bbs_proof_gen (3),
+.BR bbs_blind_sign (3),
+.BR bbs_blind_proof_gen (3),
+.BR bbs_blind_sign_with_nym (3),
+.BR bbs_blind_proof_gen_with_nym (3)
