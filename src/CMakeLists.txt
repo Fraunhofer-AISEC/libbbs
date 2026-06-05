@@ -8,6 +8,7 @@ add_library(bbs_sources OBJECT
 	compat-string.c
 )
 add_dependencies(bbs_sources blst)
+set_source_files_properties(compat-string.c PROPERTIES COMPILE_OPTIONS "-fno-builtin")
 
 
 # Main library
