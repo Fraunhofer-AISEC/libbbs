@@ -35,7 +35,7 @@ void *memcpy(void *dest, const void *src, size_t n) {
 NO_OPTIMIZE
 void *memmove(void *dest, const void *src, size_t n) {
 	char *sc = (char*)src + n, *dc = (char*)dest + n;
-	if(src < dest) return memcpy(dest, src, n);
+	if(src > dest) return memcpy(dest, src, n);
 	while(n--) *--dc = *--sc;
 	return barrier(dest);
 }
