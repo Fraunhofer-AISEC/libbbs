@@ -25,6 +25,16 @@ family of functions is used to generate signature key pairs for use with the BBS
 signature scheme. All functions take a pointer to a
 .BR bbs_ciphersuite (3type)
 to use, which determines several parameters for the scheme.
+Key generation is compatible with all ciphersuites across all function families.
+A key pair generated with any ciphersuite may be used equally with functions
+from
+.IR <bbs.h> ,
+.IR <bbs_blind.h> ,
+or
+.IR <bbs_blind_with_nym.h> ,
+and vice-versa.
+The ciphersuite passed to key generation does not restrict which functions the
+resulting key pair may be used with.
 .SS bbs_keygen()
 The
 .BR bbs_keygen ()
@@ -155,5 +165,7 @@ int main(void) {
 .EE
 .SH SEE ALSO
 .BR bbs (7),
+.BR bbs_blind (7),
+.BR bbs_blind_with_nym (7),
 .BR bbs_ciphersuite (3type),
 .BR getentropy (3)

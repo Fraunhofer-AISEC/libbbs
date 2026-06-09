@@ -7,27 +7,94 @@ set(BBS_FIX_TESTS
     bbs_fix_verify.c
     bbs_fix_proof_gen.c
     bbs_fix_proof_verify.c)
+set(BBS_BLIND_FIX_TESTS
+    blind_bbs_fix_generators.c
+    blind_bbs_fix_commit.c
+    blind_bbs_fix_sign.c
+    blind_bbs_fix_proof_gen.c)
+set(BBS_BLIND_WITH_NYM_FIX_TESTS
+    blind_with_nym_bbs_fix_generators.c
+    blind_with_nym_bbs_fix_commit.c
+    blind_with_nym_bbs_fix_sign.c
+    blind_with_nym_bbs_fix_proof_gen.c
+)
+
+# e2e source files
 set(BBS_E2E_TESTS bbs_e2e_sign_n_proof.c)
+set(BBS_BLIND_E2E_TESTS bbs_e2e_blind.c)
+set(BBS_BLIND_WITH_NYM_E2E_TESTS bbs_e2e_blind_with_nym.c)
+
+# benchmark source files
 set(BBS_BENCH_TESTS bbs_bench_individual.c)
+set(BBS_BLIND_BENCH_TESTS bbs_bench_blind.c)
+set(BBS_BLIND_WITH_NYM_BENCH_TESTS bbs_bench_blind_with_nym.c)
 
 # Generate driver source files
-create_test_sourcelist(fix_driver   bbs_fix_driver.c   ${BBS_FIX_TESTS})
-create_test_sourcelist(e2e_driver   bbs_e2e_driver.c   ${BBS_E2E_TESTS})
-create_test_sourcelist(bench_driver bbs_bench_driver.c ${BBS_BENCH_TESTS})
+create_test_sourcelist(fix_driver                   bbs_fix_driver.c                ${BBS_FIX_TESTS})
+create_test_sourcelist(blind_fix_driver             bbs_blind_fix_driver.c          ${BBS_BLIND_FIX_TESTS})
+create_test_sourcelist(blind_with_nym_fix_driver    bbs_blind_with_nym_fix_driver.c ${BBS_BLIND_WITH_NYM_FIX_TESTS})
+
+create_test_sourcelist(e2e_driver                   bbs_e2e_driver.c                ${BBS_E2E_TESTS})
+create_test_sourcelist(blind_e2e_driver             bbs_blind_e2e_driver.c          ${BBS_BLIND_E2E_TESTS})
+create_test_sourcelist(blind_with_nym_e2e_driver    bbs_blind_with_nym_e2e_driver.c ${BBS_BLIND_WITH_NYM_E2E_TESTS})
+
+create_test_sourcelist(bench_driver                 bbs_bench_driver.c                  ${BBS_BENCH_TESTS})
+create_test_sourcelist(blind_bench_driver           bbs_blind_bench_driver.c            ${BBS_BLIND_BENCH_TESTS})
+create_test_sourcelist(blind_with_nym_bench_driver  bbs_blind_with_nym_bench_driver.c   ${BBS_BLIND_WITH_NYM_BENCH_TESTS})
 
 # Compile generic sources
-add_library(bbs_fix_sources   OBJECT ${fix_driver})
-add_library(bbs_e2e_sources   OBJECT ${e2e_driver})
-add_library(bbs_bench_sources OBJECT ${bench_driver})
-target_include_directories(bbs_fix_sources   PUBLIC ../include ../src)
-target_include_directories(bbs_e2e_sources   PUBLIC ../include)
-target_include_directories(bbs_bench_sources PUBLIC ../include)
+add_library(bbs_fix_sources                 OBJECT ${fix_driver})
+add_library(bbs_blind_fix_sources           OBJECT ${blind_fix_driver})
+add_library(bbs_blind_with_nym_fix_sources  OBJECT ${blind_with_nym_fix_driver})
 
+add_library(bbs_e2e_sources                 OBJECT ${e2e_driver})
+add_library(bbs_blind_e2e_sources           OBJECT ${blind_e2e_driver})
+add_library(bbs_blind_with_nym_e2e_sources  OBJECT ${blind_with_nym_e2e_driver})
+
+add_library(bbs_bench_sources                   OBJECT ${bench_driver})
+add_library(bbs_blind_bench_sources             OBJECT ${blind_bench_driver})
+add_library(bbs_blind_with_nym_bench_sources    OBJECT ${blind_with_nym_bench_driver})
+
+target_include_directories(bbs_fix_sources                  PUBLIC ../include ../src)
+target_include_directories(bbs_blind_fix_sources            PUBLIC ../include ../src)
+target_include_directories(bbs_blind_with_nym_fix_sources   PUBLIC ../include ../src)
+
+target_include_directories(bbs_e2e_sources                  PUBLIC ../include)
+target_include_directories(bbs_blind_e2e_sources            PUBLIC ../include)
+target_include_directories(bbs_blind_with_nym_e2e_sources   PUBLIC ../include)
+
+target_include_directories(bbs_bench_sources                PUBLIC ../include)
+target_include_directories(bbs_blind_bench_sources          PUBLIC ../include)
+target_include_directories(bbs_blind_with_nym_bench_sources PUBLIC ../include)
+
+# define ciphersuite sets
+set(BBS_CIPHERSUITES bls12-381-sha-256 bls12-381-shake-256)
+set(BBS_BLIND_CIPHERSUITES bls12-381-blind-sha-256 bls12-381-blind-shake-256)
+set(BBS_BLIND_WITH_NYM_CIPHERSUITES bls12-381-blind-with-nym-sha-256 bls12-381-blind-with-nym-shake-256)
+
+# single transpiler for everything
+add_executable(fixtures_transpiler fixtures_transpiler.c)
 
 # For each ciphersuite, generate fixtures and compile them
-set(BBS_CIPHERSUITES bls12-381-sha-256 bls12-381-shake-256)
-add_executable(fixtures_transpiler fixtures_transpiler.c)
 foreach(suite IN LISTS BBS_CIPHERSUITES)
+	add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/fixtures_${suite}.c"
+		COMMAND $<TARGET_FILE:fixtures_transpiler> "${suite}" "${CMAKE_CURRENT_SOURCE_DIR}"
+		DEPENDS fixtures_transpiler)
+	add_library(bbs_fixtures_file_${suite} OBJECT "${CMAKE_CURRENT_BINARY_DIR}/fixtures_${suite}.c")
+	target_include_directories(bbs_fixtures_file_${suite} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+endforeach()
+
+# Generate and compile blind fixture files
+foreach(suite IN LISTS BBS_BLIND_CIPHERSUITES)
+	add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/fixtures_${suite}.c"
+		COMMAND $<TARGET_FILE:fixtures_transpiler> "${suite}" "${CMAKE_CURRENT_SOURCE_DIR}"
+		DEPENDS fixtures_transpiler)
+	add_library(bbs_fixtures_file_${suite} OBJECT "${CMAKE_CURRENT_BINARY_DIR}/fixtures_${suite}.c")
+	target_include_directories(bbs_fixtures_file_${suite} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+endforeach()
+
+# Generate and compile blind with nym fixture files
+foreach(suite IN LISTS BBS_BLIND_WITH_NYM_CIPHERSUITES)
 	add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/fixtures_${suite}.c"
 		COMMAND $<TARGET_FILE:fixtures_transpiler> "${suite}" "${CMAKE_CURRENT_SOURCE_DIR}"
 		DEPENDS fixtures_transpiler)
@@ -59,10 +126,71 @@ foreach(suite IN LISTS BBS_CIPHERSUITES)
 	add_executable(bbs-bench-${suite} $<TARGET_OBJECTS:bbs_bench_sources>
 		$<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
 	target_link_libraries(bbs-bench-${suite} PRIVATE bbs)
+    target_link_libraries(bbs-bench-${suite} PUBLIC m)
+endforeach()
+
+# Link blind bbs test executables
+foreach(suite IN LISTS BBS_BLIND_CIPHERSUITES)
+	add_executable(bbs-blind-fix-${suite} $<TARGET_OBJECTS:bbs_blind_fix_sources>
+		$<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
+	target_link_libraries(bbs-blind-fix-${suite} PRIVATE bbs_FIXTURES_ONLY)
+	foreach(test ${BBS_BLIND_FIX_TESTS})
+		get_filename_component(TName ${test} NAME_WE)
+		add_test(NAME ${TName}_${suite} COMMAND bbs-blind-fix-${suite} ${TName})
+	endforeach()
+
+    # End-to-End tests
+    add_executable(bbs-blind-e2e-${suite}
+        $<TARGET_OBJECTS:bbs_blind_e2e_sources>
+        $<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
+    target_link_libraries(bbs-blind-e2e-${suite} PRIVATE bbs)
+    foreach(test ${BBS_BLIND_E2E_TESTS})
+        get_filename_component(TName ${test} NAME_WE)
+        add_test(NAME ${TName}_${suite}
+            COMMAND bbs-blind-e2e-${suite} ${TName})
+    endforeach()
+
+    # Benchmarks
+    add_executable(bbs-blind-bench-${suite} $<TARGET_OBJECTS:bbs_blind_bench_sources>
+        $<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
+    target_link_libraries(bbs-blind-bench-${suite} PRIVATE bbs)
+    target_link_libraries(bbs-blind-bench-${suite} PUBLIC m)
+endforeach()
+
+# Link blind with nym bbs test executables
+foreach(suite IN LISTS BBS_BLIND_WITH_NYM_CIPHERSUITES)
+	add_executable(bbs-blind-with-nym-fix-${suite} $<TARGET_OBJECTS:bbs_blind_with_nym_fix_sources>
+		$<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
+	target_link_libraries(bbs-blind-with-nym-fix-${suite} PRIVATE bbs_FIXTURES_ONLY)
+    foreach(test ${BBS_BLIND_WITH_NYM_FIX_TESTS})
+		get_filename_component(TName ${test} NAME_WE)
+		add_test(NAME ${TName}_${suite} COMMAND bbs-blind-with-nym-fix-${suite} ${TName})
+	endforeach()
+
+    # End-to-End tests
+    add_executable(bbs-blind-with-nym-e2e-${suite}
+        $<TARGET_OBJECTS:bbs_blind_with_nym_e2e_sources>
+        $<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
+    target_link_libraries(bbs-blind-with-nym-e2e-${suite} PRIVATE bbs)
+    foreach(test ${BBS_BLIND_WITH_NYM_E2E_TESTS})
+        get_filename_component(TName ${test} NAME_WE)
+        add_test(NAME ${TName}_${suite}
+            COMMAND bbs-blind-with-nym-e2e-${suite} ${TName})
+    endforeach()
+
+    # Benchmarks
+    add_executable(bbs-blind-with-nym-bench-${suite} $<TARGET_OBJECTS:bbs_blind_with_nym_bench_sources>
+        $<TARGET_OBJECTS:bbs_fixtures_file_${suite}>)
+    target_link_libraries(bbs-blind-with-nym-bench-${suite} PRIVATE bbs)
+    target_link_libraries(bbs-blind-with-nym-bench-${suite} PUBLIC m)
 endforeach()
 
 # Benchmark command
 add_custom_target(bench
-	COMMAND bbs-bench-bls12-381-shake-256 bbs_bench_individual
-	COMMAND bbs-bench-bls12-381-sha-256   bbs_bench_individual)
+    COMMAND bbs-bench-bls12-381-shake-256                                   bbs_bench_individual
+    COMMAND bbs-bench-bls12-381-sha-256                                     bbs_bench_individual
+    COMMAND bbs-blind-bench-bls12-381-blind-shake-256                       bbs_bench_blind
+    COMMAND bbs-blind-bench-bls12-381-blind-sha-256                         bbs_bench_blind
+    COMMAND bbs-blind-with-nym-bench-bls12-381-blind-with-nym-shake-256     bbs_bench_blind_with_nym
+    COMMAND bbs-blind-with-nym-bench-bls12-381-blind-with-nym-sha-256       bbs_bench_blind_with_nym)
 

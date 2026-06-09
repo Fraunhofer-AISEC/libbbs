@@ -1,0 +1,180 @@
+.TH bbs_blind_proof_gen 3 2026-03-10 libbbs
+.SH NAME
+bbs_blind_proof_gen, bbs_blind_proof_verify \- create and verify blind BBS
+selective disclosure proofs
+.SH LIBRARY
+BBS Signatures
+.RI ( libbbs ,\~ \-lbbs )
+.SH SYNOPSIS
+.nf
+.B #include <bbs_blind.h>
+.P
+.BR "int bbs_blind_proof_gen(" "size_t num_messages, num_committed_messages;"
+.BI "                        const bbs_ciphersuite * " ciphersuite ","
+.BI "                        const bbs_public_key " pk ","
+.BI "                        const bbs_signature " signature ", void * " proof ","
+.BI "                        const void * " header ", size_t " header_len ","
+.BI "                        const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                        size_t " num_messages ","
+.BI "                        const void *const " messages [ num_messages "],"
+.BI "                        const size_t " message_lens [ num_messages "],"
+.BI "                        size_t " num_committed_messages ","
+.BI "                        const void *const " committed_messages [ num_committed_messages "],"
+.BI "                        const size_t " committed_message_lens [ num_committed_messages "],"
+.BI "                        size_t " num_disclosed_indexes ","
+.BI "                        const size_t " disclosed_indexes [ num_disclosed_indexes "],"
+.BI "                        size_t " num_disclosed_committed_indexes ","
+.BI "                        const size_t " disclosed_committed_indexes [ num_disclosed_committed_indexes "],"
+.BI "                        const uint8_t " secret_prover_blind "[BBS_BLIND_SECRET_PROVER_BLIND_LEN]);"
+.P
+.BR "int bbs_blind_proof_verify(" "size_t num_signer_known_messages,"
+.BI "                           num_disclosed_messages, num_disclosed_committed_messages;"
+.BI "                           const bbs_ciphersuite * " ciphersuite ","
+.BI "                           const bbs_public_key " pk ","
+.BI "                           const void * " proof ", size_t " proof_len ","
+.BI "                           const void * " header ", size_t " header_len ","
+.BI "                           const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                           size_t " num_signer_known_messages ","
+.BI "                           size_t " num_disclosed_messages ","
+.BI "                           const void *const " disclosed_messages [ num_disclosed_messages "],"
+.BI "                           const size_t " disclosed_message_lens [ num_disclosed_messages "],"
+.BI "                           const size_t " disclosed_indexes [ num_disclosed_messages "],"
+.BI "                           size_t " num_disclosed_committed_messages ","
+.BI "                           const void *const " disclosed_committed_messages [ num_disclosed_committed_messages "],"
+.BI "                           const size_t " disclosed_committed_message_lens [ num_disclosed_committed_messages "],"
+.BI "                           const size_t " disclosed_committed_indexes [ num_disclosed_committed_messages "]);"
+.fi
+.SH DESCRIPTION
+The blind BBS proof functions create and verify selective disclosure proofs
+from a blind BBS signature.
+The proof can disclose any subset of the signer-known messages and any subset
+of the committed messages, without revealing the remaining messages or the
+signature itself.
+.P
+The special message
+.I header
+of length
+.I header_len
+bytes must always be disclosed.
+With every proof, an optional message
+.I presentation_header
+of length
+.I presentation_header_len
+bytes may be authenticated.
+This can be used to prevent replay of proofs by incorporating a challenge
+nonce.
+.P
+The length in bytes of a blind BBS proof depends on the number of undisclosed
+messages and is given by
+.IR BBS_PROOF_LEN(num_undisclosed) ,
+where
+.I num_undisclosed
+is the total number of messages not disclosed, counting both signer-known and
+committed messages, plus one for the secret_prover_blind.
+.P
+All functions take a pointer to a
+.BR bbs_ciphersuite (3type)
+to use, which determines several parameters for the scheme.
+These functions are compatible with
+.B bbs_blind_sha256_ciphersuite
+and
+.B bbs_blind_shake256_ciphersuite
+only.
+Using a ciphersuite from
+.I <bbs.h>
+or
+.I <bbs_blind_with_nym.h>
+will produce an error.
+Keys generated with any ciphersuite may be used here; see
+.BR bbs_keygen (3).
+.SS bbs_blind_proof_gen()
+Creates a selective disclosure proof from a valid blind signature.
+The full set of signer-known messages must be provided in
+.I messages
+and the full set of committed messages in
+.IR committed_messages ,
+both in the same order as during the signature operation.
+The indices of the signer-known messages to disclose are given in ascending
+order in
+.IR disclosed_indexes ,
+and the indices of the committed messages to disclose in
+.IR disclosed_committed_indexes .
+The
+.I secret_prover_blind
+produced by
+.BR bbs_blind_commit (3)
+must be provided.
+If no commitment was used,
+.I secret_prover_blind
+may be NULL.
+The result is stored in
+.IR proof .
+.SS bbs_blind_proof_verify()
+Verifies that
+.I proof
+of length
+.I proof_len
+bytes was created from a valid blind signature over a set of messages
+authenticated with
+.IR pk .
+Only the disclosed messages are required.
+The
+.I num_signer_known_messages
+parameter gives the total number of signer-known messages the signature
+covers, including those not disclosed.
+.P
+The
+.I num_disclosed_messages
+messages in
+.I disclosed_messages
+correspond to the indices in
+.IR disclosed_indexes .
+The
+.I num_disclosed_committed_messages
+messages in
+.I disclosed_committed_messages
+correspond to the indices in
+.IR disclosed_committed_indexes .
+All index arrays must be in ascending order.
+.SH RETURN VALUE
+Returns
+.B BBS_OK
+on success.
+All other return values denote an error, the exact meaning of which
+may change in the future.
+.SH ATTRIBUTES
+For an explanation of the terms used in this section, see
+.BR attribute (7).
+.TS
+allbox;
+lbx lb lb
+l l l.
+Interface	Attribute	Value
+T{
+.na
+.nh
+.BR bbs_blind_proof_gen (),
+.BR bbs_blind_proof_verify ()
+T}	Thread safety	MT-Safe
+.TE
+.SH STANDARDS
+The
+.BR bbs_blind_proof_gen ()
+and
+.BR bbs_blind_proof_verify ()
+functions implement the corresponding algorithms from
+.I draft-irtf-cfrg-bbs-blind-signatures-02.
+.SH CAVEATS
+The
+.BR bbs_blind_proof_gen ()
+function emits a call to the POSIX 2024.1-2024 function
+.BR getentropy (3).
+On non-POSIX systems, this function has to be provided by the application at
+link-time.
+.SH SEE ALSO
+.BR bbs_blind (7),
+.BR bbs_ciphersuite (3type),
+.BR bbs_keygen (3),
+.BR bbs_blind_commit (3),
+.BR bbs_blind_sign (3),
+.BR getentropy (3)

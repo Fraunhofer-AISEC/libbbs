@@ -43,6 +43,6 @@ add_subdirectory(src)
 add_subdirectory(test)
 
 install(TARGETS bbs)
-install(FILES include/bbs.h TYPE INCLUDE)
+install(FILES include/bbs.h include/bbs_blind.h include/bbs_blind_with_nym.h TYPE INCLUDE)
 install(DIRECTORY doc/man3 doc/man7 TYPE MAN)
 
