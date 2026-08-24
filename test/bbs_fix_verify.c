@@ -12,10 +12,8 @@ bbs_fix_verify ()
 					vectors_signature[i].pk,
 					vectors_signature[i].result,
 					vectors_signature[i].header,
-					vectors_signature[i].header_len,
-					vectors_signature[i].num_messages,
 					vectors_signature[i].msgs,
-					vectors_signature[i].msg_lens))
+					vectors_signature[i].num_messages))
 		{
 			puts ("Invalid return value during signature verification");
 			return 1;

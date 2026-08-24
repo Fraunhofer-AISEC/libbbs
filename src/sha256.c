@@ -142,29 +142,28 @@ static void sha_block(SHA_TYPE *sha) {
 void SHA_INIT(SHA_TYPE *sha){
 	bbs_memcpy(sha, &SHA_INITIAL, sizeof(SHA_TYPE));
 }
-void SHA_UPDATE(SHA_TYPE *sha, const void *src, size_t n_bytes){
-    uint8_t *srcb = (uint8_t*)src;
-    sha->n_bits += 8 * n_bytes;
+void SHA_UPDATE(SHA_TYPE *sha, bbs_message data){
+    sha->n_bits += 8 * data.len;
 
-    if(n_bytes + sha->buffer_counter < SHA_N/4) {
-    	bbs_memcpy(sha->buffer + sha->buffer_counter, srcb, n_bytes);
-	sha->buffer_counter += n_bytes;
+    if(data.len + sha->buffer_counter < SHA_N/4) {
+    	bbs_memcpy(sha->buffer + sha->buffer_counter, data.loc, data.len);
+	sha->buffer_counter += data.len;
 	return;
     }
 
-    bbs_memcpy(sha->buffer + sha->buffer_counter, srcb, SHA_N/4 - sha->buffer_counter);
+    bbs_memcpy(sha->buffer + sha->buffer_counter, data.loc, SHA_N/4 - sha->buffer_counter);
     sha_block(sha);
-    n_bytes -= SHA_N/4 - sha->buffer_counter;
-    srcb += SHA_N/4 - sha->buffer_counter;
+    data.len -= SHA_N/4 - sha->buffer_counter;
+    data.loc = (uint8_t*)data.loc + SHA_N/4 - sha->buffer_counter;
 
-    while(n_bytes >= SHA_N/4) {
-    	bbs_memcpy(sha->buffer, srcb, SHA_N/4);
+    while(data.len >= SHA_N/4) {
+    	bbs_memcpy(sha->buffer, data.loc, SHA_N/4);
         sha_block(sha);
-	n_bytes -= SHA_N/4;
-	srcb += SHA_N/4;
+	data.len -= SHA_N/4;
+    	data.loc = (uint8_t*)data.loc + SHA_N/4;
     }
-    bbs_memcpy(sha->buffer, srcb, n_bytes);
-    sha->buffer_counter = n_bytes;
+    bbs_memcpy(sha->buffer, data.loc, data.len);
+    sha->buffer_counter = data.len;
 }
 
 void SHA_FINALIZE(SHA_TYPE *sha, void *dst){
@@ -191,46 +190,44 @@ void XMD_INIT(SHA_TYPE *sha) {
 	sha->n_bits = SHA_N/4 * 8;
 }
 
-void XMD_FINALIZE(SHA_TYPE *sha, void *out, uint16_t outlen, const void *dst, size_t dst_len) {
+void XMD_FINALIZE(SHA_TYPE *sha, bbs_out_message out, bbs_message dst) {
 	uint8_t b_0[SHA_N/8], b_i[SHA_N/8], ctr = 0, dst2[SHA_N/8], dst_len1;
-	uint8_t *outb = (uint8_t*)out;
-	uint16_t outlen_be = htobe16(outlen);
+	uint16_t outlen_be = htobe16(out.len);
 
 	/* I intentionally do not return an error when outlen > 255 * SHA_N/8
 	 * This is still an error for any application to do, but will not occur
 	 * in decently designed protocols, and error propagation would
 	 * complicate applications unnecessarily */
 
-	if(dst_len > 255) {
+	if(dst.len > 255) {
 		SHA_TYPE sha_dst;
 		SHA_INIT(&sha_dst);
-		SHA_UPDATE(&sha_dst, "H2C-OVERSIZE-DST-", 17);
-		SHA_UPDATE(&sha_dst, dst, dst_len);
+		SHA_UPDATE(&sha_dst, BBS_LSMSG("H2C-OVERSIZE-DST-"));
+		SHA_UPDATE(&sha_dst, dst);
 		SHA_FINALIZE(&sha_dst, dst2);
-		dst = dst2;
-		dst_len = SHA_N/8;
+		dst = BBS_CMSG(dst2);
 	}
-	dst_len1 = dst_len; /* Low order byte */
+	dst_len1 = (uint8_t)dst.len; /* Low order byte */
 
-	SHA_UPDATE(sha, &outlen_be, 2);
-	SHA_UPDATE(sha, &ctr, 1);
-	SHA_UPDATE(sha, dst, dst_len);
-	SHA_UPDATE(sha, &dst_len1, 1);
+	SHA_UPDATE(sha, BBS_CMSG(outlen_be));
+	SHA_UPDATE(sha, BBS_CMSG(ctr));
+	SHA_UPDATE(sha, dst);
+	SHA_UPDATE(sha, BBS_CMSG(dst_len1));
 	SHA_FINALIZE(sha, b_0);
 
 	(void)bbs_memset(b_i, 0, sizeof(b_i));
-	for(ctr = 1; outlen && ctr; ctr++) {
+	for(ctr = 1; out.len && ctr; ctr++) {
 		for(size_t i=0; i < sizeof(b_i); i++) b_i[i] ^= b_0[i];
 		SHA_INIT(sha);
-		SHA_UPDATE(sha, b_i, sizeof(b_i));
-		SHA_UPDATE(sha, &ctr, 1);
-		SHA_UPDATE(sha, dst, dst_len);
-		SHA_UPDATE(sha, &dst_len1, 1);
+		SHA_UPDATE(sha, BBS_CMSG(b_i));
+		SHA_UPDATE(sha, BBS_CMSG(ctr));
+		SHA_UPDATE(sha, dst);
+		SHA_UPDATE(sha, BBS_CMSG(dst_len1));
 		SHA_FINALIZE(sha, b_i);
-		size_t to_move = (outlen < SHA_N/8) ? outlen : SHA_N/8;
-		bbs_memcpy(outb, b_i, to_move);
-		outb += to_move;
-		outlen -= to_move;
+		size_t to_move = (out.len < SHA_N/8) ? out.len : SHA_N/8;
+		bbs_memcpy(out.loc, b_i, to_move);
+		out.loc = (uint8_t*)out.loc + to_move;
+		out.len -= to_move;
 	}
 
 	bbs_memset(b_0, 0, sizeof(b_0));

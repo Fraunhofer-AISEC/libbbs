@@ -159,17 +159,17 @@ int main(int argc, char **argv) {
 	}
 	fprintf(out, "static const struct fixture_hash_to_scalar _vectors_hash_to_scalar[] = {\n");
 	tmp = json_object_get(j2, "message");
-	fprintf(out, "\t{ .msg = h2s_message%d, .msg_len = %zu, ", i = 0, tmp->len / 2);
+	fprintf(out, "\t{ .msg = { h2s_message%d, %zu }, ", i = 0, tmp->len / 2);
 	tmp = json_object_get(j2, "dst");
-	fprintf(out, ".dst = h2s_dst%d, .dst_len = %zu, .result = ", i++, tmp->len / 2);
+	fprintf(out, ".dst = { h2s_dst%d, %zu }, .result = ", i++, tmp->len / 2);
 	tmp = json_object_get(j2, "scalar");
 	print_hex_str(tmp, out);
 	fprintf(out, "},\n");
 	for(struct json *k=json_object_get(j, "cases")->value; k; k = k->next) {
 		tmp = json_object_get(k, "message");
-		fprintf(out, "\t{ .msg = h2s_message%d, .msg_len = %zu, ", i, tmp->len / 2);
+		fprintf(out, "\t{ .msg = { h2s_message%d, %zu }, ", i, tmp->len / 2);
 		tmp = json_object_get(j, "dst");
-		fprintf(out, ".dst = h2s_dst%d, .dst_len = %zu, .result = ", i++, tmp->len / 2);
+		fprintf(out, ".dst = { h2s_dst%d, %zu }, .result = ", i++, tmp->len / 2);
 		tmp = json_object_get(k, "scalar");
 		print_hex_str(tmp, out);
 		fprintf(out, "},\n");
@@ -212,9 +212,9 @@ int main(int argc, char **argv) {
 	fprintf(out, ";\nstatic const uint8_t keygen_dst[] = ");
 	print_hex_str(json_object_get(j, "keyDst"), out);
 	fprintf(out, ";\nstatic const struct fixture_keygen _vectors_keygen[] = {\n");
-	fprintf(out, "\t{ .key_material = keygen_material, .key_material_len = %zu, ", json_object_get(j, "keyMaterial")->len/2);
-	fprintf(out, ".key_info = keygen_info, .key_info_len = %zu, ", json_object_get(j, "keyInfo")->len/2);
-	fprintf(out, ".key_dst = keygen_dst, .key_dst_len = %zu, ", json_object_get(j, "keyDst")->len/2);
+	fprintf(out, "\t{ .key_material = { keygen_material, %zu }, ", json_object_get(j, "keyMaterial")->len/2);
+	fprintf(out, ".key_info = { keygen_info, %zu }, ", json_object_get(j, "keyInfo")->len/2);
+	fprintf(out, ".key_dst = { keygen_dst, %zu }, ", json_object_get(j, "keyDst")->len/2);
 	tmp = json_object_get(j, "keyPair");
 	fprintf(out, ".result_sk = ");
 	print_hex_str(json_object_get(tmp, "secretKey"), out);
@@ -240,11 +240,13 @@ int main(int argc, char **argv) {
 			fprintf(out, ";\nstatic const uint8_t signature%d_msg%d[] = ", filenum, i++);
 			print_hex_str(k, out);
 		}
-		fprintf(out, ";\nstatic const void *const signature%d_msgs[] = {", filenum);
-		for(int ii=0; ii<i; ii++) fprintf(out, "signature%d_msg%d, ", filenum, ii);
-		fprintf(out, "};\nstatic const size_t signature%d_msg_lens[] = {", filenum);
+		fprintf(out, ";\nstatic const bbs_message signature%d_msgs[] = {", filenum);
+		int ii=0;
 		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
-			fprintf(out, "%zu, ", k->len/2);
+			fprintf(out, "{ signature%d_msg%d, %zu }, ", filenum, ii++, k->len/2);
+		//fprintf(out, "};\nstatic const size_t signature%d_msg_lens[] = {", filenum);
+		//for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
+		//	fprintf(out, "%zu, ", k->len/2);
 		}
 		fprintf(out, "};\n");
 		json_free(j);
@@ -263,10 +265,9 @@ int main(int argc, char **argv) {
 		fprintf(out, ", .pk = ");
 		print_hex_str(json_object_get(tmp, "publicKey"), out);
 		tmp = json_object_get(j, "header");
-		fprintf(out, ", .header = signature%d_header, .header_len = %zu", filenum, tmp->len/2);
+		fprintf(out, ", .header = { signature%d_header, %zu }", filenum, tmp->len/2);
 		fprintf(out, ", .num_messages = %zu", json_array_len(json_object_get(j, "messages")));
-		fprintf(out, ", .msgs = signature%d_msgs, .msg_lens = signature%d_msg_lens", filenum, filenum);
-		fprintf(out, ", .result = ");
+		fprintf(out, ", .msgs = signature%d_msgs, .result = ", filenum);
 		print_hex_str(json_object_get(j, "signature"), out);
 		tmp = json_object_get(j, "result");
 		fprintf(out, ", .result_valid = %d },\n", JSON_TRUE == json_object_get(tmp, "valid")->type);
@@ -298,8 +299,8 @@ int main(int argc, char **argv) {
 	}
 	fprintf(out, "};\n");
 	fprintf(out, "static const struct fixture_mocked_scalars _vectors_mocked_scalars[] = {\n");
-	fprintf(out, "\t{ .seed = mocked_seed, .seed_len = %zu", mocked_seed_len);
-	fprintf(out, ", .dst = mocked_dst, .dst_len = %zu", mocked_dst_len);
+	fprintf(out, "\t{ .seed = { mocked_seed, %zu }", mocked_seed_len);
+	fprintf(out, ", .dst = { mocked_dst, %zu }", mocked_dst_len);
 	fprintf(out, ", .result = mocked_scalars, .result_len = %d }\n", i);
 	fprintf(out, "};\n");
 	fprintf(out, "const struct fixture_mocked_scalars *const vectors_mocked_scalars = _vectors_mocked_scalars;\n");
@@ -323,11 +324,12 @@ int main(int argc, char **argv) {
 			fprintf(out, ";\nstatic const uint8_t proof%d_msg%d[] = ", filenum, i++);
 			print_hex_str(k, out);
 		}
-		fprintf(out, ";\nstatic const void *const proof%d_msgs[] = {", filenum);
-		for(int ii=0; ii<i; ii++) fprintf(out, "proof%d_msg%d, ", filenum, ii);
-		fprintf(out, "};\nstatic const size_t proof%d_msg_lens[] = {", filenum);
+		fprintf(out, ";\nstatic const bbs_message proof%d_msgs[] = {", filenum);
+		//for(int ii=0; ii<i; ii++) fprintf(out, "proof%d_msg%d, ", filenum, ii);
+		//fprintf(out, "};\nstatic const size_t proof%d_msg_lens[] = {", filenum);
+		int ii = 0;
 		for(struct json *k=json_object_get(j, "messages")->value; k; k = k->next) {
-			fprintf(out, "%zu, ", k->len/2);
+			fprintf(out, "{ proof%d_msg%d, %zu }, ", filenum, ii++, k->len/2);
 		}
 		fprintf(out, "};\nstatic const size_t proof%d_disclosed_indexes[] = {", filenum);
 		for(struct json *k=json_object_get(j, "disclosedIndexes")->value; k; k = k->next) {
@@ -351,17 +353,17 @@ int main(int argc, char **argv) {
 		fprintf(out, ", .signature = ");
 		print_hex_str(json_object_get(j, "signature"), out);
 		tmp = json_object_get(j, "header");
-		fprintf(out, ", .header = proof%d_header, .header_len = %zu", filenum, tmp->len/2);
+		fprintf(out, ", .header = { proof%d_header, %zu }", filenum, tmp->len/2);
 		tmp = json_object_get(j, "presentationHeader");
-		fprintf(out, ", .presentation_header = proof%d_presentation_header, .presentation_header_len = %zu", filenum, tmp->len/2);
+		fprintf(out, ", .presentation_header = { proof%d_presentation_header, %zu }", filenum, tmp->len/2);
 		fprintf(out, ", .num_messages = %zu", json_array_len(json_object_get(j, "messages")));
-		fprintf(out, ", .msgs = proof%d_msgs, .msg_lens = proof%d_msg_lens", filenum, filenum);
+		fprintf(out, ", .msgs = proof%d_msgs", filenum);
 		fprintf(out, ", .disclosed_indexes = proof%d_disclosed_indexes", filenum);
 		fprintf(out, ", .disclosed_indexes_len = %zu", json_array_len(json_object_get(j, "disclosedIndexes")));
-		fprintf(out, ", .mocking_seed = mocked_seed, .mocking_seed_len = %zu", mocked_seed_len);
-		fprintf(out, ", .mocking_dst = mocked_dst, .mocking_dst_len = %zu", mocked_dst_len);
+		fprintf(out, ", .mocking_seed = { mocked_seed, %zu }", mocked_seed_len);
+		fprintf(out, ", .mocking_dst = { mocked_dst, %zu }", mocked_dst_len);
 		tmp = json_object_get(j, "proof");
-		fprintf(out, ", .result = proof%d_proof, .result_len = %zu", filenum, tmp->len/2);
+		fprintf(out, ", .result = { proof%d_proof, %zu }", filenum, tmp->len/2);
 		tmp = json_object_get(j, "result");
 		fprintf(out, ", .result_valid = %d },\n", JSON_TRUE == json_object_get(tmp, "valid")->type);
 		json_free(j);

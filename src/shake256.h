@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <bbs.h>
 
 // state context
 typedef struct {
@@ -18,13 +19,13 @@ typedef struct {
 
 // SHAKE256
 void shake256_init(shake256_t *c);
-void shake256_update(shake256_t *c, const void *data, size_t len);
-void shake256_finalize(shake256_t *c, void *out, size_t outlen);    // digest goes to md
+void shake256_update(shake256_t *c, bbs_message data);
+void shake256_finalize(shake256_t *c, bbs_out_message out);    // digest goes to md
 
 // RFC 9380 expand_message XOF, deals correctly with oversized DSTs
 #define xof_shake256_init shake256_init
 #define xof_shake256_update shake256_update
-void xof_shake256_finalize(shake256_t *shake, void *out, uint16_t outlen, const void *dst, size_t dst_len);
+void xof_shake256_finalize(shake256_t *shake, bbs_out_message out, bbs_message dst);
 
 #endif
 

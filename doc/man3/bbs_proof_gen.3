@@ -10,33 +10,26 @@ BBS Signatures
 .B #include <bbs.h>
 .P
 .BR "int bbs_proof_gen(" "size_t n;"
-.BI "                  const bbs_ciphersuite * " ciphersuite ","
-.BI "                  const bbs_public_key " pk ","
-.BI "                  const bbs_signature " signature ", void * " proof ","
-.BI "                  const void * " header ", size_t " header_len ","
-.BI "                  const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                  const bbs_ciphersuite * " ciphersuite ", const bbs_public_key " pk ","
+.BI "                  const bbs_signature " signature ", bbs_out_message " proof ","
+.BI "                  bbs_message " header ", bbs_message " presentation_header ","
 .BI "                  const size_t * " disclosed_indexes ", size_t " disclosed_indexes_len ","
-.BI "                  size_t " n ","
-.BI "                  const void *const " messages [ n "], const size_t " messages_lens [ n "]);"
-.BR "int bbs_proof_verify(" "size_t disclosed_indexes_len;"
+.BI "                  const bbs_message " messages [ n "], size_t " n ");"
+.BR "int bbs_proof_verify(" "size_t n;"
 .BI "                     const bbs_ciphersuite * " ciphersuite ","
-.BI "                     const bbs_public_key " pk ","
-.BI "                     const void * " proof ", size_t " proof_len ","
-.BI "                     const void * " header ", size_t " header_len ","
-.BI "                     const void * " presentation_header ", size_t " presentation_header_len ","
+.BI "                     const bbs_public_key " pk ", bbs_message " proof ","
+.BI "                     bbs_message " header ", bbs_message " presentation_header ","
 .BI "                     const size_t * " disclosed_indexes ", size_t " disclosed_indexes_len ","
-.BI "                     size_t " n ","
-.BI "                     const void *const " messages [ disclosed_indexes_len "],"
-.BI "                     const size_t " messages_lens [ disclosed_indexed_len "]);"
+.BI "                     const bbs_message " messages [ n "], size_t " n ");"
 .fi
 .SH DESCRIPTION
-The BBS proof functions create and verify a basic BBS zero knowledge proof over
-the
+The BBS proof functions create and verify a basic BBS zero knowledge proof of
+knowledge over the
 .I n
 (at most 2^64) messages in
-.I messages,
-whose lengths in bytes are given in
-.I messages_lens.
+.I messages
+and the special message
+.I header.
 The
 .I disclosed_indexes_len
 messages whose indices are given in ascending order by
@@ -44,27 +37,23 @@ messages whose indices are given in ascending order by
 need not be provided to the verification function, but the authenticity of the
 remaining (disclosed) messages is still guaranteed. The special message
 .I header
-of length
-.I header_len
-bytes must always be revealed.
+must always be disclosed.
 .P
 Two proofs do not themselves disclose whether or not they are derived from the
-same signature. However, information contained within the messages may enable
-such correlation.
+same signature. However, information contained within the disclosed messages may
+enable such correlation.
 .P
 BBS proofs act as a simple kind of signature scheme. With every proof, a special
 message
 .I presentation_header
-of length
-.I presentation_header_len
-bytes may be authenticated. This feature may be used to prevent replay of proofs
+may be authenticated. This feature may be used to prevent replay of proofs
 by incorporating a challenge nonce in
 .I presentation_header.
 Note that anyone in possession of a valid signature can generate corresponding
 proofs. Consequently,
 .I the signature should never be disclosed directly.
 .P
-The length in bytes of a BBS proof is given by the macro
+The length in bytes of a BBS proof is given by the macro invocation
 .I BBS_PROOF_LEN(num_undisclosed)
 where
 .I num_undisclosed
@@ -84,10 +73,12 @@ function creates a selective disclosure proof
 given a public key
 .I pk
 and a valid signature for the
-.I messages,
-which have to be provided in the same order as during the signature operation.
-All signed messages have to be provided, including those which are not to be
-revealed.
+.I messages
+and
+.I header.
+The messages have to be provided in the same order as during the signature
+operation. All signed messages have to be provided, including those which are
+not to be revealed for verification.
 .SS bbs_proof_verify()
 The
 .BR bbs_proof_verify ()
@@ -99,15 +90,14 @@ Further, it asserts that the messages originally at indices
 .I disclosed_indexes
 are equal to the ones in
 .I messages.
-You should provide the length in bytes of the proof as seen on the network in
-.I proof_len.
 .P
 Note that the number of messages in
 .I messages
-must be equal to the number of disclosed messages,
-.I disclosed_indexes_len,
-not the total number of messages,
-.I n.
+must be equal to the total number of messages. Messages at indices not in
+.I disclosed_indexes
+are ignored by this function. You may pass the zero-length message
+.I BBS_UNDISCLOSED_MSG
+at such indices.
 .SH RETURN VALUE
 All BBS functions return
 .BR BBS_OK

@@ -13,7 +13,7 @@
 #undef ALIGN
 
 // This header specifies useful functions for several utility algorithms.
-// Use these ifyou want to hack on BBS signatures and want to stay close to the
+// Use these if you want to hack on BBS signatures and want to stay close to the
 // RFC draft.
 
 #define LEN(m)          (sizeof(m) / sizeof(m[0]))
@@ -36,71 +36,32 @@ union bbs_hash_context {
 /// cipher suite, keeping the same overall control flow for the caller.
 struct _bbs_ciphersuite
 {
+	// A special point to domain separate cipher suites...
 	uint8_t p1[BBS_G1_ELEM_LEN];
 
 	// Incremental expand_message API
-	void (*expand_message_init) (
-		union bbs_hash_context *ctx
-		);
-	void (*expand_message_update) (
-		union bbs_hash_context *ctx,
-		const void  *msg,
-		size_t       msg_len
-		);
-	void (*expand_message_finalize) (
-		union bbs_hash_context *ctx,
-		void          *out,
-		uint16_t       out_len, // WARNING: only supports up to 255*256
-		const void    *dst,
-		size_t         dst_len
-		);
+	void (*expand_message_init)     (union bbs_hash_context *ctx);
+	void (*expand_message_update)   (union bbs_hash_context *ctx, bbs_message msg);
+	void (*expand_message_finalize) (union bbs_hash_context *ctx, bbs_out_message out, bbs_message dst);
 
-	/// DST
-	const void *cipher_suite_id;
-	size_t  cipher_suite_id_len;
-	const void *default_key_dst;
-	size_t  default_key_dst_len;
-	const void *api_id;
-	size_t  api_id_len;
-	const void *signature_dst;
-	size_t  signature_dst_len;
-	const void *challenge_dst;
-	size_t  challenge_dst_len;
-	const void *map_dst;
-	size_t  map_dst_len;
+	/// Domain Separation Tags
+	bbs_message cipher_suite_id;
+	bbs_message default_key_dst;
+	bbs_message api_id;
+	bbs_message signature_dst;
+	bbs_message challenge_dst;
+	bbs_message map_dst;
 };
 
 // Serialization
-void bn_write_bbs (
-	uint8_t     bin[BBS_SCALAR_LEN],
-	const blst_scalar  *n
-	);
-
-void ep_write_bbs (
-	uint8_t     bin[BBS_G1_ELEM_LEN],
-	const blst_p1  *p
-	);
-
-void ep2_write_bbs (
-	uint8_t      bin[BBS_G2_ELEM_LEN],
-	const blst_p2  *p
-	);
+void bn_write_bbs  (uint8_t bin[BBS_SCALAR_LEN],  const blst_scalar *n);
+void ep_write_bbs  (uint8_t bin[BBS_G1_ELEM_LEN], const blst_p1     *p);
+void ep2_write_bbs (uint8_t bin[BBS_G2_ELEM_LEN], const blst_p2     *p);
 
 // Deserialization
-int bn_read_bbs (
-	blst_scalar           *n,
-	const uint8_t  bin[BBS_SCALAR_LEN]
-	);
-
-int ep_read_bbs (
-	blst_p1           *p,
-	const uint8_t  bin[BBS_G1_ELEM_LEN]
-	);
-
-int ep2_read_bbs (
-	blst_p2          *p,
-	const uint8_t  bin[BBS_G2_ELEM_LEN]
-	);
+int bn_read_bbs  (blst_scalar *n, const uint8_t bin[BBS_SCALAR_LEN]);
+int ep_read_bbs  (blst_p1     *p, const uint8_t bin[BBS_G1_ELEM_LEN]);
+int ep2_read_bbs (blst_p2     *p, const uint8_t bin[BBS_G2_ELEM_LEN]);
 
 // The following functions are provided as an incremental and as a one-shot API.
 // The varargs for the one-shot API consist of several of the non context
@@ -120,33 +81,30 @@ void hash_to_scalar_init (
 void hash_to_scalar_update (
 	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context   *ctx,
-	const void               *msg,
-	size_t                    msg_len
+	bbs_message               msg
 	);
 
 void hash_to_scalar_finalize (
 	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context   *ctx,
 	blst_scalar              *out,
-	const void               *dst,
-	size_t                    dst_len
+	bbs_message               dst
 	);
 
 void hash_to_scalar (
 	const bbs_ciphersuite *cipher_suite,
 	blst_scalar              *out,
-	const void               *dst,
-	size_t                    dst_len,
+	bbs_message               dst,
 	uint64_t                  num_messages,
-	...
+	bbs_message              *messages
 	);
 
-// you need to call update exactly num_messages + 1 times.
+// You need to call update exactly num_messages + 1 times.
 void calculate_domain_init (
-	const bbs_ciphersuite *cipher_suite,
+	const bbs_ciphersuite  *cipher_suite,
 	union bbs_hash_context *ctx,
-	const uint8_t       pk[BBS_PK_LEN],
-	uint64_t            num_messages
+	const bbs_public_key    pk,
+	uint64_t                num_messages
 	);
 
 void calculate_domain_update (
@@ -159,8 +117,7 @@ void calculate_domain_finalize (
 	const bbs_ciphersuite *cipher_suite,
 	union bbs_hash_context   *ctx,
 	blst_scalar              *out,
-	const void               *header,
-	size_t                    header_len
+	bbs_message               header
 	);
 
 
@@ -206,5 +163,21 @@ typedef void (bbs_bn_prf)(const bbs_ciphersuite *cipher_suite,
 			 uint64_t                   input,
 			 void                      *cookie
 			 );
+
+int
+__bbs_proof_gen_deterministic (
+	const bbs_ciphersuite *cipher_suite,
+	const bbs_public_key   pk,
+	const bbs_signature    signature,
+	bbs_out_message        proof,
+	bbs_message            header,
+	bbs_message            presentation_header,
+	const size_t          *disclosed_indexes,
+	size_t                 disclosed_indexes_len,
+	const bbs_message     *messages,
+	size_t                 n,
+	bbs_bn_prf             prf,
+	void                  *prf_cookie
+	);
 
 #endif /*BBS_UTIL_H*/

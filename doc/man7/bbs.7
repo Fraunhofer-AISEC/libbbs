@@ -108,10 +108,11 @@ with every proof you create.
 .SS bbs_verify_v()
 .SS bbs_proof_gen_v()
 .SS bbs_proof_verify_v()
-Varargs APIs of the above for simple integration into applications.
+Varargs APIs of the above for simple integration into applications. See EXAMPLES
+below.
 .SH EXAMPLES
 The following example creates a signature on two messages, verifies it, and then
-creates a proof to disclose only the first message:
+creates a proof to disclose only the first message.
 .EX
 #include <bbs.h>
 \&
@@ -132,41 +133,37 @@ int main(void) {
 	char *phdr = "I am a nonce!";
 	char *msg1 = "Message 1";
 	char *msg2 = "Message 2";
-	uint64_t disclosed_idxs[1] = {0};
+	uint64_t disclosed_idxs[] = {0};
 \&
 	if(BBS_OK != bbs_keygen_full(s, sk, pk)) {
 		perror("bbs_keygen_full");
 		return EXIT_FAILURE;
 	}
 \&
-	if(BBS_OK != bbs_sign_v(s, sk, pk, sig, head, strlen(head), 2,
-			msg1, strlen(msg1),
-			msg2, strlen(msg2))) {
+	/* Use BBS_*MSG macros to pass length information with strings */
+	if(BBS_OK != bbs_sign_v(s, sk, pk, sig, BBS_SMSG(head),
+			BBS_SMSG(msg1), BBS_SMSG(msg2))) {
 		perror("bbs_sign_v");
 		return EXIT_FAILURE;
 	}
 \&
-	if(BBS_OK != bbs_verify_v(s, pk, sig, head, strlen(head), 2,
-			msg1, strlen(msg1),
-			msg2, strlen(msg2))) {
+	if(BBS_OK != bbs_verify_v(s, pk, sig, BBS_SMSG(head),
+			BBS_SMSG(msg1), BBS_SMSG(msg2))) {
 		perror("bbs_verify_v");
 		return EXIT_FAILURE;
 	}
 \&
-	if(BBS_OK != bbs_proof_gen_v(s, pk, sig, proof,
-			head, strlen(head),
-			phdr, strlen(phdr), disclosed_idxs, 1, 2,
-			msg1, strlen(msg1),
-			msg2, strlen(msg2))) {
+	if(BBS_OK != bbs_proof_gen_v(s, pk, sig, BBS_OUT_CMSG(proof),
+			BBS_SMSG(head), BBS_SMSG(phdr), disclosed_idxs, 1,
+			BBS_SMSG(msg1), BBS_SMSG(msg2))) {
 		perror("bbs_proof_gen_v");
 		return EXIT_FAILURE;
 	}
 \&
-	if(BBS_OK != bbs_proof_verify_v(s, pk, proof, sizeof(proof),
-			head, strlen(head),
-			phdr, strlen(phdr), disclosed_idxs, 1, 2,
-			msg1, strlen(msg1)
-			/* msg2 is not disclosed */)) {
+	/* msg2 is not disclosed here */
+	if(BBS_OK != bbs_proof_verify_v(s, pk, BBS_CMSG(proof),
+			BBS_SMSG(head), BBS_SMSG(phdr), disclosed_idxs, 1,
+			BBS_SMSG(msg1), BBS_UNDISCLOSED_MSG)) {
 		perror("bbs_proof_verify_v");
 		return EXIT_FAILURE;
 	}
